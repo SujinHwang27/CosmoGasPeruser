@@ -33,7 +33,7 @@ Can we leverage machine learning techniques and simulated data to...
 
 
 # Description of how the study is relevant to NASA
-
+(will be added)
 
 ## Doubts on the methodology of leveraging synthetic data and machine learning
 - Simulations are not same as real universe : how much errror? 
