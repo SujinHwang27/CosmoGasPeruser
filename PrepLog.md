@@ -6,16 +6,16 @@ Each section will take a part in the proposal document
 ### 1. Main research questions to be addressed
 Can we leverage machine learning techniques and simulated data to...\
   A. Predict physical properties of CGM? (Careful to say 'analyze')\
-  B. Predict / backtrack Line-of-Sight (LOS) information?
+  B. Predict / backtrack Line-of-Sight (LOS) information?\
 
 
 
 ### 2. Goals for the project (explicitly outline the research motivation and my proposed work)
 - Build and train machine learning model that can predict physical properties \
-  such as density and temperature of the encountered CGMs from quasar absorption lines. \
+  such as density and temperature of the encountered CGMs from quasar absorption lines. 
 - Leverage the cosmological simulations to obtain training data. \
   It is well known that quantity and the variety of training data is crucial to boost the performance of machine learning models. \
-  Since observational data lacks in quantity and variety, synthetic data can be a good alternative. \
+  Since observational data lacks in quantity and variety, synthetic data can be a good alternative. 
 
 
 
@@ -39,7 +39,7 @@ Can we leverage machine learning techniques and simulated data to...\
 - Simulations are not same as real universe : how much errror? 
 - Synthetic data is different from real data : \
   This can be critical because the aim of the project is to build an algorithm that yields result that can be viewed as a near fact. \
-  But if machine learning algorithms learn from synthetic facts, than how meaningful is it for real-life science? \
+  But if machine learning algorithms learn from synthetic facts, than how meaningful is it for real-life science? 
 - Need a big assumption “synthetic data are similar to real data”.
   This can be dangerous because this study aims to create a scientific tool (or analyzer) that can help humanity get meaningful information from what is observed.
  	If the inference is not logically robust, then the result is meaningless.
