@@ -55,6 +55,8 @@ Can we leverage machine learning techniques and simulated data to...\
 
 
 ## Literature Review
+- [Applications of machine learning in spectroscopy](https://www.tandfonline.com/doi/full/10.1080/05704928.2020.1859525)\
+  : using machine learning in chemometrics/spectroscopy (more biology than astronomy)
 -	[Observing the circumgalactic medium of simulated galaxies through synthetic absorption spectra](https://academic.oup.com/mnras/article/479/2/1822/5046485)\
  : physical properties of CGM (density, temperature, … ) through simulation
 -	[Machine learning-based photometric classification of galaxies, quasars, emission-line galaxies, and stars](https://arxiv.org/pdf/2311.02951)\
