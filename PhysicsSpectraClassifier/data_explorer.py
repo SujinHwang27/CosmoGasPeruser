@@ -1,0 +1,1 @@
+# EDA and PCA analysis. includes plot of var-ncomp 
