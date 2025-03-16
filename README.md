@@ -11,6 +11,7 @@ Features
 ## Motivation
 The universe's diffuse gas, particularly in the intergalactic and circumgalactic media, plays a crucial role in cosmic evolution. Quasar absorption lines provide a unique window into this diffuse matter, while cosmological simulations offer detailed predictions for its behavior. **CosmoGasPeruser** aims to bridge these datasets by leveraging machine learning to uncover deeper insights.
 
+<--!
 Installation
 To get started, clone this repository and install the necessary dependencies:
 
@@ -79,6 +80,8 @@ Contributions are welcome! If you'd like to improve the project, please:
 1. Fork the repository.
 2. Create a new branch for your feature or bugfix.
 3. Submit a pull request with a detailed description of your changes.
+
+-->
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
