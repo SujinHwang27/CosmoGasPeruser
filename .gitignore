@@ -26,9 +26,10 @@ wheels/
 .installed.cfg
 *.egg
 
-# Ignore Jupyter Notebook checkpoints
+# Ignore Jupyter Notebook and checkpoints
 .ipynb_checkpoints/
 */.ipynb_checkpoints/*
+*.ipynb
 
 # Ignore logs and temporary files
 *.log
@@ -66,7 +67,5 @@ classifier_SVM/models/
 classifier_SVM/plots/
 
 # Specific files
-consolidated_gs_results.xlsx
-requirements.txt
 !README.md
 
