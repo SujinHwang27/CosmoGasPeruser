@@ -65,8 +65,8 @@ classifier_SVM/results/
 classifier_SVM/models/
 classifier_SVM/plots/
 
-# Keep specific files
-!consolidated_gs_results.xlsx
-!requirements.txt
+# Specific files
+consolidated_gs_results.xlsx
+requirements.txt
 !README.md
 
