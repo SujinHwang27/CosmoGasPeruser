@@ -1,17 +1,42 @@
-# Ignore Python compiled files
+# Ignore data and environment directories
+data/
+venv/
+.venv/
+env/
+.env/
+
+# Ignore Python compiled files and cache
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Ignore Jupyter Notebook checkpoints
 .ipynb_checkpoints/
+*/.ipynb_checkpoints/*
 
 # Ignore logs and temporary files
 *.log
 *.tmp
 *.out
 *.bak
+logs/
+temp/
 
 # Ignore environment files
 .env
@@ -21,8 +46,27 @@ venv/
 # Ignore system files
 .DS_Store
 Thumbs.db
+*.swp
+*~
 
 # Ignore large data files
 *.csv
 *.h5
 *.pkl
+*.xlsx
+*.npy
+*.npz
+*.sav
+*.joblib
+
+# Ignore output and results directories
+classifier_SVM/output/
+classifier_SVM/results/
+classifier_SVM/models/
+classifier_SVM/plots/
+
+# Keep specific files
+!consolidated_gs_results.xlsx
+!requirements.txt
+!README.md
+
