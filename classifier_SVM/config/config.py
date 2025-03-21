@@ -2,11 +2,19 @@
 Configuration parameters for the project.
 """
 
-# Data parameters
-DATA_DIR = "/home/sujin/CosmoGasPeruser/data/Spectra_for_Sujin"
-# Physics values will be dynamically determined from the dataset
-# The number of physics values can be >= 2 (nofeedback, strongAGN, etc.)
-REDSHIFT = 0.1  # Single redshift value to process
+import os
+from pathlib import Path
+
+# Get the project root directory (parent of the config directory)
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+# Set data directory relative to project root
+DATA_DIR = os.path.join(PROJECT_ROOT, "data", "TargetedSpecML")
+
+# List of physics values to use
+PHYSICS_VALUES = ['no_feedback', 'strongAGN']
+
+# REDSHIFT will be provided by user input
 
 # PCA parameters
 EXPLAINED_VARIANCE = {

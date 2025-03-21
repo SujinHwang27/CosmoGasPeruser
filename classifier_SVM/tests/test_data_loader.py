@@ -8,7 +8,7 @@ import os
 import shutil
 import tempfile
 from src.data_loader import get_physics_values, load_data, prepare_dataset
-from config.config import DATA_DIR, REDSHIFT
+from config.config import DATA_DIR
 
 class TestDataLoader(unittest.TestCase):
     @classmethod
@@ -18,16 +18,16 @@ class TestDataLoader(unittest.TestCase):
         cls.test_dir = tempfile.mkdtemp()
         
         # Create test data structure
-        cls.redshift = str(REDSHIFT)
+        cls.test_redshift = 0.1
         cls.physics_values = ['1', '2', '3']
         
         for physics in cls.physics_values:
-            folder_name = f"{physics}_{cls.redshift}"
+            folder_name = f"{physics}_{cls.test_redshift}"
             folder_path = os.path.join(cls.test_dir, folder_name)
             os.makedirs(folder_path, exist_ok=True)
             
             # Create dummy flux data
-            flux_data = np.random.rand(10, 100)  # 10 spectra, 100 wavelengths
+            flux_data = np.random.rand(1000, 194)  # 1000 spectra, 194 wavelengths
             np.save(os.path.join(folder_path, "flux.npy"), flux_data)
         
         # Override DATA_DIR for testing
@@ -47,7 +47,7 @@ class TestDataLoader(unittest.TestCase):
 
     def test_get_physics_values(self):
         """Test physics values discovery."""
-        values = get_physics_values()
+        values = get_physics_values(self.test_redshift)
         
         # Check if all expected physics values are found
         self.assertEqual(set(values), set(self.physics_values))
@@ -59,17 +59,23 @@ class TestDataLoader(unittest.TestCase):
     def test_get_physics_values_insufficient(self):
         """Test error when insufficient physics values are found."""
         # Remove one physics value folder
-        folder_to_remove = os.path.join(self.test_dir, f"{self.physics_values[0]}_{self.redshift}")
+        folder_to_remove = os.path.join(self.test_dir, f"{self.physics_values[0]}_{self.test_redshift}")
         shutil.rmtree(folder_to_remove)
         
         # Test if ValueError is raised
         with self.assertRaises(ValueError) as context:
-            get_physics_values()
+            get_physics_values(self.test_redshift)
+        self.assertIn("Dataset must contain at least 2 physics values", str(context.exception))
+
+    def test_get_physics_values_invalid_redshift(self):
+        """Test error when invalid redshift is provided."""
+        with self.assertRaises(ValueError) as context:
+            get_physics_values(-1.0)
         self.assertIn("Dataset must contain at least 2 physics values", str(context.exception))
 
     def test_load_data(self):
         """Test data loading functionality."""
-        data = load_data()
+        data = load_data(self.test_redshift)
         
         # Check if all physics values are present
         self.assertEqual(set(data.keys()), set(self.physics_values))
@@ -83,12 +89,18 @@ class TestDataLoader(unittest.TestCase):
     def test_load_data_missing_file(self):
         """Test handling of missing flux files."""
         # Remove flux.npy from one folder
-        folder_to_modify = os.path.join(self.test_dir, f"{self.physics_values[0]}_{self.redshift}")
+        folder_to_modify = os.path.join(self.test_dir, f"{self.physics_values[0]}_{self.test_redshift}")
         os.remove(os.path.join(folder_to_modify, "flux.npy"))
         
-        data = load_data()
+        data = load_data(self.test_redshift)
         # Check if the physics value with missing file is not in the data
         self.assertNotIn(self.physics_values[0], data)
+
+    def test_load_data_invalid_redshift(self):
+        """Test error when invalid redshift is provided."""
+        with self.assertRaises(ValueError) as context:
+            load_data(-1.0)
+        self.assertIn("Dataset must contain at least 2 physics values", str(context.exception))
 
     def test_prepare_dataset(self):
         """Test dataset preparation."""

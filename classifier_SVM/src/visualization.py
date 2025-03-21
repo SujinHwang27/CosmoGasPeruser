@@ -2,12 +2,26 @@
 Visualization functionality for spectra and analysis results.
 """
 
+from pathlib import Path
+import sys
+
+# Add the project root to Python path
+project_root = str(Path(__file__).parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from src.data_loader import load_data
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.decomposition import PCA
+
 from typing import Dict, List, Tuple
 import logging
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def plot_spectrum(flux: np.ndarray, 
@@ -84,7 +98,7 @@ def plot_grayscale_spectra(spectra: np.ndarray,
     plt.axis("off")
     plt.show()
 
-def plot_pca_variance(pca_results: Dict[str, float],
+def plot_pca_variance(pca: PCA,
                      title: str = "PCA Explained Variance",
                      figsize: Tuple[int, int] = (10, 6)) -> None:
     """
@@ -96,9 +110,11 @@ def plot_pca_variance(pca_results: Dict[str, float],
         figsize: Figure size
     """
     plt.figure(figsize=figsize)
-    plt.plot(list(pca_results.values()), marker='o')
+    plt.plot(np.cumsum(pca.explained_variance_ratio_))
     plt.xlabel('Number of Components')
     plt.ylabel('Cumulative Explained Variance')
+
+
     plt.title(title)
     plt.grid(True)
     plt.show()
@@ -176,3 +192,28 @@ def plot_pca_reconstruction(original: np.ndarray,
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.show()
+
+
+
+def main():
+    # Load data
+    redshift = 2.4  # You can change this value
+    logger.info(f"Loading data for redshift {redshift}...")
+    data = load_data(redshift)
+    
+    # Combine all spectra
+    all_spectra = []
+    for physics, spectra in data.items():
+        all_spectra.extend(spectra)
+    all_spectra = np.array(all_spectra)
+    logger.info(f"Total {all_spectra.shape[0]} spectra")
+    
+    # Perform PCA analysis
+    logger.info("Performing PCA analysis...")
+    pca = PCA().fit(spectra)    
+    # Plot PCA variance
+    logger.info("Plotting PCA variance...")
+    plot_pca_variance(pca)
+
+if __name__ == "__main__":
+    main() 

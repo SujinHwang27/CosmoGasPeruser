@@ -7,7 +7,16 @@ from typing import Dict, Tuple, Optional
 from sklearn.decomposition import PCA
 import random
 import logging
-from ..config.config import EXPLAINED_VARIANCE
+from pathlib import Path
+import sys
+
+# Add the project root to Python path
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+# Import config using absolute import
+from classifier_SVM.config.config import EXPLAINED_VARIANCE
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +83,7 @@ def perform_pca_analysis(spectra: np.ndarray) -> Dict[str, int]:
     return n_components_dict
 
 def apply_pca_transformation(spectra: np.ndarray, 
-                           n_components: int) -> np.ndarray:
+                           n_components: float) -> np.ndarray:
     """
     Apply PCA transformation to the data.
     
@@ -85,9 +94,25 @@ def apply_pca_transformation(spectra: np.ndarray,
     Returns:
         PCA-transformed data
     """
-    logger.info(f"Applying PCA with {n_components} components")
+    while True:
+        try:
+            n_components = input("\nEnter desired variance threshold between 0 and 1(e.g., 0.95) or the number of principal components: ")
+            if 0<n_components<1:
+                n_components = float(n_components)
+                logger.info(f"\nApplying PCA transformation for {n_components}% variance...")
+                break
+            elif 1<= n_components <= spectra.shape[1]:
+                n_components = int(n_components)
+                logger.info(f"Applying PCA with {n_components} explained variance")
+                break
+            else:
+                logger.error(f"Invalid variance threshold.")
+        except ValueError:
+            logger.error("Please enter a valid number.")
     
-    pca = PCA(n_components=n_components)
+
+    
+    pca = PCA(n_components=n_components, svd_solver='full')
     transformed_data = pca.fit_transform(spectra)
     logger.info(f"Transformed shape: {transformed_data.shape}")
     
