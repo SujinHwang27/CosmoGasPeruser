@@ -79,17 +79,16 @@ def perform_pca_analysis(spectra: np.ndarray) -> Dict[str, int]:
         n_components = np.where(cumulative_variance >= threshold_value)[0][0] + 1
         n_components_dict[threshold_key] = n_components
         logger.info(f"Components needed for {threshold_value*100}% variance: {n_components}")
+
             
     return n_components_dict
 
-def apply_pca_transformation(spectra: np.ndarray, 
-                           n_components: float) -> np.ndarray:
+def apply_pca_transformation(train_spectra: np.ndarray, test_spectra: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Apply PCA transformation to the data.
     
     Args:
         spectra: Original spectra array
-        n_components: Number of components to use
         
     Returns:
         PCA-transformed data
@@ -97,26 +96,26 @@ def apply_pca_transformation(spectra: np.ndarray,
     while True:
         try:
             n_components = input("\nEnter desired variance threshold between 0 and 1(e.g., 0.95) or the number of principal components: ")
-            if 0<n_components<1:
-                n_components = float(n_components)
+            n_components = float(n_components)
+
+            if 0 < n_components and n_components < 1:
                 logger.info(f"\nApplying PCA transformation for {n_components}% variance...")
                 break
-            elif 1<= n_components <= spectra.shape[1]:
+            elif 1 <= n_components and n_components <= train_spectra.shape[1]:
                 n_components = int(n_components)
-                logger.info(f"Applying PCA with {n_components} explained variance")
+                logger.info(f"Applying PCA with {n_components} principal components")
                 break
             else:
                 logger.error(f"Invalid variance threshold.")
         except ValueError:
             logger.error("Please enter a valid number.")
     
-
-    
     pca = PCA(n_components=n_components, svd_solver='full')
-    transformed_data = pca.fit_transform(spectra)
-    logger.info(f"Transformed shape: {transformed_data.shape}")
+    X_train_pca = pca.fit_transform(train_spectra)
+    X_test_pca = pca.transform(test_spectra)
+    logger.info(f"Transformed shape (train, test): {X_train_pca.shape}, {X_test_pca.shape}")
     
-    return transformed_data
+    return X_train_pca, X_test_pca
 
 def extract_local_minima_features(spectra: np.ndarray, 
                                 num_samples: int = 2000, 

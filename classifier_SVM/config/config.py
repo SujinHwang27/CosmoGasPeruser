@@ -14,6 +14,12 @@ DATA_DIR = os.path.join(PROJECT_ROOT, "data", "TargetedSpecML")
 # List of physics values to use
 PHYSICS_VALUES = ['no_feedback', 'strongAGN']
 
+# The number of total spectra per class
+CLASS_SIZE = 3000
+
+# The number of spectra per class used for the pipeline
+DATA_SIZE = 3000
+
 # REDSHIFT will be provided by user input
 
 # PCA parameters
@@ -38,13 +44,13 @@ PARAM_GRID_1 = {
 PARAM_GRID_2 = {
     'C': [1, 0.1, 0.01],
     'gamma': [0.1, 1, 10],
-    'kernel': ['poly']
+    'kernel': ['rbf', 'poly']
 }
 
 # Model training parameters
 TRAIN_TEST_SPLIT_RATIO = 0.2
 RANDOM_STATE = 40
-CV_FOLDS = 5
+CV_FOLDS = 3
 
 # Local minima parameters
 LOCAL_MINIMA_SAMPLE_SIZE = 2000

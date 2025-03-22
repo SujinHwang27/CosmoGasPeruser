@@ -16,7 +16,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 # Import config using absolute import
-from classifier_SVM.config.config import DATA_DIR, PHYSICS_VALUES
+from classifier_SVM.config.config import DATA_DIR, PHYSICS_VALUES, DATA_SIZE
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -84,12 +84,13 @@ def load_data(redshift: float) -> Dict[str, np.ndarray]:
 
     return data_by_physics
 
-def prepare_dataset(data_by_physics: Dict[str, np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
+def prepare_dataset(data_by_physics: Dict[str, np.ndarray], size: int = DATA_SIZE) -> Tuple[np.ndarray, np.ndarray]:
     """
     Prepare dataset from physics-based data.
     
     Args:
         data_by_physics: Dictionary containing flux data by physics value.
+        size: Optional int, if provided, randomly sample this many spectra from each physics value.
         
     Returns:
         Tuple containing:
@@ -106,8 +107,27 @@ def prepare_dataset(data_by_physics: Dict[str, np.ndarray]) -> Tuple[np.ndarray,
         logger.info(f"  {physics} -> {idx}")
 
     for physics, fluxes in data_by_physics.items():
-        for flux in fluxes:
+        # Convert fluxes list to numpy array
+        fluxes_array = np.array(fluxes)
+        
+        # Randomly sample 'size' spectra from each physics value
+        if len(fluxes_array) <= size:
+            logger.warning(f"Physics {physics} has fewer or equal samples ({len(fluxes_array)}) than requested size ({size}). "
+                            "Using all available samples.")
+            selected_fluxes = fluxes_array
+        else:
+            indices = np.random.choice(len(fluxes_array), size=size, replace=False)
+            selected_fluxes = fluxes_array[indices]
+
+            
+        for flux in selected_fluxes:
             spectra.append(flux)
             labels.append(physics_to_int[physics])
     
-    return np.array(spectra), np.array(labels)
+    spectra = np.array(spectra)
+    labels = np.array(labels)
+    
+    logger.info(f"Final dataset shape: {spectra.shape}")
+    logger.info(f"Number of samples per class: {np.bincount(labels)}")
+    
+    return spectra, labels
