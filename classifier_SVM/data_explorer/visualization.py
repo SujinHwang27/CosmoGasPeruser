@@ -10,7 +10,7 @@ project_root = str(Path(__file__).parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from src.data_loader import load_data
+from classifier_SVM.src.data_loader import load_data
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,6 +23,9 @@ import logging
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+from classifier_SVM.config.config import REDSHIFT
+
 
 def plot_spectrum(flux: np.ndarray, 
                  wavelength: np.ndarray = None,
@@ -197,7 +200,7 @@ def plot_pca_reconstruction(original: np.ndarray,
 
 def main():
     # Load data
-    redshift = 2.4  # You can change this value
+    redshift = REDSHIFT
     logger.info(f"Loading data for redshift {redshift}...")
     data = load_data(redshift)
     

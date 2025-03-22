@@ -18,9 +18,14 @@ PHYSICS_VALUES = ['no_feedback', 'strongAGN']
 CLASS_SIZE = 3000
 
 # The number of spectra per class used for the pipeline
-DATA_SIZE = 3000
+DATA_SIZE = 300
 
-# REDSHIFT will be provided by user input
+# REDSHIFT
+REDSHIFT = 2.4
+
+# Number of components (if int, elif float, it's explained variance)
+NCOMP = 11      
+
 
 # PCA parameters
 EXPLAINED_VARIANCE = {

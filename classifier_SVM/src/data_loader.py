@@ -16,7 +16,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 # Import config using absolute import
-from classifier_SVM.config.config import DATA_DIR, PHYSICS_VALUES, DATA_SIZE
+from classifier_SVM.config.config import DATA_DIR, PHYSICS_VALUES, DATA_SIZE, REDSHIFT
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ def get_physics_values(redshift: float) -> List[str]:
     logger.info(f"Using physics values: {PHYSICS_VALUES}")
     return PHYSICS_VALUES
 
-def load_data(redshift: float) -> Dict[str, np.ndarray]:
+def load_data(redshift: float = REDSHIFT) -> Dict[str, np.ndarray]:
     """
     Load flux data for a single redshift.
     
@@ -48,6 +48,7 @@ def load_data(redshift: float) -> Dict[str, np.ndarray]:
         Dict[str, np.ndarray]: Dictionary containing flux data organized by physics values
         {physics_value: [[spectrum1],[spectrum2]...]}
     """
+    logger.info(f"Loading data for redshift {redshift}...")
     physics_values = get_physics_values(redshift)
     data_by_physics = {physics: [] for physics in physics_values}
     redshift_str = str(redshift)

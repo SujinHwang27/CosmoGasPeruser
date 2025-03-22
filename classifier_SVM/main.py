@@ -10,8 +10,7 @@ from pathlib import Path
 import sys
 from sklearn.model_selection import train_test_split
 from src.data_loader import load_data, prepare_dataset
-from src.feature_extraction import (perform_pca_analysis, apply_pca_transformation,
-                                  extract_local_minima_features)
+from src.feature_extraction import perform_pca_analysis, apply_pca_transformation
 from src.model import train_and_evaluate_svm
 # from src.evaluation import (analyze_performance_vs_overfit, create_factors_heatmap,
 #                           evaluate_model_performance)
@@ -28,28 +27,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def get_redshift_input():
-    """
-    Get redshift value from user input with validation.
-    
-    Returns:
-        float: Validated redshift value
-    """
-    while True:
-        try:
-            redshift = float(input("Which redshift of data are you processing?(e.g., 0.1, 0.3, 2.2, 2.4): "))
-            if redshift < 0:
-                print("Redshift must be positive. Please try again.")
-                continue
-            return redshift
-        except ValueError:
-            print("Please enter a valid number. Try again.")
 
 def main():
     # 1. Load and prepare data
-    redshift = get_redshift_input()
-    logger.info(f"Loading data for redshift {redshift}...")
-    data = load_data(redshift)
+    data = load_data()
     spectra, labels = prepare_dataset(data)
     
     # 2. Split data into train and test sets

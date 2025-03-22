@@ -14,8 +14,8 @@ project_root = str(Path(__file__).parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from src.data_loader import load_data
-from src.feature_extraction import perform_pca_analysis, plot_pca_variance
+from classifier_SVM.src.data_loader import load_data
+from data_explorer.visualization import plot_pca_variance
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
