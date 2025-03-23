@@ -69,8 +69,11 @@ def load_data(redshift: float = REDSHIFT) -> Dict[str, np.ndarray]:
                 flux = np.load(flux_file)
                 logger.info(f"{flux.shape[0]} spectra in {flux_file}")
                 data_by_physics[physics].extend(flux)
+                logger.info(f"Current total spectra for {physics}: {len(data_by_physics[physics])}")
 
-            logger.info(f"Flux data shape for physics {physics}: {flux.shape}")
+            # Log the total accumulated data shape after all files are processed
+            total_fluxes = np.array(data_by_physics[physics])
+            logger.info(f"Total accumulated flux data shape for physics {physics}: {total_fluxes.shape}")
 
         except FileNotFoundError as e:
             logger.error(f"Files not found in folder {folder}: {e}")

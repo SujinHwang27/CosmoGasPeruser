@@ -1,0 +1,77 @@
+feature_extraction.py (to save pca model)
+prediction.py (to conduct prediction on new data)
+
+Notes:
+Conducted training with PCA+SVM 
+Total data size 3000 per class, total 6000 spectra
+Conducting PCA didn't help. Models ended up predicting spectra as nofeedback majority of the time. 
+Not involving PCA solved this issue, but the accuracy didn't improve.
+Doubling the total data size reduced overfitting, but accuracy remained similar around 60%. 
+Using parameter grid 3, the best hyperparameter combination was {'C': 0.01, 'gamma': 0.1, 'kernel': 'poly'}. 
+
+With PCA:
+
+ncomp12, grid3
+              precision    recall  f1-score   support
+
+           0       0.55      0.98      0.70       600
+           1       0.93      0.19      0.31       600
+
+    accuracy                           0.59      1200
+   macro avg       0.74      0.59      0.51      1200
+weighted avg       0.74      0.59      0.51      1200
+
+ncomp25, grid3
+              precision    recall  f1-score   support
+
+           0       0.55      0.99      0.71       600
+           1       0.94      0.19      0.31       600
+
+    accuracy                           0.59      1200
+   macro avg       0.75      0.59      0.51      1200
+weighted avg       0.75      0.59      0.51      1200
+
+ncomp50, grid3
+              precision    recall  f1-score   support
+
+           0       0.55      0.99      0.71       600
+           1       0.93      0.19      0.31       600
+
+    accuracy                           0.59      1200
+   macro avg       0.74      0.59      0.51      1200
+weighted avg       0.74      0.59      0.51      1200
+
+ncomp194, grid3
+              precision    recall  f1-score   support
+
+           0       0.55      0.99      0.71       600
+           1       0.94      0.19      0.31       600
+
+    accuracy                           0.59      1200
+   macro avg       0.75      0.59      0.51      1200
+weighted avg       0.75      0.59      0.51      1200
+
+
+Without PCA (saved in 3000_194_3):
+{'C': 0.01, 'gamma': 0.1, 'kernel': 'poly'}
+ncomp194, grid3
+              precision    recall  f1-score   support
+
+           0       0.61      0.69      0.65       600
+           1       0.64      0.56      0.60       600
+
+    accuracy                           0.62      1200
+   macro avg       0.63      0.62      0.62      1200
+weighted avg       0.63      0.62      0.62      1200
+
+Without PCA (saved in 6000_194_3):
+ncomp194, grid3
+{'C': 0.01, 'gamma': 0.1, 'kernel': 'poly'}
+              precision    recall  f1-score   support
+
+           0       0.61      0.70      0.65      1200
+           1       0.65      0.55      0.59      1200
+
+    accuracy                           0.62      2400
+   macro avg       0.63      0.62      0.62      2400
+weighted avg       0.63      0.62      0.62      2400

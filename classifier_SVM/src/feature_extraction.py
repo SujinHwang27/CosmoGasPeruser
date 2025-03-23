@@ -56,27 +56,14 @@ def apply_pca_transformation(train_spectra: np.ndarray, test_spectra: np.ndarray
     Returns:
         PCA-transformed data
     """
-    # while True:
-    #     try:
-    #         n_components = input("\nEnter desired variance threshold between 0 and 1(e.g., 0.95) or the number of principal components: ")
-    #         n_components = float(n_components)
 
-    #         if 0 < n_components and n_components < 1:
-    #             logger.info(f"\nApplying PCA transformation for {n_components}% variance...")
-    #             break
-    #         elif 1 <= n_components and n_components <= train_spectra.shape[1]:
-    #             n_components = int(n_components)
-    #             logger.info(f"Applying PCA with {n_components} principal components")
-    #             break
-    #         else:
-    #             logger.error(f"Invalid variance threshold.")
-    #     except ValueError:
-    #         logger.error("Please enter a valid number.")
     
     pca = PCA(n_components=NCOMP, svd_solver='full')
     X_train_pca = pca.fit_transform(train_spectra)
     X_test_pca = pca.transform(test_spectra)
     logger.info(f"Transformed shape (train, test): {X_train_pca.shape}, {X_test_pca.shape}")
+
+    # TODO: save pca
     
     return X_train_pca, X_test_pca
 

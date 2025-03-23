@@ -20,7 +20,8 @@ if project_root not in sys.path:
 
 # Import config using absolute import
 from classifier_SVM.config.config import (TRAIN_TEST_SPLIT_RATIO, RANDOM_STATE, 
-                                       CV_FOLDS, PARAM_GRID_1, PARAM_GRID_2, CLASS_SIZE, DATA_SIZE)
+                                       CV_FOLDS, CLASS_SIZE, DATA_SIZE,NCOMP,
+                                       PARAM_GRID_DICT)
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ logger = logging.getLogger(__name__)
 
 def train_svm_with_cv(X: np.ndarray, 
                       y: np.ndarray, 
-                      param_grid: Dict[str, Any]) -> Tuple[GridSearchCV, Dict[str, Any]]:
+                      param_grid_no: int) -> Tuple[GridSearchCV, Dict[str, Any]]:
     """
     Train SVM model with cross-validation and hyperparameter tuning.
     
@@ -80,7 +81,7 @@ def train_svm_with_cv(X: np.ndarray,
 
     grid_search = GridSearchCV(
         SVC(),
-        param_grid,
+        PARAM_GRID_DICT.get(int(param_grid_no)),
         cv=KFold(n_splits=CV_FOLDS, shuffle=True),
         scoring='accuracy',
         verbose=1,
@@ -95,7 +96,7 @@ def train_svm_with_cv(X: np.ndarray,
     logger.info(f"Best cross-validation accuracy: {grid_search.best_score_:.4f}")
     
     # Save grid search results with proper file extension
-    output_file = output_dir / f"grid_search_results_size_{DATA_SIZE}.xlsx"
+    output_file = output_dir / f"grid_search_results_{DATA_SIZE}_{NCOMP}_{param_grid_no}.xlsx"
     save_grid_search_results(grid_search=grid_search, output_file=str(output_file))
 
     return grid_search, best_params
@@ -151,7 +152,7 @@ def train_final_model(X: np.ndarray,
     logger.info(f"Model saved to {model_path}")
     return model
 
-def train_and_evaluate_svm(X_train, y_train, X_test, y_test):
+def train_and_evaluate_svm(X_train, y_train, X_test, y_test, param_grid_no):
     """
     Train and evaluate SVM model with cross-validation.
     
@@ -169,9 +170,13 @@ def train_and_evaluate_svm(X_train, y_train, X_test, y_test):
     output_dir = Path("output/models")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    grid_search, best_params = train_svm_with_cv(X_train, y_train, PARAM_GRID_2)
+    # Select parameter grid based on param_grid_no
     
-    model = train_final_model(X_train, y_train, best_params, output_dir / f"final_svm_model_{DATA_SIZE}.pkl")
+    param_grid = PARAM_GRID_DICT.get(int(param_grid_no), 3)  
+
+    grid_search, best_params = train_svm_with_cv(X_train, y_train, param_grid_no)
+    
+    model = train_final_model(X_train, y_train, best_params, output_dir / f"final_svm_model_{DATA_SIZE}_{NCOMP}_{param_grid_no}.pkl")
     
     # Make predictions
     y_train_pred = model.predict(X_train)

@@ -6,25 +6,24 @@ from pathlib import Path
 import sys
 
 # Add the project root to Python path
-project_root = str(Path(__file__).parent.parent)
+project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
 from classifier_SVM.src.data_loader import load_data
+from classifier_SVM.config.config import REDSHIFT
 
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import PCA
-
 from typing import Dict, List, Tuple
 import logging
+import pandas as pd
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-from classifier_SVM.config.config import REDSHIFT
 
 
 def plot_spectrum(flux: np.ndarray, 
@@ -196,7 +195,49 @@ def plot_pca_reconstruction(original: np.ndarray,
     plt.grid(True, alpha=0.3)
     plt.show()
 
-
+def analyze_pca_loadings(pca: PCA, 
+                        n_components: int = 20,
+                        feature_names: List[str] = None) -> pd.DataFrame:
+    """
+    Analyze and visualize PCA loadings (feature contributions).
+    
+    Args:
+        pca: Fitted PCA object
+        n_components: Number of components to analyze
+        feature_names: List of feature names (optional)
+        
+    Returns:
+        DataFrame containing PCA loadings
+    """
+    # Create feature names if not provided
+    if feature_names is None:
+        feature_names = [f"Feature {i+1}" for i in range(pca.components_.shape[1])]
+    
+    # Create component names
+    component_names = [f"PC{i+1}" for i in range(n_components)]
+    
+    # Create DataFrame of loadings
+    loadings_df = pd.DataFrame(
+        pca.components_[:n_components],
+        columns=feature_names,
+        index=component_names
+    )
+    
+    # Print top features for each component
+    top_features_per_pc = loadings_df.abs().idxmax(axis=1)
+    logger.info("\nMost important feature for each principal component:")
+    logger.info(top_features_per_pc)
+    
+    # Create heatmap
+    plt.figure(figsize=(12, 6))
+    sns.heatmap(loadings_df, cmap="coolwarm", annot=False, center=0)
+    plt.title("PCA Loadings (Feature Contributions to Components)")
+    plt.xlabel("Original Features")
+    plt.ylabel("Principal Components")
+    plt.tight_layout()
+    plt.show()
+    
+    return loadings_df
 
 def main():
     # Load data
@@ -205,6 +246,7 @@ def main():
     data = load_data(redshift)
     
     # Combine all spectra
+    # QUESTION: spectra by physics?
     all_spectra = []
     for physics, spectra in data.items():
         all_spectra.extend(spectra)
@@ -213,10 +255,19 @@ def main():
     
     # Perform PCA analysis
     logger.info("Performing PCA analysis...")
-    pca = PCA().fit(spectra)    
+    pca = PCA().fit(all_spectra)
+    
     # Plot PCA variance
     logger.info("Plotting PCA variance...")
     plot_pca_variance(pca)
+    
+    # Analyze and visualize PCA loadings
+    logger.info("Analyzing PCA loadings...")
+    loadings_df = analyze_pca_loadings(pca, n_components=25)
+    logger.info("\nPCA Loadings DataFrame:")
+    logger.info(loadings_df)
+
+
 
 if __name__ == "__main__":
     main() 

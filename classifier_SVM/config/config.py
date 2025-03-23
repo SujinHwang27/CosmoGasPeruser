@@ -15,16 +15,16 @@ DATA_DIR = os.path.join(PROJECT_ROOT, "data", "TargetedSpecML")
 PHYSICS_VALUES = ['no_feedback', 'strongAGN']
 
 # The number of total spectra per class
-CLASS_SIZE = 3000
+CLASS_SIZE = 6000
 
 # The number of spectra per class used for the pipeline
-DATA_SIZE = 300
+DATA_SIZE = 6000
 
 # REDSHIFT
 REDSHIFT = 2.4
 
 # Number of components (if int, elif float, it's explained variance)
-NCOMP = 11      
+NCOMP = 194     
 
 
 # PCA parameters
@@ -51,6 +51,18 @@ PARAM_GRID_2 = {
     'gamma': [0.1, 1, 10],
     'kernel': ['rbf', 'poly']
 }
+
+PARAM_GRID_3 = {
+    'C': [0.001, 0.005, 0.01],
+    'gamma': [0.05, 0.01, 0.1],
+    'kernel': ['poly']
+}
+
+PARAM_GRID_DICT = {
+        1: PARAM_GRID_1,
+        2: PARAM_GRID_2,
+        3: PARAM_GRID_3
+    }
 
 # Model training parameters
 TRAIN_TEST_SPLIT_RATIO = 0.2
