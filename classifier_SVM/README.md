@@ -2,7 +2,7 @@
 This pipeline of model conducts binary classification on spectra from Sherwood simulation suite of redshift 2.4. The classes are 'nofeedback' and 'strongAGN'. 
 
 To conduct the training:
-First adjust the hyperparameters in config.py
+First adjust the hyperparameters in config.py.
 Then run "python main.py" in terminal.
 
 # Results
