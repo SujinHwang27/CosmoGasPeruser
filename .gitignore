@@ -66,6 +66,5 @@ classifier_SVM/results/
 classifier_SVM/models/
 classifier_SVM/plots/
 
-# Specific files
-!README.md
-
+# Text files
+*.txt
