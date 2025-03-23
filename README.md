@@ -11,6 +11,12 @@ Features
 ## Motivation
 The universe's diffuse gas, particularly in the intergalactic and circumgalactic media, plays a crucial role in cosmic evolution. Quasar absorption lines provide a unique window into this diffuse matter, while cosmological simulations offer detailed predictions for its behavior. **CosmoGasPeruser** aims to bridge these datasets by leveraging machine learning to uncover deeper insights.
 
+## Project Status
+🚧 **This repository is a work in progress.** 🚧  
+In the process of exploring and testing various methods to optimize analysis techniques. Expect ongoing updates and refinements.
+
+## Submodules & Methods
+- 📂 [**Classifier SVM**](classifier_SVM/README.md) - Work in progress on Support Vector Machine (SVM)-based classification models.
 
 
 <!--
