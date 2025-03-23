@@ -5,14 +5,19 @@ To conduct the training:
 First adjust the hyperparameters in config.py
 Then run "python main.py" in terminal.
 
+# Results
 
-
-Quick note on the result:
-Conducted training with PCA+SVM 
-Total data size 3000 per class, total 6000 spectra
-Conducting PCA didn't help. Models ended up predicting spectra as 'nofeedback' majority of the time. 
-Not utilizing PCA solved this issue, but the accuracy didn't improve.
-Doubling the total data size reduced overfitting, but accuracy remained similar around 60%. 
-Using parameter grid 3, the best hyperparameter combination was {'C': 0.01, 'gamma': 0.1, 'kernel': 'poly'}. 
+* Conducted training with PCA+SVM
+* Total data size: 3000 per class (6000 spectra total)
+* Key findings:
+  * PCA did not improve performance
+  * Models with PCA tended to predict 'nofeedback' as majority class
+  * Removing PCA resolved the majority class prediction issue
+  * Accuracy remained similar (~60%) without PCA
+  * Doubling total data size reduced overfitting but maintained similar accuracy
+* Best hyperparameters (using parameter grid 3):
+  * C: 0.01
+  * gamma: 0.1
+  * kernel: poly
 
 
