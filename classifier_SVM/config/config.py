@@ -17,7 +17,7 @@ PHYSICS_VALUES = ['no_feedback', 'strongAGN']
 # The number of total spectra per class
 CLASS_SIZE = 6000
 
-# The number of spectra per class used for the pipeline
+# The number of spectra per class used for the model training pipeline
 DATA_SIZE = 6000
 
 # REDSHIFT
@@ -58,10 +58,17 @@ PARAM_GRID_3 = {
     'kernel': ['poly']
 }
 
+PARAM_GRID_4 = {
+    'C': [0.005, 0.01, 0.05],
+    'gamma': ['scale'],
+    'kernel': ['rbf']
+}
+
 PARAM_GRID_DICT = {
         1: PARAM_GRID_1,
         2: PARAM_GRID_2,
-        3: PARAM_GRID_3
+        3: PARAM_GRID_3,
+        4: PARAM_GRID_4
     }
 
 # Model training parameters

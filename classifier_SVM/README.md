@@ -15,9 +15,9 @@ Then run "python main.py" in terminal.
   * Removing PCA resolved the majority class prediction issue
   * Accuracy remained similar (~60%) without PCA
   * Doubling total data size reduced overfitting but maintained similar accuracy
-* Best hyperparameters (using parameter grid 3):
-  * C: 0.01
-  * gamma: 0.1
-  * kernel: poly
+* Best hyperparameter combinations:
+  *{'C': 0.01, 'gamma': 0.1, 'kernel': 'poly'}
+  *{'C': 0.05, 'gamma':'scale', 'kernel':'rbf'}
+
 
 

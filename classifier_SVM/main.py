@@ -63,7 +63,7 @@ def main():
         y_train,
         X_test,
         y_test,
-        3
+        4
     )
     
     # 6. Plot results

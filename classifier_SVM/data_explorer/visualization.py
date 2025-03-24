@@ -10,7 +10,7 @@ project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from classifier_SVM.src.data_loader import load_data
+from classifier_SVM.src.data_loader import load_data, prepare_dataset
 from classifier_SVM.config.config import REDSHIFT
 
 import numpy as np
@@ -20,6 +20,7 @@ from sklearn.decomposition import PCA
 from typing import Dict, List, Tuple
 import logging
 import pandas as pd
+from sklearn.preprocessing import StandardScaler
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -239,23 +240,51 @@ def analyze_pca_loadings(pca: PCA,
     
     return loadings_df
 
+def plot_pca_projection(X: np.ndarray,
+                       y: np.ndarray,
+                       n_components: int = 2,
+                       title: str = "PCA Projection of the Dataset",
+                       figsize: Tuple[int, int] = (8, 6)) -> None:
+    """
+    Plot PCA projection of the dataset in 2D space.
+    
+    Args:
+        X: Feature matrix
+        y: Labels
+        n_components: Number of components to use for projection (default: 2)
+        title: Plot title
+        figsize: Figure size
+    """
+    # Standardize features
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    # Apply PCA
+    pca = PCA(n_components=n_components)
+    X_pca = pca.fit_transform(X_scaled)
+    
+    # Create the plot
+    plt.figure(figsize=figsize)
+    scatter = plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, cmap='coolwarm', alpha=0.6)
+    plt.colorbar(scatter)
+    plt.title(title)
+    plt.xlabel("Principal Component 1")
+    plt.ylabel("Principal Component 2")
+    plt.grid(True)
+    plt.show()
+
 def main():
     # Load data
     redshift = REDSHIFT
     logger.info(f"Loading data for redshift {redshift}...")
     data = load_data(redshift)
+    spectra, labels = prepare_dataset(data)
+
     
-    # Combine all spectra
-    # QUESTION: spectra by physics?
-    all_spectra = []
-    for physics, spectra in data.items():
-        all_spectra.extend(spectra)
-    all_spectra = np.array(all_spectra)
-    logger.info(f"Total {all_spectra.shape[0]} spectra")
     
     # Perform PCA analysis
     logger.info("Performing PCA analysis...")
-    pca = PCA().fit(all_spectra)
+    pca = PCA().fit(spectra)
     
     # Plot PCA variance
     logger.info("Plotting PCA variance...")
@@ -266,6 +295,10 @@ def main():
     loadings_df = analyze_pca_loadings(pca, n_components=25)
     logger.info("\nPCA Loadings DataFrame:")
     logger.info(loadings_df)
+    
+    # Plot PCA projection
+    logger.info("Plotting PCA projection...")
+    plot_pca_projection(spectra, labels, title=f"PCA Projection of Spectra (z={redshift})")
 
 
 
