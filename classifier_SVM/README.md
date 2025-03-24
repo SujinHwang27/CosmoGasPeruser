@@ -11,8 +11,8 @@ Then run "python main.py" in terminal.
 * Total data size: 3000 per class (6000 spectra total)
 * Key findings:
   * PCA did not improve performance
-  * Models with PCA tended to predict 'nofeedback' as majority class
-  * Removing PCA resolved the majority class prediction issue
+  * Models with PCA tended to predict 'nofeedback' majority of the time
+  * Removing PCA from the pipeline resolved the majority class prediction issue
   * Accuracy remained similar (~60%) without PCA
   * Doubling total data size reduced overfitting but maintained similar accuracy
 * Best hyperparameter combinations:
