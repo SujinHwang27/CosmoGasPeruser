@@ -17,6 +17,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+
 from typing import Dict, List, Tuple
 import logging
 import pandas as pd
@@ -273,6 +275,15 @@ def plot_pca_projection(X: np.ndarray,
     plt.grid(True)
     plt.show()
 
+def plot_tsne(X: np.ndarray, y:np.ndarray):
+
+    X_tsne = TSNE(n_components=2, perplexity=30, random_state=42).fit_transform(X)
+    plt.scatter(X_tsne[:, 0], X_tsne[:, 1], c=y, cmap='coolwarm', alpha=0.6)
+    plt.xlabel("t-SNE Component 1")
+    plt.ylabel("t-SNE Component 2")
+    plt.title("t-SNE Visualization of Dataset")
+    plt.colorbar(label="Class Label")
+    plt.show()
 
 
 def main():
@@ -284,23 +295,27 @@ def main():
 
     
     
-    # Perform PCA analysis
-    logger.info("Performing PCA analysis...")
-    pca = PCA().fit(spectra)
+    # # Perform PCA analysis
+    # logger.info("Performing PCA analysis...")
+    # pca = PCA().fit(spectra)
     
-    # Plot PCA variance
-    logger.info("Plotting PCA variance...")
-    plot_pca_variance(pca)
+    # # Plot PCA variance
+    # logger.info("Plotting PCA variance...")
+    # plot_pca_variance(pca)
     
-    # Analyze and visualize PCA loadings
-    logger.info("Analyzing PCA loadings...")
-    loadings_df = analyze_pca_loadings(pca, n_components=25)
-    logger.info("\nPCA Loadings DataFrame:")
-    logger.info(loadings_df)
+    # # Analyze and visualize PCA loadings
+    # logger.info("Analyzing PCA loadings...")
+    # loadings_df = analyze_pca_loadings(pca, n_components=25)
+    # logger.info("\nPCA Loadings DataFrame:")
+    # logger.info(loadings_df)
     
-    # Plot PCA projection
-    logger.info("Plotting PCA projection...")
-    plot_pca_projection(spectra, labels, title=f"PCA Projection of Spectra (z={redshift})")
+    # # Plot PCA projection
+    # logger.info("Plotting PCA projection...")
+    # plot_pca_projection(spectra, labels, title=f"PCA Projection of Spectra (z={redshift})")
+
+    # Plot tSNE
+    logger.info("Plotting tSNE...")
+    plot_tsne(spectra, labels)
 
 
 
