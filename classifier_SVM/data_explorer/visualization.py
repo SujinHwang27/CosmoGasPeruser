@@ -273,6 +273,8 @@ def plot_pca_projection(X: np.ndarray,
     plt.grid(True)
     plt.show()
 
+
+
 def main():
     # Load data
     redshift = REDSHIFT
