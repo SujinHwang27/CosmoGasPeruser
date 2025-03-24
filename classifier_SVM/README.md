@@ -14,7 +14,7 @@ Then run "python main.py" in terminal.
   * Models with PCA tended to predict 'nofeedback' majority of the time
   * Removing PCA from the pipeline resolved the majority class prediction issue
   * Accuracy remained similar (~60%) without PCA
-  * Doubling total data size reduced overfitting but maintained similar accuracy
+  * Doubling total data size reduced overfitting but hardly improved accuracy
 * Best hyperparameter combinations:
   *{'C': 0.01, 'gamma': 0.1, 'kernel': 'poly'}
   *{'C': 0.05, 'gamma':'scale', 'kernel':'rbf'}
