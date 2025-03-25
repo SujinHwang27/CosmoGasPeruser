@@ -5,3 +5,5 @@ matplotlib>=3.4.2
 seaborn>=0.11.1
 openpyxl>=3.0.7
 joblib>=1.0.1
+pathlib>=1.0.1
+typing-extensions>=4.0.0
