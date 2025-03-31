@@ -24,7 +24,7 @@ DATA_SIZE = 6000
 REDSHIFT = 2.4
 
 # Number of components (if int, elif float, it's explained variance)
-NCOMP = 194     
+NCOMP = 25     
 
 
 # PCA parameters

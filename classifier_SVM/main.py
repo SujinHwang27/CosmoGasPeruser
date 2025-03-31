@@ -6,6 +6,7 @@ import logging
 import os
 import argparse
 import numpy as np
+import psutil
 from pathlib import Path
 import sys
 from sklearn.model_selection import train_test_split
@@ -56,6 +57,11 @@ def main():
     else:
         logger.info("Skipping PCA analysis as NCOMP equals 194 (original feature dimension)")
     
+    # Measure memory before training
+    process = psutil.Process()
+    mem_before = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+
+
     # 5. Train and evaluate SVM model
     logger.info(f"\nTraining and evaluating SVM model")
     results = train_and_evaluate_svm(
@@ -66,6 +72,13 @@ def main():
         4
     )
     
+    # Measure memory after training
+    mem_after = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+
+    print(f"Memory Usage Before Training: {mem_before:.2f} MB")
+    print(f"Memory Usage After Training: {mem_after:.2f} MB")
+    print(f"Memory Increase: {mem_after - mem_before:.2f} MB")
+
     # 6. Plot results
     # plot_results(results, n_components_dict)
 

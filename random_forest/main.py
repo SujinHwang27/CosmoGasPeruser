@@ -3,6 +3,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 import numpy as np
+import psutil
 import logging
 from src.data_loader import load_data, prepare_dataset
 from sklearn.inspection import permutation_importance
@@ -12,6 +13,57 @@ import matplotlib.pyplot as plt
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def custom_normalize(values, threshold):
+    """Normalize values so that threshold maps to 0.5."""
+    values = np.array(values)
+    min_val, max_val = np.min(values), np.max(values)
+    
+    # Split normalization into below and above threshold
+    below_mask = values < threshold
+    above_mask = values > threshold
+
+    normalized_values = np.zeros_like(values, dtype=float)
+    
+    if np.any(below_mask):  # Avoid division by zero
+        normalized_values[below_mask] = 0.5 * (values[below_mask] - min_val) / (threshold - min_val + 1e-9)
+    if np.any(above_mask):  # Avoid division by zero
+        normalized_values[above_mask] = 0.5 + 0.5 * (values[above_mask] - threshold) / (max_val - threshold + 1e-9)
+
+    normalized_values[values == threshold] = 0.5  # Explicitly set threshold point
+
+    return normalized_values
+
+def plot_velocity_importance(velocity_data, importance_scores, threshold=0.005):
+    """Plot velocity values as x-axis with points colored by their importance scores."""
+    plt.figure(figsize=(25, 1))
+    
+    # Apply custom normalization
+    norm_importance = custom_normalize(importance_scores, threshold)
+    
+    # Define colors (Blue for low importance, Red for high importance)
+    colors = np.array([[score, 0, 1 - score] for score in norm_importance])
+    
+    # Scatter plot
+    plt.scatter(velocity_data, np.zeros_like(velocity_data), c=colors, s=50, edgecolors='k', alpha=0.7)
+
+    # top_indices = np.argsort(importance_scores)[-15:]  # Get indices of top 15 importance values
+    
+    # # Annotate the points with the highest importance scores
+    # for idx in top_indices:
+    #     plt.text(velocity_data[idx], 0.02, f"{velocity_data[idx]:.2f}", 
+    #              ha='center', fontsize=10, color='black')
+    
+    # Labels and formatting
+    plt.xlabel("Velocity Data")
+    plt.yticks([])  # Hide y-axis since it's not relevant
+    plt.title("Velocity Importance Visualization")
+    
+    # Show plot
+    plt.show()
+
+
 
 def main():
     data = load_data()
@@ -28,43 +80,49 @@ def main():
     )
     logger.info(f"Training set shape: {X_train.shape}")
     logger.info(f"Test set shape: {X_test.shape}")
-    
+        
+    # Measure memory before training
+    process = psutil.Process()
+    mem_before = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
 
     rf = RandomForestClassifier(n_estimators=100, random_state=42)
     rf.fit(X_train, y_train)
+
+    # Measure memory after training
+    mem_after = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+
+    print(f"Memory Usage Before Training: {mem_before:.2f} MB")
+    print(f"Memory Usage After Training: {mem_after:.2f} MB")
+    print(f"Memory Increase: {mem_after - mem_before:.2f} MB")
 
     y_pred = rf.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
     print(f"Accuracy: {accuracy:.4f}")
 
-
-
-    # Sort and visualize top features
+    # Get feature importances
     importances = rf.feature_importances_
-    feature_names = np.array(["Feature " + str(i) for i in range(spectra.shape[1])])
-
-    # Sort features by importance
-    sorted_indices = np.argsort(importances)[::-1]
-    for i in sorted_indices[:10]:  # Show top 10 features
-        logger.info(f"{feature_names[i]}: {importances[i]:.4f}")
-
-
-    perm_importance = permutation_importance(rf, X_test, y_test, n_repeats=10, random_state=42)
-    sorted_indices = np.argsort(perm_importance.importances_mean)[::-1]
-
-    for i in sorted_indices[:10]:
-        print(f"{feature_names[i]}: {perm_importance.importances_mean[i]:.4f}")
-
-
     
+    # Load velocity data
+    velocity_path = "/home/sujin/CosmoGasPeruser/data/TargetedSpecML/no_feedback/SN40.0_nspec3000_seed10/velocity.npy"
+    velocity_data = np.load(velocity_path)
+    
+    # Print important features
+    logger.info("Top 15 important features:")
+    sorted_indices = np.argsort(importances)[::-1]
+    for i in sorted_indices[:15]:
+        logger.info(f"Velocity {velocity_data[i]}: {importances[i]:.4f}")
 
-    plt.figure(figsize=(10, 6))
-    plt.barh(feature_names[sorted_indices[:10]], importances[sorted_indices[:10]], color='royalblue')
-    plt.xlabel("Feature Importance")
-    plt.ylabel("Feature Name")
-    plt.title("Top 10 Most Important Features (Random Forest)")
-    plt.gca().invert_yaxis()  # Highest importance on top
+    # Create velocity importance plot
+    plot_velocity_importance(velocity_data, importances, threshold=0.005)
     plt.show()
+
+    # # Calculate and print permutation importance
+    # perm_importance = permutation_importance(rf, X_test, y_test, n_repeats=10, random_state=42)
+    # sorted_indices = np.argsort(perm_importance.importances_mean)[::-1]
+    
+    # print("\nPermutation Importance - Top 10 features:")
+    # for i in sorted_indices[:10]:
+    #     print(f"Feature {i}: {perm_importance.importances_mean[i]:.4f}")
 
 # Accuracy: 0.6925
 # INFO:__main__:Feature 73: 0.0083

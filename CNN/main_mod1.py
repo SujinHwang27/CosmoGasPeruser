@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
+import psutil
 from src.data_loader import load_data, prepare_dataset
 from sklearn.model_selection import train_test_split
 
@@ -49,7 +50,22 @@ num_samples = 12000
 input_size = 194  # Number of features per sample
 num_classes = 2
 
+def get_memory_usage():
+    process = psutil.Process()
+    cpu_mem = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+    
+    if torch.cuda.is_available():
+        gpu_mem = torch.cuda.memory_allocated() / (1024 * 1024)  # Convert bytes to MB
+        return cpu_mem, gpu_mem
+    return cpu_mem, 0
+
 def main():
+    # Measure initial memory usage
+    cpu_mem_before, gpu_mem_before = get_memory_usage()
+    print(f"Initial CPU Memory Usage: {cpu_mem_before:.2f} MB")
+    if torch.cuda.is_available():
+        print(f"Initial GPU Memory Usage: {gpu_mem_before:.2f} MB")
+
     data = load_data()
     spectra, labels = prepare_dataset(data)
 
@@ -75,6 +91,13 @@ def main():
     num_epochs = 50
     best_val_loss = float('inf')  # Track the best validation loss for early stopping
     train_losses, val_losses = [], []  # To track the losses during training
+
+    # Measure memory before training
+    cpu_mem_train_start, gpu_mem_train_start = get_memory_usage()
+    print(f"\nMemory Usage Before Training:")
+    print(f"CPU Memory: {cpu_mem_train_start:.2f} MB")
+    if torch.cuda.is_available():
+        print(f"GPU Memory: {gpu_mem_train_start:.2f} MB")
 
     for epoch in range(num_epochs):
         model.train()
@@ -113,7 +136,27 @@ def main():
             best_val_loss = avg_val_loss
             torch.save(model.state_dict(), "cnn_model_best.pth")  # Save the best model
 
+        # Print memory usage every 10 epochs
+        if (epoch + 1) % 10 == 0:
+            cpu_mem, gpu_mem = get_memory_usage()
+            print(f"\nEpoch [{epoch+1}/{num_epochs}] Memory Usage:")
+            print(f"CPU Memory: {cpu_mem:.2f} MB")
+            if torch.cuda.is_available():
+                print(f"GPU Memory: {gpu_mem:.2f} MB")
+
         print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}")
+
+    # Measure final memory usage
+    cpu_mem_after, gpu_mem_after = get_memory_usage()
+    print(f"\nFinal Memory Usage:")
+    print(f"CPU Memory: {cpu_mem_after:.2f} MB")
+    if torch.cuda.is_available():
+        print(f"GPU Memory: {gpu_mem_after:.2f} MB")
+    
+    print(f"\nMemory Increase During Training:")
+    print(f"CPU Memory Increase: {cpu_mem_after - cpu_mem_train_start:.2f} MB")
+    if torch.cuda.is_available():
+        print(f"GPU Memory Increase: {gpu_mem_after - gpu_mem_train_start:.2f} MB")
 
     # Plot training and validation loss
     plt.plot(range(num_epochs), train_losses, label='Training Loss')
@@ -162,7 +205,7 @@ if __name__ == "__main__":
 
 # Tracking both training and validation loss during each epoch and plotting them.
 
-# Early Stopping: If the validation loss improves, we save the model’s state; otherwise, training continues.
+# Early Stopping: If the validation loss improves, we save the model's state; otherwise, training continues.
 
 
 # kernel 3, filters 32&64, dropout 0.5, lr 0.001

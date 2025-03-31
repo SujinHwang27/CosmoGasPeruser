@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
+import psutil
 from src.data_loader import load_data, prepare_dataset
 from sklearn.model_selection import train_test_split
 
@@ -56,7 +57,22 @@ class CNN1D(nn.Module):
         return x
 
 
+def get_memory_usage():
+    process = psutil.Process()
+    cpu_mem = process.memory_info().rss / (1024 * 1024)  # Convert bytes to MB
+    
+    if torch.cuda.is_available():
+        gpu_mem = torch.cuda.memory_allocated() / (1024 * 1024)  # Convert bytes to MB
+        return cpu_mem, gpu_mem
+    return cpu_mem, 0
+
 def main():
+    # Measure initial memory usage
+    cpu_mem_before, gpu_mem_before = get_memory_usage()
+    print(f"Initial CPU Memory Usage: {cpu_mem_before:.2f} MB")
+    if torch.cuda.is_available():
+        print(f"Initial GPU Memory Usage: {gpu_mem_before:.2f} MB")
+
     data = load_data()
     spectra, labels = prepare_dataset(data)
 
@@ -84,6 +100,12 @@ def main():
     train_losses = []
     val_losses = []
 
+    # Measure memory before training
+    cpu_mem_train_start, gpu_mem_train_start = get_memory_usage()
+    print(f"\nMemory Usage Before Training:")
+    print(f"CPU Memory: {cpu_mem_train_start:.2f} MB")
+    if torch.cuda.is_available():
+        print(f"GPU Memory: {gpu_mem_train_start:.2f} MB")
 
     for epoch in range(num_epochs):
         model.train()
@@ -116,7 +138,27 @@ def main():
         avg_val_loss = total_val_loss / len(test_loader)
         val_losses.append(avg_val_loss)
         
+        # Print memory usage every 10 epochs
+        if (epoch + 1) % 10 == 0:
+            cpu_mem, gpu_mem = get_memory_usage()
+            print(f"\nEpoch [{epoch+1}/{num_epochs}] Memory Usage:")
+            print(f"CPU Memory: {cpu_mem:.2f} MB")
+            if torch.cuda.is_available():
+                print(f"GPU Memory: {gpu_mem:.2f} MB")
+        
         print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}")
+
+    # Measure final memory usage
+    cpu_mem_after, gpu_mem_after = get_memory_usage()
+    print(f"\nFinal Memory Usage:")
+    print(f"CPU Memory: {cpu_mem_after:.2f} MB")
+    if torch.cuda.is_available():
+        print(f"GPU Memory: {gpu_mem_after:.2f} MB")
+    
+    print(f"\nMemory Increase During Training:")
+    print(f"CPU Memory Increase: {cpu_mem_after - cpu_mem_train_start:.2f} MB")
+    if torch.cuda.is_available():
+        print(f"GPU Memory Increase: {gpu_mem_after - gpu_mem_train_start:.2f} MB")
 
     # Plot training vs validation loss
     plt.figure(figsize=(8, 6))
@@ -186,12 +228,24 @@ if __name__ == "__main__":
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 # ### **Model Architecture:**
 
 # 1. **Input Layer:**
 #    - The input has a shape of **(batch_size, 1, 194)** where:
 #      - `batch_size` is the number of samples in a batch.
-#      - `1` is the number of input channels (since it’s a single-channel 1D signal).
+#      - `1` is the number of input channels (since it's a single-channel 1D signal).
 #      - `194` is the number of features per sample.
 
 # 2. **First Convolutional Block:**
@@ -232,7 +286,7 @@ if __name__ == "__main__":
 # - **Pooling Layers** help **reduce dimensionality** while retaining important features.
 # - **Fully Connected Layers** learn **higher-level representations** and perform classification.
 
-# This model is a **shallow CNN**, meaning it’s relatively simple and computationally efficient. If needed, you could experiment with **more convolutional layers**, **dropout**, or **batch normalization** to improve performance.
+# This model is a **shallow CNN**, meaning it's relatively simple and computationally efficient. If needed, you could experiment with **more convolutional layers**, **dropout**, or **batch normalization** to improve performance.
 
 # ---
 
