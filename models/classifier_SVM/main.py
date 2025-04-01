@@ -10,7 +10,7 @@ import psutil
 from pathlib import Path
 import sys
 from sklearn.model_selection import train_test_split
-from src.data_loader import load_data, prepare_dataset
+from data.TargetedSpecML.data_loader import load_data, prepare_dataset
 from src.feature_extraction import perform_pca_analysis, apply_pca_transformation
 from src.model import train_and_evaluate_svm
 

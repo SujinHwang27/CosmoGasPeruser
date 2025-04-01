@@ -10,13 +10,26 @@ import logging
 from pathlib import Path
 import sys
 
-# Add the project root to Python path
-project_root = str(Path(__file__).parent.parent.parent)
-if project_root not in sys.path:
-    sys.path.append(project_root)
+# # Add the project root to Python path
+# project_root = str(Path(__file__).parent.parent.parent)
+# if project_root not in sys.path:
+#     sys.path.append(project_root)
 
-# Import config using absolute import
-from classifier_SVM.config.config import EXPLAINED_VARIANCE, NCOMP
+# # Import config using absolute import
+# from classifier_SVM.config.config import EXPLAINED_VARIANCE, NCOMP
+
+EXPLAINED_VARIANCE = {
+    '95': 0.95,
+    '90': 0.90,
+    '85': 0.85,
+    '80': 0.80,
+    '75': 0.75,
+    '70': 0.70,
+    '65': 0.65,
+    '60': 0.60
+}
+
+NCOMP = 0.95
 
 logger = logging.getLogger(__name__)
 

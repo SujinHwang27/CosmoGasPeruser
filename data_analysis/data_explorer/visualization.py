@@ -10,7 +10,7 @@ project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from classifier_SVM.src.data_loader import load_data, prepare_dataset
+from data.TargetedSpecML.data_loader import load_data, prepare_dataset
 from classifier_SVM.config.config import REDSHIFT
 
 import numpy as np

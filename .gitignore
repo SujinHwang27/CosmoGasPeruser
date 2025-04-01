@@ -62,9 +62,7 @@ Thumbs.db
 
 # Ignore output and results directories
 classifier_SVM/output/
-classifier_SVM/results/
 classifier_SVM/models/
-classifier_SVM/plots/
 
 # Text files
 *.txt
