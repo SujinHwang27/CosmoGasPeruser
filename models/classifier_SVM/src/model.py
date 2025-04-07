@@ -25,41 +25,7 @@ from classifier_SVM.config.config import (TRAIN_TEST_SPLIT_RATIO, RANDOM_STATE,
 
 logger = logging.getLogger(__name__)
 
-# def prepare_training_data(X: np.ndarray, 
-#                          y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-#     """
-#     Prepare training data by sampling from each class.
-    
-#     Args:
-#         X: Feature matrix
-#         y: Labels
-#         size_per_class: Number of samples to use from each class
-        
-#     Returns:
-#         Tuple of (X, y) containing features and labels
-#     """
-#     if len(np.unique(y)) < 2:
-#         raise ValueError("Dataset must contain at least 2 classes for classification")
-    
-#     X_balanced = []
-#     y_balanced = []
-    
-#     unique_classes = np.unique(y)
-#     for class_label in unique_classes:
-#         class_indices = np.where(y == class_label)[0]
-#         if len(class_indices) < CLASS_SIZE:
-#             logger.warning(f"Class {class_label} has fewer samples ({len(class_indices)}) "
-#                          f"than requested size_per_class ({CLASS_SIZE}). "
-#                          "Using all available samples.")
-#             selected_indices = class_indices
-#         else:
-#             selected_indices = np.random.choice(class_indices, 
-#                                              size=CLASS_SIZE, 
-#                                              replace=False)
-#         X_balanced.append(X[selected_indices])
-#         y_balanced.extend([class_label] * len(selected_indices))
 
-#     return np.vstack(X_balanced), np.array(y_balanced).astype(int)
 
 def train_svm_with_cv(X: np.ndarray, 
                       y: np.ndarray, 

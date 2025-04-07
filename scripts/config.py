@@ -1,0 +1,1 @@
+CLASSES = ['nofeedback', 'stellarwind', 'windAGN', 'windstrongAGN']
