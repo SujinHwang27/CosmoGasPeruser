@@ -1,3 +1,5 @@
+------------------------------------------------------------------------------
+Bayesian Reasoning and Machine Learning, David Barber
 ## Bayes' Rule
 $$
 p(x|y) = \frac{p(y|x) \, p(x)}{p(y)}
