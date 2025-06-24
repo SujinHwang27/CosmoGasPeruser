@@ -14,6 +14,7 @@ The universe's diffuse gas, particularly in the intergalactic and circumgalactic
 ## Project Status
 🚧 **This repository is a work in progress.** 🚧  
 In the process of exploring and testing various methods to optimize analysis techniques. Expect ongoing updates and refinements.
+Click [**Project Research Board**](https://www.notion.so/Academic-Paper-Note-Archive-Template-21956fe183b18071af95d03d05700e33?source=copy_link) to see resource archive and updates
 
 ## Submodules & Methods
 - 📂 [**Classifier SVM**](classifier_SVM/README.md) - Work in progress on Support Vector Machine (SVM)-based classification models.
