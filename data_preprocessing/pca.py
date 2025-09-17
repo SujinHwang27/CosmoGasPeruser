@@ -37,7 +37,7 @@ EXPLAINED_VARIANCE = {
 logger = logging.getLogger(__name__)
 
 
-def perform_pca_analysis(spectra: np.ndarray) -> Dict[str, int]:
+def perform_pca_analysis(spectra: np.ndarray, show_plot:True) -> Dict[str, int]:
     """
     Perform PCA analysis to determine optimal number of components.
     
@@ -56,10 +56,11 @@ def perform_pca_analysis(spectra: np.ndarray) -> Dict[str, int]:
     
     for threshold_key, threshold_value in EXPLAINED_VARIANCE.items():
         n_components = np.where(cumulative_variance >= threshold_value)[0][0] + 1
-        n_components_dict[threshold_key] = n_components
+        n_components_dict[f"{threshold_value*100}%"] = int(n_components)
         logger.info(f"Components needed for {threshold_value*100}% variance: {n_components}")
 
-    plot_pca_variance(pca)
+    if show_plot:
+        plot_pca_variance(pca)
 
             
     return pca, n_components_dict

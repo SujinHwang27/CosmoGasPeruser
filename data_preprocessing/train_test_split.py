@@ -8,16 +8,17 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def split_data(spectra:np.array, labels:np.array) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def split_data(labels:np.array) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     logger.info("Splitting data into train and test sets...")
-    X_train, X_test, y_train, y_test = train_test_split(
-        spectra, 
-        labels, 
+    indices = np.arange(len(labels))
+
+    train_idx, test_idx = train_test_split(
+        indices, 
         test_size=0.1,  
         random_state=42,  
         stratify=labels  # maintain class distribution
     )
-    logger.info(f"Training set shape: {X_train.shape}")
-    logger.info(f"Test set shape: {X_test.shape}")
+    logger.info(f"Training set size: {train_idx.shape}")
+    logger.info(f"Test set size: {test_idx.shape}")
 
-    return X_train, X_test, y_train, y_test
+    return train_idx, test_idx

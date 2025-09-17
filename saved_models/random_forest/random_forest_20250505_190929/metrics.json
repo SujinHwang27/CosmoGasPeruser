@@ -1,0 +1,17 @@
+{
+    "train_accuracy": 0.8197694133604612,
+    "test_accuracy": 0.6792798291119927,
+    "test_precision": 0.6792903389313293,
+    "test_recall": 0.6792798291119927,
+    "test_f1_score": 0.6792743934467018,
+    "test_confusion_matrix": [
+        [
+            1106,
+            532
+        ],
+        [
+            519,
+            1120
+        ]
+    ]
+}

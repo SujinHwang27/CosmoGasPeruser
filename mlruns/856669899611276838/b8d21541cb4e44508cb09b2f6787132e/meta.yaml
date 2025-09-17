@@ -1,0 +1,14 @@
+artifact_uri: mlflow-artifacts:/856669899611276838/b8d21541cb4e44508cb09b2f6787132e/artifacts
+end_time: 1757450450372
+entry_point_name: ''
+experiment_id: '856669899611276838'
+lifecycle_stage: active
+run_id: b8d21541cb4e44508cb09b2f6787132e
+run_name: rogue-toad-174
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1757450446827
+status: 3
+tags: []
+user_id: sujin

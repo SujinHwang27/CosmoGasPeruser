@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def plot_spectrum(flux: np.ndarray, 
-                 wavelength: np.ndarray = None,
+                 wavelength: np.ndarray=None,
                  title: str = "Spectrum Plot",
                  figsize: Tuple[int, int] = (20, 4)) -> None:
     """
@@ -49,6 +49,55 @@ def plot_spectrum(flux: np.ndarray,
     plt.title(title, fontsize=14)
     plt.grid(alpha=0.3)
     plt.show()
+
+
+def plot_spectra(spectra: np.ndarray,
+                 labels: np.ndarray,
+                 wavelength: np.ndarray = None,
+                 sample_idx: int = 2000) -> None:
+    """
+    Plot one sample spectrum per class.
+
+    Parameters:
+    - spectra: np.ndarray of shape (n_samples, n_features)
+    - labels: np.ndarray of shape (n_samples,)
+    - wavelength: np.ndarray of shape (n_features,), optional
+    - sample_idx: base index for selecting samples across classes
+    """
+    if wavelength is None:
+        wavelength = np.arange(spectra.shape[1])  
+
+    logger.info("Plotting spectra...")
+
+    classes = ['nofeedback','stellarwind','wind+AGN','wind+strongAGN']
+    logger.info(f"Total {spectra.shape[0]} spectra, {len(classes)} physics classes")
+
+    data_per_class = spectra.shape[0] // len(classes)
+    if sample_idx > data_per_class: 
+        sample_idx = sample_idx % data_per_class
+
+    # Collect one sample per class
+    sample_spectra = [
+        spectra[sample_idx + data_per_class * i] for i in range(len(classes))
+    ]
+    sample_spectra_dict = dict(zip(classes, sample_spectra))
+
+    # Plot
+    plt.figure(figsize=(10, 6))
+    for cls, spectrum in sample_spectra_dict.items():
+        plt.plot(wavelength, spectrum, label=f'{cls}')
+    
+    plt.xlabel("Wavelength")
+    plt.ylabel("Flux")
+    plt.title("Sample Spectra by Class")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+
+
 
 def plot_spectrum_with_minima(flux: np.ndarray,
                             minima_indices: np.ndarray,
