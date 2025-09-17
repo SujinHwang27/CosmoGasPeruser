@@ -1,3 +1,0 @@
-"""
-Classifier SVM package
-""" 
