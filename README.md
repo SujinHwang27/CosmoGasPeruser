@@ -24,7 +24,7 @@ In the process of exploring and testing various methods to optimize analysis tec
 ├── notebooks/      : data exploration and quick analysis
 ├── src/
 │   ├── data/       : codes for data ingestion and processing
-│   ├── features/   : codes for feature engieneering
+│   ├── features/   : codes for feature engineering
 │   ├── models/     : codes for ml models
 │   └── predict.py  
 │   └── train.py
