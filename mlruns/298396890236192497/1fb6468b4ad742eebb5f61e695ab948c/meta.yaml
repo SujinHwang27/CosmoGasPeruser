@@ -1,0 +1,14 @@
+artifact_uri: mlflow-artifacts:/298396890236192497/1fb6468b4ad742eebb5f61e695ab948c/artifacts
+end_time: 1762208538676
+entry_point_name: ''
+experiment_id: '298396890236192497'
+lifecycle_stage: active
+run_id: 1fb6468b4ad742eebb5f61e695ab948c
+run_name: z0.3_inf_uncentered_pc2
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1762208533695
+status: 3
+tags: []
+user_id: sujin
