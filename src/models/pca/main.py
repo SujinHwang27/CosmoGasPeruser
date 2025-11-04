@@ -1,6 +1,6 @@
 from load_data import load_sherwood_data
 from plot import plot_2d_data
-from pca_utils import uncentered_pca, save_reduced_data
+from pca_utils import uncentered_pca_last, save_reduced_data
 
 import mlflow
 import numpy as np
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         mlflow.log_param("num_classes", len(np.unique(y)))
 
         # 2. Run custom PCA
-        X_reduced = uncentered_pca(X, n_components=2)
+        X_reduced = uncentered_pca_last(X, n_components=2)
 
         # Save reduced data per class
         save_reduced_data(X_reduced, y, save_path)
