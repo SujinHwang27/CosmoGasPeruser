@@ -12,7 +12,8 @@ def uncentered_pca(data, n_components=2):
     representing the data projected onto the first k principal components.
 
     Args:
-        
+        data (numpy matrix): X (without label)
+
     """
     try:
         # 1. Load the data
@@ -51,7 +52,8 @@ def uncentered_pca_last(data, n_components=2):
     representing the data projected onto the last k principal components.
 
     Args:
-        
+        data (numpy matrix): X (without label)
+
     """
     try:
         # 1. Load the data
