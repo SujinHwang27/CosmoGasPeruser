@@ -10,8 +10,8 @@ mlflow.set_tracking_uri("http://localhost:5000")
 mlflow.set_experiment("DCT_Sherwood")
 
 data_base_path = "data/preprocessed/Sherwood_z0.3_inf"
-save_path = "data/processed/Sherwood_z0.3_inf/dct_last"
-run_name = "z0.3_inf_dct_last"
+save_path = "data/processed/Sherwood_z0.3_inf/dct_highfreq_2"
+run_name = "z0.3_inf_dct_highfreq_2"
 
 if __name__ == "__main__":
     with mlflow.start_run(run_name=run_name) as run:
@@ -23,7 +23,8 @@ if __name__ == "__main__":
         mlflow.log_param("num_classes", len(np.unique(y)))
 
         # 2. Run Discrete Cosine Transform
-        X_reduced = uncentered_pca_last(X, n_components=2)
+        X_reduced = dct_high_freq(X, 2)
+        mlflow.log_param("k", X_reduced.shape[1])
 
         # Save reduced data per class
         save_reduced_data(X_reduced, y, save_path)
