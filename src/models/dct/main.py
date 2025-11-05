@@ -1,17 +1,17 @@
 from load_data import load_sherwood_data
 from plot import plot_2d_data
-from pca_utils import uncentered_pca_last, save_reduced_data
+from dct_utils import *
 
 import mlflow
 import numpy as np
 
 
 mlflow.set_tracking_uri("http://localhost:5000")  
-mlflow.set_experiment("Custom_PCA_Sherwood")
+mlflow.set_experiment("DCT_Sherwood")
 
 data_base_path = "data/preprocessed/Sherwood_z0.3_inf"
-save_path = "data/processed/Sherwood_z0.3_inf/uncentered_pca_last2"
-run_name = "z0.3_inf_uncentered_pca_last2"
+save_path = "data/processed/Sherwood_z0.3_inf/dct_last"
+run_name = "z0.3_inf_dct_last"
 
 if __name__ == "__main__":
     with mlflow.start_run(run_name=run_name) as run:
@@ -22,7 +22,7 @@ if __name__ == "__main__":
         mlflow.log_param("num_features", X.shape[1])
         mlflow.log_param("num_classes", len(np.unique(y)))
 
-        # 2. Run custom PCA
+        # 2. Run Discrete Cosine Transform
         X_reduced = uncentered_pca_last(X, n_components=2)
 
         # Save reduced data per class
