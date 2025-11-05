@@ -7,12 +7,12 @@ def uncentered_pca(data, n_components=2):
     """
     Performs a simple PCA to reduce dimensionality to top k principal components.
 
-    The input is a comma-separated matrix (npy file) of size n x m.
-    The output is a comma-separated matrix (npy file) of size n x k,
+    The input is a numpy matrix of size n x m.
+    The output is a numpy matrix of size n x k,
     representing the data projected onto the first k principal components.
 
     Args:
-        data (numpy matrix): X (without label)
+        data: numpy matrix ('X' without label)
 
     """
     try:
@@ -47,12 +47,12 @@ def uncentered_pca_last(data, n_components=2):
     """
     Performs a simple PCA to reduce dimensionality to last k principal components.
 
-    The input is a comma-separated matrix (npy file) of size n x m.
-    The output is a comma-separated matrix (npy file) of size n x k,
+    The input is a numpy matrix of size n x m.
+    The output is a numpy matrix of size n x k,
     representing the data projected onto the last k principal components.
 
     Args:
-        data (numpy matrix): X (without label)
+        data: numpy matrix
 
     """
     try:
