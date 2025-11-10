@@ -127,3 +127,24 @@ def plot_3d_interactive(X_3d, y, title, save_path):
 
     return out_path
 
+
+def plot_dct_1d_heatmap(dct_coeffs, title="DCT Coefficients", save_path=None):
+    """
+    Visualizes a 1D array of DCT coefficients as a horizontal heatmap.
+    """
+    dct_coeffs = np.array(dct_coeffs).reshape(1, -1)  # reshape for imshow
+    
+    plt.figure(figsize=(8, 1.2))
+    plt.imshow(dct_coeffs, cmap='coolwarm', aspect='auto')
+    plt.colorbar(label="Coefficient Value", orientation="vertical", shrink=0.8)
+    plt.yticks([])
+    plt.xticks(range(len(dct_coeffs[0])), labels=[f"{i}" for i in range(len(dct_coeffs[0]))])
+    plt.title(title)
+    plt.xlabel("Coefficient Index")
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path)
+        plt.close()
+    else:
+        plt.show()

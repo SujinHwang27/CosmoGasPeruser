@@ -9,9 +9,9 @@ import numpy as np
 mlflow.set_tracking_uri("http://localhost:5000")  
 mlflow.set_experiment("DCT_Sherwood")
 
-data_base_path = "data/preprocessed/Sherwood_z0.3_inf"
+data_base_path = "data/processed/Sherwood_z0.3_inf/dct_full"
 save_path = "data/processed/Sherwood_z0.3_inf/dct_highfreq_3"
-run_name = "z0.3_inf_dct_highfreq_3"
+run_name = "z0.3_inf_dct_coeff_variance"
 
 # For highest 2 frequencies
 # if __name__ == "__main__":
@@ -28,7 +28,7 @@ run_name = "z0.3_inf_dct_highfreq_3"
 #         mlflow.log_param("k", X_reduced.shape[1])
 
 #         # Save reduced data per class
-#         save_reduced_data(X_reduced, y, save_path)
+#         save_processed_data(X_reduced, y, save_path)
 
 #         # 3. Plot and log artifact
 #         plot_path = plot_2d_data(X_reduced, y, run_name)
@@ -72,8 +72,8 @@ run_name = "z0.3_inf_dct_highfreq_3"
 #         # 2. Run Discrete Cosine Transform
 #         X_dct = dct_full(sampled_X)
 
-#         # Save reduced dct data per class
-#         save_reduced_data(X_dct, sampled_y, save_path)
+#         # Save dct data per class
+#         save_processed_data(X_dct, sampled_y, save_path)
 
 #         # 3. Plot and log artifact
 #         plot_path_list = plot_dct_by_los(X_dct, sampled_y, save_path=save_path, title="DCT_Comparison", n_classes=4)
@@ -85,28 +85,58 @@ run_name = "z0.3_inf_dct_highfreq_3"
 #         print(f"MLflow run completed: {run.info.run_id}")
 
 # For dominant/minor 2 or 3 coefficients
+# if __name__ == "__main__":
+#     with mlflow.start_run(run_name=run_name) as run:
+#         # 1. Load data
+#         X, y = load_sherwood_data(data_base_path)
+#         mlflow.log_param("dataset_version", "Sherwood_z0.3_inf")
+#         mlflow.log_param("num_samples", len(y))
+#         mlflow.log_param("num_features", X.shape[1])
+#         mlflow.log_param("num_classes", len(np.unique(y)))
+
+#         # 2. Run Discrete Cosine Transform
+#         X_reduced = dct_high_freq(X, 3)
+#         mlflow.log_param("k", X_reduced.shape[1])
+
+#         # Save reduced data per class
+#         save_processed_data(X_reduced, y, save_path)
+
+#         # 3. Plot and log artifact
+#         # plot_path = plot_2d_data(X_reduced, y, run_name, save_path=save_path)
+#         plot_path = plot_3d_interactive(X_reduced, y, run_name, save_path=save_path)
+#         mlflow.log_artifact(plot_path, artifact_path="plots")
+#         mlflow.log_artifact(save_path, artifact_path="reduced_data")
+
+#         print(f"MLflow run completed: {run.info.run_id}")
+
+
+# For feature extraction by dct coeff variance analysis
 if __name__ == "__main__":
     with mlflow.start_run(run_name=run_name) as run:
-        # 1. Load data
-        X, y = load_sherwood_data(data_base_path)
-        mlflow.log_param("dataset_version", "Sherwood_z0.3_inf")
-        mlflow.log_param("num_samples", len(y))
-        mlflow.log_param("num_features", X.shape[1])
-        mlflow.log_param("num_classes", len(np.unique(y)))
+        # 1. Load data (dct_full)
+        # X_dct, y = load_sherwood_data(data_base_path)
+        # mlflow.log_param("dataset_version", "Sherwood_z0.3_inf_dct_full")
+        # mlflow.log_param("num_samples", len(y))
+        # mlflow.log_param("num_features", X.shape[1])
+        # mlflow.log_param("num_classes", len(np.unique(y)))
 
-        # 2. Run Discrete Cosine Transform
-        X_reduced = dct_high_freq(X, 3)
-        mlflow.log_param("k", X_reduced.shape[1])
+        # 2. Analyze variance of dct coeff across class, LoS by LoS
+        sorted_idx, mean_var = global_rank_by_variance(dct_lists)
+        # print("Global coefficient ranking by variance:", sorted_idx)
+        # print("Mean variances:", mean_var[sorted_idx])
+        # save?
 
-        # Save reduced data per class
-        save_reduced_data(X_reduced, y, save_path)
+ 
 
-        # 3. Plot and log artifact
-        # plot_path = plot_2d_data(X_reduced, y, run_name, save_path=save_path)
-        plot_path = plot_3d_interactive(X_reduced, y, run_name, save_path=save_path)
-        mlflow.log_artifact(plot_path, artifact_path="plots")
-        mlflow.log_artifact(save_path, artifact_path="reduced_data")
+        # Save processed data per class
+        # save_processed_data(X_reduced, y, save_path)
+
+        # 3. Plot 1d heatmap and log artifact
+        plot_path = plot_dct_1d_heatmap(dct_coeffs, title=run_name, save_path=save_path)
+        # mlflow.log_artifact(plot_path, artifact_path="plots")
+        # mlflow.log_artifact(save_path, artifact_path="reduced_data")
 
         print(f"MLflow run completed: {run.info.run_id}")
+
 
 
