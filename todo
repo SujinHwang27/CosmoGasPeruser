@@ -1,0 +1,24 @@
+3. add large dataset
+dvc add data/processed/Sherwood_z0.3_inf/dct_full/
+# let git track dvc pointers 
+git add data/processed/Sherwood_z0.3_inf/dct_full.dvc
+git commit -m "Track DCT processed data with DVC"
+
+4. Configure remote storage
+dvc remote add -d myremote s3://your-bucket-name/ml-data
+dvc remote modify myremote access_key_id <YOUR_ACCESS_KEY>
+dvc remote modify myremote secret_access_key <YOUR_SECRET_KEY>
+
+5. Push data to remote
+dvc push
+
+6. Pull data 
+dvc pull
+
+7. Track pipelines & experiments 
+# define data processing pipelines in dvc.yaml
+dvc run -n preprocess_dct \
+    -d src/preprocess.py -d data/raw/input.csv \
+    -o data/processed/dct_full \
+    python src/preprocess.py
+# This automatically tracks dependencies, outputs, and commands in DVC.
