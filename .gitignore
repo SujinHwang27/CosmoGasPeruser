@@ -1,3 +1,4 @@
 src/data/
 data/raw/
 mlartifacts/
+mlruns/

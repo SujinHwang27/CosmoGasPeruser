@@ -16,6 +16,8 @@ dvc remote modify myremote secret_access_key <YOUR_SECRET_KEY>
 dvc push
 
 6. Pull data 
+export AWS_ACCESS_KEY_ID="YOUR_ACTUAL_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="YOUR_ACTUAL_SECRET_ACCESS_KEY"
 dvc pull
 
 7. Track pipelines & experiments 
