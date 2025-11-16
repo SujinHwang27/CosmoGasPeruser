@@ -110,33 +110,6 @@ if __name__ == "__main__":
 #         print(f"MLflow run completed: {run.info.run_id}")
 
 
-# For feature extraction by dct coeff variance analysis
-# if __name__ == "__main__":
-    # with mlflow.start_run(run_name=run_name) as run:
-        # 1. Load data (dct_full)
-        # X_dct, y = load_sherwood_data(data_base_path)
-        # mlflow.log_param("dataset_version", "Sherwood_z0.3_inf_dct_full")
-        # mlflow.log_param("num_samples", len(y))
-        # mlflow.log_param("num_features", X.shape[1])
-        # mlflow.log_param("num_classes", len(np.unique(y)))
-
-        # 2. Analyze variance of dct coeff across class, LoS by LoS
-        # sorted_idx, mean_var = global_rank_by_variance(dct_lists)
-        # print("Global coefficient ranking by variance:", sorted_idx)
-        # print("Mean variances:", mean_var[sorted_idx])
-        # save?
-
- 
-
-        # Save processed data per class
-        # save_processed_data(X_reduced, y, save_path)
-
-        # 3. Plot 1d heatmap and log artifact
-        # plot_path = plot_dct_1d_heatmap(dct_coeffs, title=run_name, save_path=save_path)
-        # mlflow.log_artifact(plot_path, artifact_path="plots")
-        # mlflow.log_artifact(save_path, artifact_path="reduced_data")
-
-        # print(f"MLflow run completed: {run.info.run_id}")
 
 
 
