@@ -1,3 +1,6 @@
 data/
 src/data/
 mlartifacts/
+
+.dvc/cache/
+.dvc/tmp/
