@@ -1,0 +1,14 @@
+artifact_uri: mlflow-artifacts:/772463023234651535/8322802c7bca47d1934ff5dc9df7fc3d/artifacts
+end_time: 1762378411581
+entry_point_name: ''
+experiment_id: '772463023234651535'
+lifecycle_stage: active
+run_id: 8322802c7bca47d1934ff5dc9df7fc3d
+run_name: z0.3_inf_sample_dct_full_coeff
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1762378409545
+status: 3
+tags: []
+user_id: sujin

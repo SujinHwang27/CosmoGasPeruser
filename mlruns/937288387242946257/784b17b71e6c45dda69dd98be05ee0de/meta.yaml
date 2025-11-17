@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/937288387242946257/784b17b71e6c45dda69dd98be05ee0de/artifacts
+deleted_time: 1763343861148
+end_time: 1763341008187
+entry_point_name: ''
+experiment_id: '937288387242946257'
+lifecycle_stage: deleted
+run_id: 784b17b71e6c45dda69dd98be05ee0de
+run_name: z0.3_inf_dct_fisher
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1763341008174
+status: 4
+tags: []
+user_id: sujin
