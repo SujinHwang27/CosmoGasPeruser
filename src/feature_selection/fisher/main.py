@@ -42,10 +42,11 @@ if __name__ == "__main__":
         # 3. Fisher coeff stat analysis
         # Rank feature index by fisher coeff
         mean_fisher = np.mean(fisher_scores_matrix, axis=0)
-        mean_plot_path = plot_mean_fisher(mean_fisher, title="Mean Fisher Coefficient", save_path="plots")
+        mean_plot_path = plot_mean_fisher(mean_fisher, title="Mean Fisher Coefficient", save_path=save_path)
         mlflow.log_artifact(mean_plot_path, artifact_path="plots")
         ranked_idx = np.argsort(mean_fisher)[::-1] 
-        mlflow.log_metric("feature_importance_rank", ranked_idx)
+        np.save(f"{save_path}/feature_ranks.npy", ranked_idx)
+        mlflow.log_artifact(f"{save_path}/feature_ranks.npy", artifact_path="feature_ranks")
 
 
         print(f"MLflow run completed: {run.info.run_id}")

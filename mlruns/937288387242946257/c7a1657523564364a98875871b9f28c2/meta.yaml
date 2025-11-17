@@ -1,8 +1,9 @@
 artifact_uri: mlflow-artifacts:/937288387242946257/c7a1657523564364a98875871b9f28c2/artifacts
+deleted_time: 1763418088936
 end_time: null
 entry_point_name: ''
 experiment_id: '937288387242946257'
-lifecycle_stage: active
+lifecycle_stage: deleted
 run_id: c7a1657523564364a98875871b9f28c2
 run_name: z0.3_inf_dct_fisher
 source_name: ''
