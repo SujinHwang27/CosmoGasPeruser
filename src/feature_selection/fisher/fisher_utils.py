@@ -1,3 +1,6 @@
+import numpy as np 
+import os
+
 def _fisher_score_(X_los):
     """
     Computes Fisher coefficient per feature for one LoS (n_classes x n_features)
@@ -29,12 +32,12 @@ def fisher_scores(X_LoS_generator):
 
 def save_feature_analysis(score_matrix, out_base):
     """
-    Saves processed data by class
+    Saves feature importance score matrix.
     """
-    save_path = os.path.join(out_base, fisher_scores.npy)
-    os.makedirs(save_path, exist_ok=True)
+    os.makedirs(out_base, exist_ok=True)
+    save_path = os.path.join(out_base, "scores.npy")
     np.save(save_path, score_matrix)
-    print(f"Saved {len(score_matrix)} rows to {save_path}")
+    print(f"Saved {score_matrix.shape[0]} rows to {save_path}")
     return save_path
 
 
