@@ -1,2 +1,5 @@
 *
+!*.dvc
+
 !.gitignore
+/feature_analysis
