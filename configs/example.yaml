@@ -1,0 +1,15 @@
+name: "dct_fisher_experiment"
+data: "Sherwood_z0.3_inf/dct_full"
+data_filename: "data.npy"
+transforms:
+  - type: "dct"
+    params:
+      mode: "full"
+  - type: "fisher"
+    params:
+      top_k: 20
+model:
+  type: "transformer"
+  params:
+    lr: 0.001
+    epochs: 10

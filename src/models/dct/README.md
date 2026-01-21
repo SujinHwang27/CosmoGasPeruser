@@ -1,3 +1,0 @@
-# Discrete Cosine Transform
-
-

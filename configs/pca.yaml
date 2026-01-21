@@ -1,0 +1,9 @@
+name: "pca_reduction_experiment"
+data: "preprocessed/Sherwood_z0.3_inf"
+# Mapping to legacy: load_sherwood_data(data_base_path)
+transforms:
+  - type: "pca"
+    params:
+      n_components: 2
+      centered: false
+# No model specified for this pure reduction experiment
