@@ -3,7 +3,11 @@ import argparse
 import os
 import numpy as np
 import mlflow
+from dotenv import load_dotenv
 from core.data import DatasetFactory
+
+# Load environment variables
+load_dotenv()
 from core.transforms import PCATransform, DCTTransform, FisherTransform
 from core.models import SimpleTransformerClassifier, train_model
 from core.viz import plot_training_curves
@@ -20,6 +24,11 @@ def create_dataloader(X, y, batch_size=32):
 def run_experiment(config_path: str):
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
+    
+    # Pattern 2: Remote Tracking Support
+    tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
+    if tracking_uri:
+        mlflow.set_tracking_uri(tracking_uri)
     
     experiment_name = config.get('mlflow', {}).get('experiment', config.get('name', 'Default'))
     mlflow.set_experiment(experiment_name)

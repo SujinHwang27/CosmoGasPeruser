@@ -4,4 +4,8 @@ transforms:
   - type: "dct"
     params:
       mode: "full"
+mlflow:
+  experiment: "Modular_DCT"
+  params:
+    description: "Full DCT transformation"
 # No model specified
