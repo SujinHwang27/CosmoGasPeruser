@@ -1,0 +1,11 @@
+name: "pca_reduction_experiment"
+data: "preprocessed/Sherwood_z0.3_inf"
+transforms:
+  - type: "pca"
+    params:
+      n_components: 2
+      centered: false
+mlflow:
+  experiment: "Modular_PCA"
+  params:
+    description: "Uncentered PCA reduction"

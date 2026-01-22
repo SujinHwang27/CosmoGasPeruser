@@ -1,0 +1,11 @@
+name: "dct_full_experiment"
+data: "preprocessed/Sherwood_z0.3_inf"
+transforms:
+  - type: "dct"
+    params:
+      mode: "full"
+mlflow:
+  experiment: "Modular_DCT"
+  params:
+    description: "Full DCT transformation"
+# No model specified

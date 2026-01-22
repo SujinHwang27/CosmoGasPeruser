@@ -1,4 +1,19 @@
+data/**/*
+!data/**/*.dvc
+!data/.gitignore
+
+
 src/data/
-data/raw/
 mlartifacts/
+# mlruns/
+
+
+.dvc/cache/
+.dvc/tmp/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
 mlruns/
+reports/
