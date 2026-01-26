@@ -25,7 +25,7 @@ def run_experiment(config_path: str):
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
     
-    # Pattern 2: Remote Tracking Support
+    # Remote Tracking Support
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
     if tracking_uri:
         mlflow.set_tracking_uri(tracking_uri)
