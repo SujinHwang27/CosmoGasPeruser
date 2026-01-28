@@ -1,11 +1,3 @@
-data/**/*
-!data/**/*.dvc
-!data/.gitignore
-
-
-src/data/
-mlartifacts/
-# mlruns/
 
 
 .dvc/cache/

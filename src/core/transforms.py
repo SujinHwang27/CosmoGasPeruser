@@ -1,12 +1,6 @@
-import numpy as np
-from scipy.fftpack import dct
-from typing import Optional, Protocol
+from src.core.base import BaseTransformer
 
-class Transform(Protocol):
-    def fit_transform(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
-        ...
-
-class PCATransform:
+class PCATransform(BaseTransformer):
     def __init__(self, n_components: int = 2, centered: bool = False):
         self.n_components = n_components
         self.centered = centered
@@ -25,7 +19,7 @@ class PCATransform:
         
         return np.dot(X, principal_components)
 
-class DCTTransform:
+class DCTTransform(BaseTransformer):
     def __init__(self, n_coefficients: Optional[int] = None, mode: str = "full"):
         self.n_coefficients = n_coefficients
         self.mode = mode # "full", "dominant", "high_freq"
@@ -42,7 +36,7 @@ class DCTTransform:
         else:
             raise ValueError(f"Unknown DCT mode: {self.mode}")
 
-class FisherTransform:
+class FisherTransform(BaseTransformer):
     """
     Fisher Feature Selection logic.
     Note: Current implementation calculates scores rather than reducing dimensions.

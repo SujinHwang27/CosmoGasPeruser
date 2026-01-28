@@ -1,11 +1,6 @@
-import torch
-import torch.nn as nn
-from torch.optim import Adam
-from torch.utils.data import DataLoader, TensorDataset
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from typing import Dict, List, Tuple, Any
+from src.core.base import BaseModel
 
-class SimpleTransformerClassifier(nn.Module):
+class SimpleTransformerClassifier(nn.Module, BaseModel):
     def __init__(self, input_dim=20, num_classes=4, d_model=64, nhead=4, num_layers=2):
         super().__init__()
         self.input_projection = nn.Linear(1, d_model)
@@ -28,6 +23,14 @@ class SimpleTransformerClassifier(nn.Module):
         x = self.encoder(x)
         x = x.mean(dim=1)  # Global average pooling
         return self.classifier(x)
+
+    def train(self, train_loader: Any, val_loader: Optional[Any] = None, epochs: int = 20, lr: float = 1e-3, device: str = "cpu") -> Any:
+        return train_model(self, train_loader, val_loader, epochs, lr, device)
+
+    def predict(self, X: Any) -> Any:
+        self.eval()
+        with torch.no_grad():
+            return self.forward(X)
 
 def train_model(model, train_loader, val_loader, epochs=20, lr=1e-3, device="cpu"):
     model.to(device)
