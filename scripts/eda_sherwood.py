@@ -20,19 +20,74 @@ def total_equivalent_width(lambda_arr, flux):
     return np.trapezoid(1.0 - flux, lambda_arr)
 
 def local_equivalent_widths(lambda_arr, flux, minima_idx):
-    """Computes pseudo-EW around each local minimum."""
+    """
+    Computes pseudo-EW for each local minimum.
+    Handles overlapping features by splitting at the 'saddle point' (local maximum)
+    between adjacent minima.
+    """
+    if len(minima_idx) == 0:
+        return np.array([])
+    
     local_ews = []
-    for i in minima_idx:
-        left = i
-        right = i
-        # Expand left
-        while left > 0 and flux[left] < 1.0:
-            left -= 1
-        # Expand right
-        while right < len(flux) - 1 and flux[right] < 1.0:
-            right += 1
-        ew = np.trapezoid(1.0 - flux[left:right], lambda_arr[left:right])
+    
+    # 1. Determine boundaries for each minimum
+    # boundaries[i] will be the Left Edge of feature i
+    # boundaries[i+1] will be the Right Edge of feature i
+    boundaries = []
+    
+    # --- Find Leftmost Boundary for the first minimum ---
+    first_min = minima_idx[0]
+    left = first_min
+    while left > 0 and flux[left] < 1.0:
+        left -= 1
+    boundaries.append(left)
+    
+    # --- Find Saddle Points between adjacent minima ---
+    for i in range(len(minima_idx) - 1):
+        idx_curr = minima_idx[i]
+        idx_next = minima_idx[i+1]
+        
+        # Find index of max flux (saddle point) in the region between peaks
+        # We search in range [idx_curr, idx_next]
+        # +1 to include right edge in search if needed, usually just between them
+        segment = flux[idx_curr:idx_next+1] 
+        saddle_rel_idx = np.argmax(segment)
+        saddle_abs_idx = idx_curr + saddle_rel_idx
+        
+        boundaries.append(saddle_abs_idx)
+        
+    # --- Find Rightmost Boundary for the last minimum ---
+    last_min = minima_idx[-1]
+    right = last_min
+    while right < len(flux) - 1 and flux[right] < 1.0:
+        right += 1
+    boundaries.append(right)
+    
+    # 2. Integrate each segment
+    for i in range(len(minima_idx)):
+        l_idx = boundaries[i]
+        r_idx = boundaries[i+1]
+        
+        # Clip indices just in case
+        if l_idx >= r_idx:
+            # Should not happen unless peaks are identical or weirdness
+            local_ews.append(0.0)
+            continue
+            
+        # Get subset of data
+        sub_flux = flux[l_idx : r_idx+1] # Include right edge for integration
+        sub_wave = lambda_arr[l_idx : r_idx+1]
+        
+        # Integrate (1 - flux). 
+        # Note: If flux > 1.0 at the saddle point, this might subtract a bit.
+        # Standard approach is to clamp integrand to 0 or just integrate.
+        # We will integrate as is to preserve continuity, or we could clip:
+        # integrand = np.maximum(0, 1.0 - sub_flux)
+        integrand = 1.0 - sub_flux
+        
+        ew = np.trapezoid(integrand, sub_wave)
         local_ews.append(ew)
+        
     return np.array(local_ews)
 
 def absorption_depths(flux, minima_idx):
@@ -220,8 +275,8 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         axes[i].set_title(f"Class {c}: EW vs Density")
         axes[i].set_xlabel(r"Line Density (lines/$\mathrm{\AA}$)")
         axes[i].set_ylabel(r"Total EW ($\mathrm{\AA}$)")
-        axes[i].set_xscale('log')
-        axes[i].set_yscale('log')
+        axes[i].set_xscale('log', base=2)
+        axes[i].set_yscale('log', base=2)
         axes[i].set_xlim(global_limits["line_density"])
         axes[i].set_ylim(global_limits["total_ew"])
         axes[i].grid(True, which="both", alpha=0.1)
@@ -234,22 +289,22 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
     # File 2a: Hist + KDE 2x2
     fig, axes = get_axes_2x2()
     all_kde_data = {}
-    ew_bins = np.logspace(np.log10(global_limits["local_ew"][0]), np.log10(global_limits["local_ew"][1]), 40)
+    ew_bins = np.logspace(np.log2(global_limits["local_ew"][0]), np.log2(global_limits["local_ew"][1]), 40, base=2)
     for i, c in enumerate(classes):
         data = np.concatenate([f["local_ews"] for f in all_features[c] if len(f["local_ews"]) > 0])
         # Filter for positive values for log histogram
         data = data[data > 0]
         axes[i].hist(data, bins=ew_bins, density=True, alpha=0.3, color=colors[i])
         if len(data) > 1:
-            kde = gaussian_kde(np.log10(data))
-            x_range_log = np.linspace(np.log10(global_limits["local_ew"][0]), np.log10(global_limits["local_ew"][1]), 200)
+            kde = gaussian_kde(np.log2(data))
+            x_range_log = np.linspace(np.log2(global_limits["local_ew"][0]), np.log2(global_limits["local_ew"][1]), 200)
             # KDE in log space needs transformation back for plotting if plotting on log scale
-            y_kde = kde(x_range_log) / (10**x_range_log * np.log(10)) # PDF transformation
-            axes[i].plot(10**x_range_log, y_kde, color=colors[i], lw=2)
-            all_kde_data[c] = (10**x_range_log, y_kde)
+            y_kde = kde(x_range_log) / (2**x_range_log * np.log(2)) # PDF transformation
+            axes[i].plot(2**x_range_log, y_kde, color=colors[i], lw=2)
+            all_kde_data[c] = (2**x_range_log, y_kde)
         axes[i].set_title(f"Class {c}: Local EW Dist")
         axes[i].set_xlabel("Local EW")
-        axes[i].set_xscale('log')
+        axes[i].set_xscale('log', base=2)
         axes[i].set_xlim(global_limits["local_ew"])
     fig.suptitle("Local EW Distribution (Log X)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
@@ -264,7 +319,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
             plt.plot(x, y_val, color=colors[i], label=f"Class {c}", lw=2)
     plt.title("Comparative Local EW KDE (Log X)")
     plt.xlabel("Local EW")
-    plt.xscale('log')
+    plt.xscale('log', base=2)
     plt.ylabel("Density")
     plt.legend()
     plt.savefig(os.path.join(output_dir, "tier1_local_ew_kde_overlap.png"))
@@ -288,7 +343,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
 
     # Plot 4: Gap Distribution (1 file, 2x2 panel: Hist + CDF overlay, Log X)
     fig, axes = get_axes_2x2()
-    gap_bins = np.logspace(np.log10(global_limits["gap"][0]), np.log10(global_limits["gap"][1]), 40)
+    gap_bins = np.logspace(np.log2(global_limits["gap"][0]), np.log2(global_limits["gap"][1]), 40, base=2)
     for i, c in enumerate(classes):
         all_gaps = np.concatenate([f["gaps"] for f in all_features[c] if len(f["gaps"]) > 0])
         if len(all_gaps) > 0:
@@ -303,7 +358,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
             if i == 0: axes[i].legend(loc='upper right')
         axes[i].set_title(f"Class {c}: Gap Dist (Log X)")
         axes[i].set_xlabel(r"Gap ($\mathrm{\AA}$)")
-        axes[i].set_xscale('log')
+        axes[i].set_xscale('log', base=2)
         axes[i].set_xlim(global_limits["gap"])
     fig.suptitle("Gap Distribution with CDF Overlays (Log X)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
@@ -319,7 +374,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         axes[i].set_title(f"Class {c}: Mean Gap vs Density")
         axes[i].set_xlabel(r"Line Density (Log)")
         axes[i].set_ylabel("Mean Gap")
-        axes[i].set_xscale('log')
+        axes[i].set_xscale('log', base=2)
         axes[i].set_xlim(global_limits["line_density"])
         axes[i].set_ylim(global_limits["gap"])
     fig.suptitle("Mean Gap vs Line Density (Log X)")
@@ -336,7 +391,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         axes[i].set_title(f"Class {c}: Depth Std vs Density")
         axes[i].set_xlabel(r"Line Density (Log)")
         axes[i].set_ylabel("Depth Std")
-        axes[i].set_xscale('log')
+        axes[i].set_xscale('log', base=2)
         axes[i].set_xlim(global_limits["line_density"])
         axes[i].set_ylim(global_limits["depth_std"])
     fig.suptitle("Depth Dispersion vs Line Density (Log X)")
