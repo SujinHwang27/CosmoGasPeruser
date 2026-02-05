@@ -108,11 +108,19 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
     ingestor = DataIngestor(base_path, filename="flux.npy", num_classes=4)
     X, y = ingestor.load()
     
+    # Load wavelength data (standardized across classes)
+    wave_path = os.path.join(base_path, "1", "wave.npy")
+    if os.path.exists(wave_path):
+        lambda_arr = np.load(wave_path)
+        print(f"Loaded wavelength array from {wave_path} (Range: {lambda_arr.min():.2f} - {lambda_arr.max():.2f})")
+    else:
+        print("wave.npy not found, falling back to pixel indices.")
+        lambda_arr = np.arange(X.shape[1])
+        
     n_samples, n_features = X.shape
     classes = np.unique(y)
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-    lambda_arr = np.arange(n_features) # Assuming pixel index as proxy for wavelength
-    wavelength_bins = np.linspace(0, n_features, 51) # 50 bins
+    wavelength_bins = np.linspace(lambda_arr.min(), lambda_arr.max(), 51) # 50 bins
     
     # 1. Greyscale Stacked Visualization (Per-Class Files)
     print("Generating Greyscale Stacks (Per Class)...")
@@ -130,9 +138,13 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
             
         ax.set_title(f"Class {c} Greyscale Stack (Indices 1-100)")
         ax.set_ylabel("Spectrum Index")
-        ax.set_xlabel("Pixel Index")
+        ax.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         
-        # Add index numbers on the left (showing every 5th or 10th if too crowded, but user asked for index numbers)
+        # Update X-ticks to show wavelength
+        x_ticks = np.linspace(0, n_features-1, 6)
+        x_tick_labels = [f"{lambda_arr[int(i)]:.1f}" for i in x_ticks]
+        ax.set_xticks(x_ticks)
+        ax.set_xticklabels(x_tick_labels)
         # We'll label every index but only if readable, or a subset. Let's try every 5th first.
         indices_to_label = np.arange(0, n_stack, 5)
         ax.set_yticks(indices_to_label)
@@ -164,8 +176,8 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         densities = [f["line_density"] for f in all_features[c]]
         axes[i].scatter(densities, ews, color=colors[i], alpha=0.5, s=15)
         axes[i].set_title(f"Class {c}: EW vs Density")
-        axes[i].set_xlabel("Line Density (lines/pixel)")
-        axes[i].set_ylabel("Total EW")
+        axes[i].set_xlabel(r"Line Density (lines/$\mathrm{\AA}$)")
+        axes[i].set_ylabel(r"Total EW ($\mathrm{\AA}$)")
         axes[i].grid(True, alpha=0.2)
     fig.suptitle("Total Absorption vs Line Density")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
@@ -232,7 +244,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
             ax2.set_ylim(0, 1.05)
             if i == 0: axes[i].legend(loc='upper right')
         axes[i].set_title(f"Class {c}: Gap Dist (Hist + CDF)")
-        axes[i].set_xlabel("Gap (pixels)")
+        axes[i].set_xlabel(r"Gap ($\mathrm{\AA}$)")
     fig.suptitle("Gap Distribution with CDF Overlays")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_gap_dist_2x2.png"))
@@ -277,7 +289,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         axes[i].plot(bin_centers, mean_prof, color=colors[i], lw=2)
         axes[i].fill_between(bin_centers, mean_prof - std_prof, mean_prof + std_prof, color=colors[i], alpha=0.2)
         axes[i].set_title(f"Class {c}: Activity Profile")
-        axes[i].set_xlabel("Pixel Index")
+        axes[i].set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         axes[i].set_ylabel("Activity (EW per bin)")
     fig.suptitle("Spatial Absorption Activity Profile")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
@@ -290,7 +302,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         profiles = np.array([f["activity_profile"] for f in all_features[c]])
         plt.plot(bin_centers, np.mean(profiles, axis=0), color=colors[i], label=f"Class {c}", lw=2)
     plt.title("Comparative Absorption Activity Overlap")
-    plt.xlabel("Pixel Index")
+    plt.xlabel(r"Wavelength ($\mathrm{\AA}$)")
     plt.ylabel("Mean EW per bin")
     plt.legend()
     plt.savefig(os.path.join(output_dir, "tier1_activity_overlap.png"))

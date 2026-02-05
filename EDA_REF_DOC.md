@@ -9,9 +9,11 @@ This document combines the implementation plan and task status for the refactori
 - **Per-Class Files**: `greyscale_class_{c}.png` generated for each of the 4 classes.
 - **Improved Visuals**: Added 0.5px white divider rows between spectra for a natural "stack" look.
 - **Indexing**: Included spectrum index numbers (1-100) on the left Y-axis for clear data point identification.
+- **Real Wavelength Axis**: Integrated `wave.npy` to show real wavelength values on the X-axis.
 
 ### 2. Tier 1 Metrics (Master Feature Extractor)
 Implemented a robust, model-free feature extraction pipeline including:
+- **Wavelength Integration**: All metrics are now calculated using actual wavelength values from `wave.npy` rather than pixel indices.
 - **Total Equivalent Width (EW)**: Overall absorption strength.
 - **Local EW Distribution**: Strength regime of individual features.
 - **Line Density**: Feature count per wavelength unit.
