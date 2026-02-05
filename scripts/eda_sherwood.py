@@ -17,7 +17,7 @@ def detect_local_minima(flux):
 
 def total_equivalent_width(lambda_arr, flux):
     """Numerical EW across entire spectrum."""
-    return np.trapz(1.0 - flux, lambda_arr)
+    return np.trapezoid(1.0 - flux, lambda_arr)
 
 def local_equivalent_widths(lambda_arr, flux, minima_idx):
     """Computes pseudo-EW around each local minimum."""
@@ -31,7 +31,7 @@ def local_equivalent_widths(lambda_arr, flux, minima_idx):
         # Expand right
         while right < len(flux) - 1 and flux[right] < 1.0:
             right += 1
-        ew = np.trapz(1.0 - flux[left:right], lambda_arr[left:right])
+        ew = np.trapezoid(1.0 - flux[left:right], lambda_arr[left:right])
         local_ews.append(ew)
     return np.array(local_ews)
 
@@ -66,7 +66,7 @@ def absorption_activity_profile(lambda_arr, flux, binedges):
     for i in range(len(binedges) - 1):
         mask = (lambda_arr >= binedges[i]) & (lambda_arr < binedges[i+1])
         if np.any(mask):
-            activity[i] = np.trapz(1.0 - flux[mask], lambda_arr[mask])
+            activity[i] = np.trapezoid(1.0 - flux[mask], lambda_arr[mask])
         bin_minima = minima_idx[(lambda_arr[minima_idx] >= binedges[i]) & (lambda_arr[minima_idx] < binedges[i+1])]
         counts[i] = len(bin_minima)
     
@@ -162,6 +162,47 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         feat = extract_tier1_features(lambda_arr, X[i], wavelength_bins)
         all_features[y[i]].append(feat)
     
+    # Calculate Global Limits for consistent axes
+    print("Calculating Global Limits for consistent axes...")
+    global_limits = {
+        "total_ew": (float('inf'), float('-inf')),
+        "line_density": (float('inf'), float('-inf')),
+        "local_ew": (float('inf'), float('-inf')),
+        "depth": (float('inf'), float('-inf')),
+        "depth_std": (float('inf'), float('-inf')),
+        "gap": (float('inf'), float('-inf')),
+        "activity": (float('inf'), float('-inf')),
+        "bin_density": (float('inf'), float('-inf'))
+    }
+    
+    for c in classes:
+        ews = [f["total_ew"] for f in all_features[c]]
+        densities = [f["line_density"] for f in all_features[c]]
+        local_ews = np.concatenate([f["local_ews"] for f in all_features[c] if len(f["local_ews"]) > 0])
+        depths = np.concatenate([f["depths"] for f in all_features[c] if len(f["depths"]) > 0])
+        depth_stds = [f["depth_std"] for f in all_features[c]]
+        gaps = np.concatenate([f["gaps"] for f in all_features[c] if len(f["gaps"]) > 0])
+        activities = np.concatenate([f["activity_profile"] for f in all_features[c]])
+        bin_dens = np.concatenate([f["bin_densities"] for f in all_features[c]])
+        
+        if len(ews) > 0:
+            global_limits["total_ew"] = (min(global_limits["total_ew"][0], np.min(ews)), max(global_limits["total_ew"][1], np.max(ews)))
+            global_limits["line_density"] = (min(global_limits["line_density"][0], np.min(densities)), max(global_limits["line_density"][1], np.max(densities)))
+            global_limits["depth_std"] = (min(global_limits["depth_std"][0], np.min(depth_stds)), max(global_limits["depth_std"][1], np.max(depth_stds)))
+        if len(local_ews) > 0:
+            global_limits["local_ew"] = (min(global_limits["local_ew"][0], np.min(local_ews)), max(global_limits["local_ew"][1], np.max(local_ews)))
+        if len(depths) > 0:
+            global_limits["depth"] = (min(global_limits["depth"][0], np.min(depths)), max(global_limits["depth"][1], np.max(depths)))
+        if len(gaps) > 0:
+            global_limits["gap"] = (min(global_limits["gap"][0], np.min(gaps)), max(global_limits["gap"][1], np.max(gaps)))
+        global_limits["activity"] = (min(global_limits["activity"][0], np.min(activities)), max(global_limits["activity"][1], np.max(activities)))
+        global_limits["bin_density"] = (min(global_limits["bin_density"][0], np.min(bin_dens)), max(global_limits["bin_density"][1], np.max(bin_dens)))
+
+    # Ensure log-friendly limits (no zeros)
+    for k in ["total_ew", "line_density", "local_ew", "gap"]:
+        low, high = global_limits[k]
+        global_limits[k] = (max(low, EPS), high)
+    
     # 3. Tier 1 Visualization Playbook (2x2 Panels)
     print("Generating Tier 1 Visualization Playbook...")
     
@@ -170,54 +211,66 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
         return fig, axes.flatten()
 
-    # Plot 1: Total EW vs Line Density (1 file, 2x2)
+    # Plot 1: Total EW vs Line Density (1 file, 2x2, Log-Log)
     fig, axes = get_axes_2x2()
     for i, c in enumerate(classes):
-        ews = [f["total_ew"] for f in all_features[c]]
-        densities = [f["line_density"] for f in all_features[c]]
+        ews = np.array([f["total_ew"] for f in all_features[c]])
+        densities = np.array([f["line_density"] for f in all_features[c]])
         axes[i].scatter(densities, ews, color=colors[i], alpha=0.5, s=15)
         axes[i].set_title(f"Class {c}: EW vs Density")
         axes[i].set_xlabel(r"Line Density (lines/$\mathrm{\AA}$)")
         axes[i].set_ylabel(r"Total EW ($\mathrm{\AA}$)")
-        axes[i].grid(True, alpha=0.2)
-    fig.suptitle("Total Absorption vs Line Density")
+        axes[i].set_xscale('log')
+        axes[i].set_yscale('log')
+        axes[i].set_xlim(global_limits["line_density"])
+        axes[i].set_ylim(global_limits["total_ew"])
+        axes[i].grid(True, which="both", alpha=0.1)
+    fig.suptitle("Total Absorption vs Line Density (Log-Log)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_ew_vs_density_2x2.png"))
     plt.close()
 
-    # Plot 2: Local EW Distribution (2 files)
+    # Plot 2: Local EW Distribution (2 files, Log X)
     # File 2a: Hist + KDE 2x2
     fig, axes = get_axes_2x2()
     all_kde_data = {}
+    ew_bins = np.logspace(np.log10(global_limits["local_ew"][0]), np.log10(global_limits["local_ew"][1]), 40)
     for i, c in enumerate(classes):
         data = np.concatenate([f["local_ews"] for f in all_features[c] if len(f["local_ews"]) > 0])
-        axes[i].hist(data, bins=40, density=True, alpha=0.3, color=colors[i])
+        # Filter for positive values for log histogram
+        data = data[data > 0]
+        axes[i].hist(data, bins=ew_bins, density=True, alpha=0.3, color=colors[i])
         if len(data) > 1:
-            kde = gaussian_kde(data)
-            x_range = np.linspace(0, np.max(data), 200)
-            axes[i].plot(x_range, kde(x_range), color=colors[i], lw=2)
-            all_kde_data[c] = (x_range, kde(x_range))
+            kde = gaussian_kde(np.log10(data))
+            x_range_log = np.linspace(np.log10(global_limits["local_ew"][0]), np.log10(global_limits["local_ew"][1]), 200)
+            # KDE in log space needs transformation back for plotting if plotting on log scale
+            y_kde = kde(x_range_log) / (10**x_range_log * np.log(10)) # PDF transformation
+            axes[i].plot(10**x_range_log, y_kde, color=colors[i], lw=2)
+            all_kde_data[c] = (10**x_range_log, y_kde)
         axes[i].set_title(f"Class {c}: Local EW Dist")
         axes[i].set_xlabel("Local EW")
-    fig.suptitle("Local EW Distribution (Hist + KDE)")
+        axes[i].set_xscale('log')
+        axes[i].set_xlim(global_limits["local_ew"])
+    fig.suptitle("Local EW Distribution (Log X)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_local_ew_dist_2x2.png"))
     plt.close()
 
-    # File 2b: Overlapping KDE
+    # File 2b: Overlapping KDE (Log X)
     plt.figure(figsize=(10, 6))
     for i, c in enumerate(classes):
         if c in all_kde_data:
             x, y_val = all_kde_data[c]
             plt.plot(x, y_val, color=colors[i], label=f"Class {c}", lw=2)
-    plt.title("Comparative Local EW KDE")
+    plt.title("Comparative Local EW KDE (Log X)")
     plt.xlabel("Local EW")
+    plt.xscale('log')
     plt.ylabel("Density")
     plt.legend()
     plt.savefig(os.path.join(output_dir, "tier1_local_ew_kde_overlap.png"))
     plt.close()
 
-    # Plot 3: Depth vs Local EW (1 file, 2x2)
+    # Plot 3: Depth vs Local EW (1 file, 2x2, Fixed Y)
     fig, axes = get_axes_2x2()
     for i, c in enumerate(classes):
         all_depths = np.concatenate([f["depths"] for f in all_features[c] if len(f["depths"]) > 0])
@@ -226,17 +279,21 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         axes[i].set_title(f"Class {c}: Depth vs Local EW")
         axes[i].set_xlabel("Depth")
         axes[i].set_ylabel("Local EW")
-    fig.suptitle("Depth vs Local Equivalent Width")
+        axes[i].set_ylim(global_limits["local_ew"])
+        axes[i].set_xlim(global_limits["depth"])
+    fig.suptitle("Depth vs Local Equivalent Width (Fixed Y)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_depth_vs_ew_2x2.png"))
     plt.close()
 
-    # Plot 4: Gap Distribution (1 file, 2x2 panel: Hist + CDF overlay)
+    # Plot 4: Gap Distribution (1 file, 2x2 panel: Hist + CDF overlay, Log X)
     fig, axes = get_axes_2x2()
+    gap_bins = np.logspace(np.log10(global_limits["gap"][0]), np.log10(global_limits["gap"][1]), 40)
     for i, c in enumerate(classes):
         all_gaps = np.concatenate([f["gaps"] for f in all_features[c] if len(f["gaps"]) > 0])
         if len(all_gaps) > 0:
-            axes[i].hist(all_gaps, bins=40, density=True, alpha=0.3, color=colors[i], label="Hist")
+            all_gaps = all_gaps[all_gaps > 0]
+            axes[i].hist(all_gaps, bins=gap_bins, density=True, alpha=0.3, color=colors[i], label="Hist")
             sorted_gaps = np.sort(all_gaps)
             cdf = np.arange(len(sorted_gaps)) / float(len(sorted_gaps))
             # Overlay CDF on twin axis
@@ -244,37 +301,45 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
             ax2.plot(sorted_gaps, cdf, color='black', lw=1.5, label="CDF")
             ax2.set_ylim(0, 1.05)
             if i == 0: axes[i].legend(loc='upper right')
-        axes[i].set_title(f"Class {c}: Gap Dist (Hist + CDF)")
+        axes[i].set_title(f"Class {c}: Gap Dist (Log X)")
         axes[i].set_xlabel(r"Gap ($\mathrm{\AA}$)")
-    fig.suptitle("Gap Distribution with CDF Overlays")
+        axes[i].set_xscale('log')
+        axes[i].set_xlim(global_limits["gap"])
+    fig.suptitle("Gap Distribution with CDF Overlays (Log X)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_gap_dist_2x2.png"))
     plt.close()
 
-    # Plot 5: Mean Gap vs Line Density (1 file, 2x2)
+    # Plot 5: Mean Gap vs Line Density (1 file, 2x2, Log X)
     fig, axes = get_axes_2x2()
     for i, c in enumerate(classes):
         gaps = [f["gap_mean"] for f in all_features[c]]
         densities = [f["line_density"] for f in all_features[c]]
         axes[i].scatter(densities, gaps, color=colors[i], alpha=0.5, s=15)
         axes[i].set_title(f"Class {c}: Mean Gap vs Density")
-        axes[i].set_xlabel("Line Density")
+        axes[i].set_xlabel(r"Line Density (Log)")
         axes[i].set_ylabel("Mean Gap")
-    fig.suptitle("Mean Gap vs Line Density")
+        axes[i].set_xscale('log')
+        axes[i].set_xlim(global_limits["line_density"])
+        axes[i].set_ylim(global_limits["gap"])
+    fig.suptitle("Mean Gap vs Line Density (Log X)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_mean_gap_vs_density_2x2.png"))
     plt.close()
 
-    # Plot 6: Depth Dispersion vs Line Density (1 file, 2x2)
+    # Plot 6: Depth Dispersion vs Line Density (1 file, 2x2, Log X)
     fig, axes = get_axes_2x2()
     for i, c in enumerate(classes):
         depth_stds = [f["depth_std"] for f in all_features[c]]
         densities = [f["line_density"] for f in all_features[c]]
         axes[i].scatter(densities, depth_stds, color=colors[i], alpha=0.5, s=15)
         axes[i].set_title(f"Class {c}: Depth Std vs Density")
-        axes[i].set_xlabel("Line Density")
+        axes[i].set_xlabel(r"Line Density (Log)")
         axes[i].set_ylabel("Depth Std")
-    fig.suptitle("Depth Dispersion vs Line Density")
+        axes[i].set_xscale('log')
+        axes[i].set_xlim(global_limits["line_density"])
+        axes[i].set_ylim(global_limits["depth_std"])
+    fig.suptitle("Depth Dispersion vs Line Density (Log X)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_depth_disp_vs_density_2x2.png"))
     plt.close()
@@ -309,7 +374,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
     plt.savefig(os.path.join(output_dir, "tier1_activity_overlap.png"))
     plt.close()
 
-    # Plot 8: Activity vs Density (Per Bin) (1 file, 2x2)
+    # Plot 8: Activity vs Density (Per Bin) (1 file, 2x2, Fixed Axes)
     fig, axes = get_axes_2x2()
     for i, c in enumerate(classes):
         bin_dens = np.array([f["bin_densities"] for f in all_features[c]]) # (N_samples, N_bins)
@@ -322,7 +387,9 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         axes[i].set_title(f"Class {c}: Activity vs Density (Per Bin)")
         axes[i].set_xlabel("Bin Density")
         axes[i].set_ylabel("Bin Activity")
-    fig.suptitle("Activity vs Density Correlation (Binned)")
+        axes[i].set_xlim(global_limits["bin_density"])
+        axes[i].set_ylim(global_limits["activity"])
+    fig.suptitle("Activity vs Density Correlation (Binned, Fixed Ranges)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_activity_vs_density_binned_2x2.png"))
     plt.close()
