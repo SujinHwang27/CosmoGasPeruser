@@ -3,10 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 from scipy.stats import gaussian_kde
+from tqdm import tqdm
 from src.core.data import DataIngestor
 
 # Constants
-ABS_THRESH = 0.01
+ABS_THRESH = 0.05
 EPS = 1e-12
 
 def detect_local_minima(flux):
@@ -157,7 +158,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
     # 2. Tier 1 Feature Extraction
     print("Extracting Tier 1 Features...")
     all_features = {c: [] for c in classes}
-    for i in range(n_samples):
+    for i in tqdm(range(n_samples), desc="Extracting features"):
         feat = extract_tier1_features(lambda_arr, X[i], wavelength_bins)
         all_features[y[i]].append(feat)
     
