@@ -283,7 +283,8 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
             axes_rep[i].set_title(f"Class {c} Representative Spectrum")
             axes_rep[i].set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
             axes_rep[i].set_ylabel("Flux")
-            axes_rep[i].set_ylim(-0.1, 1.2)
+            axes_rep[i].set_ylim(-0.1, 1.1)
+            axes_rep[i].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
             axes_rep[i].grid(True, alpha=0.2)
             
             # Plot in Overlap
@@ -297,7 +298,8 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
     ax_ov.set_title("Comparative Representative Spectra (First Samples)")
     ax_ov.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
     ax_ov.set_ylabel("Flux")
-    ax_ov.set_ylim(-0.1, 1.2)
+    ax_ov.set_ylim(-0.1, 1.1)
+    ax_ov.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
     ax_ov.legend(loc='lower left', ncol=2)
     ax_ov.grid(True, alpha=0.2)
     plt.tight_layout()
