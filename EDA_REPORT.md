@@ -9,7 +9,20 @@ This report summarizes the Exploratory Data Analysis (EDA) performed on the Sher
 
 ---
 
-## 2. Global Statistics
+## 2. Representative Spectra
+
+![Representative Spectra 2x2](eda_plots/tier1_representative_spectra_2x2.png)
+![Representative Spectra Overlap](eda_plots/tier1_representative_spectra_overlap.png)
+
+### Analysis
+These plots show the first spectrum from each class to visualize the raw flux data against the real wavelength axis ($\mathrm{\AA}$).
+- **Profile Characteristics**: Classes 1-3 show significant absorption dips reaching down to ~0.2-0.4 flux, while Class 4 shows much shallower and more sparse features.
+- **Continuum Recovery**: Most spectra return to 1.0 flux between major features, confirming the baseline normalization.
+- **Overlap View**: The comparative plot highlights how the same wavelength regions often contain features across multiple classes, but with vastly different depths and widths.
+
+---
+
+## 3. Global Statistics
 
 | Class | Mean Total EW (Å) | Mean Depth | Mean Line Density (lines/Å) | Mean Gap (Å) | Mean Absorption Line Count |
 | :---: | :---: | :---: | :---: | :---: | :---: |

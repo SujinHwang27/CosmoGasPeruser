@@ -266,6 +266,44 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
         return fig, axes.flatten()
 
+    # plot 1a: Representative Spectra (2x2)
+    print("Generating Representative Spectra Plots...")
+    fig_rep, axes_rep = get_axes_2x2()
+    fig_ov, ax_ov = plt.subplots(figsize=(12, 6))
+    
+    for i, c in enumerate(classes):
+        # Get first sample of this class
+        class_indices = np.where(y == c)[0]
+        if len(class_indices) > 0:
+            first_idx = class_indices[0]
+            flux_sample = X[first_idx]
+            
+            # Plot in 2x2
+            axes_rep[i].plot(lambda_arr, flux_sample, color=colors[i], lw=1)
+            axes_rep[i].set_title(f"Class {c} Representative Spectrum")
+            axes_rep[i].set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+            axes_rep[i].set_ylabel("Flux")
+            axes_rep[i].set_ylim(-0.1, 1.2)
+            axes_rep[i].grid(True, alpha=0.2)
+            
+            # Plot in Overlap
+            ax_ov.plot(lambda_arr, flux_sample, color=colors[i], label=f"Class {c}", lw=1, alpha=0.7)
+            
+    fig_rep.suptitle("Representative Spectra per Class (First Samples)")
+    fig_rep.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig_rep.savefig(os.path.join(output_dir, "tier1_representative_spectra_2x2.png"))
+    plt.close(fig_rep)
+    
+    ax_ov.set_title("Comparative Representative Spectra (First Samples)")
+    ax_ov.set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
+    ax_ov.set_ylabel("Flux")
+    ax_ov.set_ylim(-0.1, 1.2)
+    ax_ov.legend(loc='lower left', ncol=2)
+    ax_ov.grid(True, alpha=0.2)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, "tier1_representative_spectra_overlap.png"))
+    plt.close()
+
     # Plot 1: Total EW vs Line Density (1 file, 2x2, Log-Log)
     fig, axes = get_axes_2x2()
     for i, c in enumerate(classes):
