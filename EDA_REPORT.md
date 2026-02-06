@@ -11,12 +11,12 @@ This report summarizes the Exploratory Data Analysis (EDA) performed on the Sher
 
 ## 2. Global Statistics
 
-| Class | Mean Total EW (Å) | Mean Line Density (lines/Å) | Mean Depth | Mean Gap (Å) | Mean Raw Count |
+| Class | Mean Total EW (Å) | Mean Depth | Mean Line Density (lines/Å) | Mean Gap (Å) | Mean Absorption Line Count |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1** | 0.6208 | 1.8006 | 0.0416 | 0.5594 | 51.70 |
-| **2** | **0.7321** | 1.8005 | **0.0521** | 0.5601 | 51.69 |
-| **3** | **0.7121** | 1.7498 | 0.0494 | 0.5755 | 50.24 |
-| **4** | 0.4758 | 1.3013 | 0.0445 | **0.7837** | 37.36 |
+| **1** | 0.6208 | 0.0416 | 1.8006 | 0.5594 | 51.70 |
+| **2** | **0.7321** | **0.0521** | 1.8005 | 0.5601 | 51.69 |
+| **3** | **0.7121** | 0.0494 | 1.7498 | 0.5755 | 50.24 |
+| **4** | 0.4758 | 0.0445 | 1.3013 | **0.7837** | 37.36 |
 
 ### Analysis
 **Class 2** exhibits the strongest absorption signature with the highest mean total EW (0.7321 Å) and deepest absorption features (0.0521). **Class 3** follows closely with similar characteristics. Both classes maintain high line densities (~1.75-1.80 lines/Å) and small gaps between features (~0.56 Å), indicating dense absorption environments.

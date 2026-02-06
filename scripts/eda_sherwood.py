@@ -320,7 +320,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
     plt.title("Comparative Local EW KDE (Log X)")
     plt.xlabel("Local EW")
     plt.xscale('log', base=2)
-    plt.ylabel("Density")
+    plt.ylabel("Probability Density")
     plt.legend()
     plt.savefig(os.path.join(output_dir, "tier1_local_ew_kde_overlap.png"))
     plt.close()
@@ -439,9 +439,19 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
 
     # Plot 7: Absorption Activity Profile (2 files)
     # File 7a: 2x2 panel with Peaks
-    fig, axes = get_axes_2x2()
+    
+    # Recalculate zoom limit for Activity (focus on mean trends)
+    max_representative_activity = 0
     bin_centers = (wavelength_bins[:-1] + wavelength_bins[1:]) / 2
     
+    for c in classes:
+        profiles = np.array([f["activity_profile"] for f in all_features[c]])
+        mean_p = np.mean(profiles, axis=0)
+        std_p = np.std(profiles, axis=0)
+        # Goal: Zoom to accommodate the mean behavior, not outliers
+        max_representative_activity = max(max_representative_activity, np.max(mean_p + std_p))
+
+    fig, axes = get_axes_2x2()
     activity_peaks_data = ["Class,Rank,Bin_Center,Bin_Range,Activity_Value"]
     
     for i, c in enumerate(classes):
@@ -473,7 +483,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         axes[i].set_title(f"Class {c}: Activity Profile")
         axes[i].set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         axes[i].set_ylabel("Activity (EW per bin)")
-        axes[i].set_ylim(global_limits["activity"]) # Fix Y range
+        axes[i].set_ylim(0, max_representative_activity * 1.1)
         
     fig.suptitle("Spatial Absorption Activity Profile (Top 7 Peaks Marked)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
@@ -518,14 +528,15 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
 
     # 4. Save KPIs
     print("Saving KPIs...")
-    stats_lines = ["Class,Mean_Total_EW,Mean_Line_Density,Mean_Depth,Mean_Gap,Mean_Raw_Count"]
+    header = "Class,Mean_Total_EW,Mean_Depth,Mean_Line_Density,Mean_Gap,Mean_Absorption_Line_Count"
+    stats_lines = [header]
     for c in classes:
         m_ew = np.mean([f["total_ew"] for f in all_features[c]])
-        m_dens = np.mean([f["line_density"] for f in all_features[c]])
         m_depth = np.mean([f["depth_mean"] for f in all_features[c]])
+        m_dens = np.mean([f["line_density"] for f in all_features[c]])
         m_gap = np.mean([f["gap_mean"] for f in all_features[c]])
         m_count = np.mean([f["raw_counts"] for f in all_features[c]])
-        stats_lines.append(f"{c},{m_ew:.4f},{m_dens:.4f},{m_depth:.4f},{m_gap:.4f},{m_count:.2f}")
+        stats_lines.append(f"{c},{m_ew:.4f},{m_depth:.4f},{m_dens:.4f},{m_gap:.4f},{m_count:.2f}")
     
     with open(os.path.join(output_dir, "tier1_summary_stats.txt"), "w") as f:
         f.write("\n".join(stats_lines))
