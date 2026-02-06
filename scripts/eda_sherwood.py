@@ -334,16 +334,25 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         axes[i].set_title(f"Class {c}: Depth vs Local EW")
         axes[i].set_xlabel("Depth")
         axes[i].set_ylabel("Local EW")
+        axes[i].set_yscale('log', base=2)
         axes[i].set_ylim(global_limits["local_ew"])
         axes[i].set_xlim(global_limits["depth"])
-    fig.suptitle("Depth vs Local Equivalent Width (Fixed Y)")
+    fig.suptitle("Depth vs Local Equivalent Width (Log Y)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_depth_vs_ew_2x2.png"))
     plt.close()
 
     # Plot 4: Gap Distribution (1 file, 2x2 panel: Hist + CDF overlay, Log X)
-    fig, axes = get_axes_2x2()
+    # Determine global max density for histogram scaling
+    max_hist_dens = 0
     gap_bins = np.logspace(np.log2(global_limits["gap"][0]), np.log2(global_limits["gap"][1]), 40, base=2)
+    for c in classes:
+        all_gaps = np.concatenate([f["gaps"] for f in all_features[c] if len(f["gaps"]) > 0])
+        if len(all_gaps) > 0:
+            hist, _ = np.histogram(all_gaps, bins=gap_bins, density=True)
+            max_hist_dens = max(max_hist_dens, np.max(hist))
+            
+    fig, axes = get_axes_2x2()
     for i, c in enumerate(classes):
         all_gaps = np.concatenate([f["gaps"] for f in all_features[c] if len(f["gaps"]) > 0])
         if len(all_gaps) > 0:
@@ -355,29 +364,58 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
             ax2 = axes[i].twinx()
             ax2.plot(sorted_gaps, cdf, color='black', lw=1.5, label="CDF")
             ax2.set_ylim(0, 1.05)
-            if i == 0: axes[i].legend(loc='upper right')
+            ax2.set_ylabel("CDF")
+            if i == 0: 
+                # Combine legends
+                lines, labels = axes[i].get_legend_handles_labels()
+                lines2, labels2 = ax2.get_legend_handles_labels()
+                ax2.legend(lines + lines2, labels + labels2, loc='upper right')
+        
         axes[i].set_title(f"Class {c}: Gap Dist (Log X)")
         axes[i].set_xlabel(r"Gap ($\mathrm{\AA}$)")
+        axes[i].set_ylabel("Probability Density")
         axes[i].set_xscale('log', base=2)
         axes[i].set_xlim(global_limits["gap"])
+        axes[i].set_ylim(0, max_hist_dens * 1.1)
+        
     fig.suptitle("Gap Distribution with CDF Overlays (Log X)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_gap_dist_2x2.png"))
     plt.close()
 
-    # Plot 5: Mean Gap vs Line Density (1 file, 2x2, Log X)
+    # Plot 5: Mean Gap vs Line Density (1 file, 2x2, Log X, Log Y, Optimized Ranges)
     fig, axes = get_axes_2x2()
+    
+    # Calculate specialized limits for this plot to avoid whitespace
+    all_dens = []
+    all_mgaps = []
+    for c in classes:
+        all_dens.extend([f["line_density"] for f in all_features[c]])
+        all_mgaps.extend([f["gap_mean"] for f in all_features[c]])
+    
+    # Use percentiles or min/max with padding
+    den_min, den_max = np.min(all_dens), np.max(all_dens)
+    gap_min, gap_max = np.min(all_mgaps), np.max(all_mgaps)
+    
+    # Ensure no zeros for log
+    den_min = max(den_min, EPS)
+    gap_min = max(gap_min, EPS)
+    
     for i, c in enumerate(classes):
         gaps = [f["gap_mean"] for f in all_features[c]]
         densities = [f["line_density"] for f in all_features[c]]
         axes[i].scatter(densities, gaps, color=colors[i], alpha=0.5, s=15)
         axes[i].set_title(f"Class {c}: Mean Gap vs Density")
         axes[i].set_xlabel(r"Line Density (Log)")
-        axes[i].set_ylabel("Mean Gap")
+        axes[i].set_ylabel("Mean Gap (Log)")
         axes[i].set_xscale('log', base=2)
-        axes[i].set_xlim(global_limits["line_density"])
-        axes[i].set_ylim(global_limits["gap"])
-    fig.suptitle("Mean Gap vs Line Density (Log X)")
+        axes[i].set_yscale('log', base=2)
+        
+        # Set localized limits
+        axes[i].set_xlim(den_min * 0.9, den_max * 1.1)
+        axes[i].set_ylim(gap_min * 0.9, gap_max * 1.1)
+        
+    fig.suptitle("Mean Gap vs Line Density (Log-Log)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_mean_gap_vs_density_2x2.png"))
     plt.close()
@@ -400,22 +438,51 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
     plt.close()
 
     # Plot 7: Absorption Activity Profile (2 files)
-    # File 7a: 2x2 panel
+    # File 7a: 2x2 panel with Peaks
     fig, axes = get_axes_2x2()
     bin_centers = (wavelength_bins[:-1] + wavelength_bins[1:]) / 2
+    
+    activity_peaks_data = ["Class,Rank,Bin_Center,Bin_Range,Activity_Value"]
+    
     for i, c in enumerate(classes):
         profiles = np.array([f["activity_profile"] for f in all_features[c]])
         mean_prof = np.mean(profiles, axis=0)
         std_prof = np.std(profiles, axis=0)
         axes[i].plot(bin_centers, mean_prof, color=colors[i], lw=2)
         axes[i].fill_between(bin_centers, mean_prof - std_prof, mean_prof + std_prof, color=colors[i], alpha=0.2)
+        
+        # Peak Detection
+        peaks, props = find_peaks(mean_prof)
+        if len(peaks) > 0:
+            peak_heights = mean_prof[peaks]
+            # Get top 7 indices
+            top_indices = np.argsort(peak_heights)[-7:][::-1] # Descending order
+            top_peaks = peaks[top_indices]
+            
+            # Plot peaks
+            axes[i].plot(bin_centers[top_peaks], mean_prof[top_peaks], "x", color='red', markersize=8, markeredgewidth=2)
+            
+            # Record peak data
+            for rank, p_idx in enumerate(top_indices):
+                actual_p_idx = peaks[p_idx]
+                val = mean_prof[actual_p_idx]
+                center = bin_centers[actual_p_idx]
+                b_range = f"{wavelength_bins[actual_p_idx]:.2f}-{wavelength_bins[actual_p_idx+1]:.2f}"
+                activity_peaks_data.append(f"{c},{rank+1},{center:.2f},{b_range},{val:.4f}")
+
         axes[i].set_title(f"Class {c}: Activity Profile")
         axes[i].set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         axes[i].set_ylabel("Activity (EW per bin)")
-    fig.suptitle("Spatial Absorption Activity Profile")
+        axes[i].set_ylim(global_limits["activity"]) # Fix Y range
+        
+    fig.suptitle("Spatial Absorption Activity Profile (Top 7 Peaks Marked)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(os.path.join(output_dir, "tier1_activity_profile_2x2.png"))
     plt.close()
+    
+    # Save Peak Data
+    with open(os.path.join(output_dir, "tier1_activity_peaks.csv"), "w") as f:
+        f.write("\n".join(activity_peaks_data))
 
     # File 7b: Overlapping
     plt.figure(figsize=(10, 6))
