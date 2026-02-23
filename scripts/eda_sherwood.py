@@ -482,6 +482,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
     
     # Recalculate zoom limit for Activity (focus on mean trends)
     max_representative_activity = 0
+    min_representative_activity = 0
     bin_centers = (wavelength_bins[:-1] + wavelength_bins[1:]) / 2
     
     for c in classes:
@@ -490,6 +491,7 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         std_p = np.std(profiles, axis=0)
         # Goal: Zoom to accommodate the mean behavior, not outliers
         max_representative_activity = max(max_representative_activity, np.max(mean_p + std_p))
+        min_representative_activity = min(min_representative_activity, np.min(mean_p - std_p))
 
     fig, axes = get_axes_2x2()
     activity_peaks_data = ["Class,Rank,Bin_Center,Bin_Range,Activity_Value"]
@@ -523,7 +525,9 @@ def perform_refined_eda(base_path, output_dir="eda_plots"):
         axes[i].set_title(f"Class {c}: Activity Profile")
         axes[i].set_xlabel(r"Wavelength ($\mathrm{\AA}$)")
         axes[i].set_ylabel("Activity (EW per bin)")
-        axes[i].set_ylim(0, max_representative_activity * 1.1)
+        # Allow Y-axis to show below 0 if shaded region goes there
+        y_min = min_representative_activity * 1.1 if min_representative_activity < 0 else 0
+        axes[i].set_ylim(y_min, max_representative_activity * 1.1)
         
     fig.suptitle("Spatial Absorption Activity Profile (Top 7 Peaks Marked)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
