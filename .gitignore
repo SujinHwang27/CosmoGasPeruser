@@ -15,3 +15,6 @@ reports/
 logs/
 nohup.out
 *.log
+docs/
+docs_archive/
+mlartifacts/
