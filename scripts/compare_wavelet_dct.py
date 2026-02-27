@@ -4,9 +4,17 @@ import pandas as pd
 from sklearn.metrics import confusion_matrix
 
 def compare_wavelet_vs_dct():
-    # Load labels
-    labels_wavelet = np.load("data/feature_discovery/clustering_results/cluster_labels.npy")
-    labels_dct = np.load("data/feature_discovery/clustering_results_dct/cluster_labels.npy")
+    # Use reorganized paths
+    path_wavelet = "data/feature_discovery/experiments/wavelet_k8_primary/cluster_labels.npy"
+    path_dct = "data/feature_discovery/experiments/dct_k8_test/cluster_labels.npy"
+    output_csv = "data/feature_discovery/comparisons/transform_invariance/wavelet_vs_dct_membership.csv"
+    
+    if not os.path.exists(path_wavelet) or not os.path.exists(path_dct):
+        print(f"Error: Could not find labels at {path_wavelet} or {path_dct}")
+        return
+
+    labels_wavelet = np.load(path_wavelet)
+    labels_dct = np.load(path_dct)
     
     # Create DataFrame
     df = pd.DataFrame({
@@ -15,8 +23,9 @@ def compare_wavelet_vs_dct():
         'Cluster_DCT': labels_dct
     })
     
-    df.to_csv("data/feature_discovery/wavelet_vs_dct_membership.csv", index=False)
-    print("Saved membership comparison to data/feature_discovery/wavelet_vs_dct_membership.csv")
+    os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+    df.to_csv(output_csv, index=False)
+    print(f"Saved membership comparison to {output_csv}")
     
     # Compute contingency table
     w_unique = np.unique(labels_wavelet)

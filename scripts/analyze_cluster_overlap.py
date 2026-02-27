@@ -4,8 +4,17 @@ import pandas as pd
 from sklearn.metrics import confusion_matrix
 
 def analyze_overlap():
-    labels_k8 = np.load("data/feature_discovery/clustering_results/cluster_labels.npy")
-    labels_k5 = np.load("data/feature_discovery/clustering_results_k5/cluster_labels.npy")
+    # Use reorganized paths
+    path_k8 = "data/feature_discovery/experiments/wavelet_k8_primary/cluster_labels.npy"
+    path_k5 = "data/feature_discovery/experiments/wavelet_k5_test/cluster_labels.npy"
+    output_csv = "data/feature_discovery/comparisons/k_stability/cluster_membership_comparison.csv"
+    
+    if not os.path.exists(path_k8) or not os.path.exists(path_k5):
+        print(f"Error: Could not find labels at {path_k8} or {path_k5}")
+        return
+
+    labels_k8 = np.load(path_k8)
+    labels_k5 = np.load(path_k5)
     
     # Create a DataFrame for easy comparison
     df = pd.DataFrame({
@@ -15,11 +24,11 @@ def analyze_overlap():
     })
     
     # Save the complete membership table
-    df.to_csv("data/feature_discovery/cluster_membership_comparison.csv", index=False)
-    print("Saved complete membership table to data/feature_discovery/cluster_membership_comparison.csv")
+    os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+    df.to_csv(output_csv, index=False)
+    print(f"Saved complete membership table to {output_csv}")
     
     # Compute contingency table
-    # We want a table where rows are K5 and columns are K8
     k5_unique = np.unique(labels_k5)
     k8_unique = np.unique(labels_k8)
     
@@ -36,12 +45,11 @@ def analyze_overlap():
     print("\nContingency Table (Overlap Counts):")
     print(cm_df)
     
-    # Percentages for the report (How much of K5 Group X came from K8 Group Y)
+    # Percentages for the report
     cm_perc = cm_df.div(cm_df.sum(axis=1), axis=0) * 100
     print("\nOverlap Percentages (Row-wise: % of K5 group coming from K8 groups):")
     print(cm_perc.round(1))
     
-    # How much of K8 Group Y was absorbed into K5 Group X
     cm_perc_k8 = cm_df.div(cm_df.sum(axis=0), axis=1) * 100
     print("\nAbsorption Percentages (Column-wise: % of K8 group moving into K5 groups):")
     print(cm_perc_k8.round(1))

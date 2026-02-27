@@ -42,14 +42,15 @@ def visualize_3d(params_file, labels_file, output_html):
     fig.update_traces(marker=dict(size=2))
     fig.update_layout(margin=dict(l=0, r=0, b=0, t=40))
     
+    os.makedirs(os.path.dirname(output_html), exist_ok=True)
     fig.write_html(output_html)
     print(f"Saved interactive 3D plot to {output_html}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--params", type=str, default="data/feature_discovery/micro_classifier_params.npy")
-    parser.add_argument("--labels", type=str, required=True)
-    parser.add_argument("--output", type=str, required=True)
+    parser.add_argument("--params", type=str, default="data/feature_discovery/base_data/params_wavelet.npy")
+    parser.add_argument("--labels", type=str, default="data/feature_discovery/experiments/wavelet_k8_primary/cluster_labels.npy")
+    parser.add_argument("--output", type=str, default="data/feature_discovery/experiments/wavelet_k8_primary/umap_3d_k8.html")
     
     args = parser.parse_args()
     

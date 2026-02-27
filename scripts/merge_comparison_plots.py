@@ -3,12 +3,13 @@ import matplotlib.image as mpimg
 import os
 
 def merge_plots():
-    path1 = "data/feature_discovery/clustering_results_k5/classifier_clusters_umap.png"
-    path2 = "data/feature_discovery/clustering_results/classifier_clusters_umap.png"
-    output = "data/feature_discovery/k5_vs_k8_comparison.png"
+    # Updated paths for reorganized directory structure
+    path1 = "data/feature_discovery/experiments/wavelet_k5_test/classifier_clusters_umap.png"
+    path2 = "data/feature_discovery/experiments/wavelet_k8_primary/classifier_clusters_umap.png"
+    output = "data/feature_discovery/comparisons/k_stability/k5_vs_k8_comparison.png"
     
     if not os.path.exists(path1) or not os.path.exists(path2):
-        print("Required plots not found.")
+        print(f"Required plots not found at {path1} or {path2}")
         return
 
     img1 = mpimg.imread(path1)
@@ -25,6 +26,7 @@ def merge_plots():
     ax2.axis('off')
     
     plt.tight_layout()
+    os.makedirs(os.path.dirname(output), exist_ok=True)
     plt.savefig(output, dpi=150)
     print(f"Saved side-by-side comparison to {output}")
 

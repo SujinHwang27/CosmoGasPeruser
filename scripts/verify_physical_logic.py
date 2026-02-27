@@ -5,30 +5,28 @@ import matplotlib.pyplot as plt
 
 def verify_physical_interpretation():
     # 1. Load data
-    # We need the absorption field A used for processing
-    # and the cluster labels
     print("Loading data for verification...")
     
-    # Let's load the labels (K8 is our primary)
-    labels = np.load("data/feature_discovery/clustering_results/cluster_labels.npy")
-    
-    # We need to see the "typical" absorption value for indices in each cluster.
-    # The 'micro_classifier_params.npy' contains the behavioral vectors,
-    # but the 'process_signals.py' script generated the actual features.
-    # However, a simpler way is to look at the 'A' field for the 4 representative 
-    # samples used to train the SVMs.
-    
-    # Let's load Class 1-4 data from the processed wavelet directory
-    # (Actually, let's just use the raw flux from one sample per class to keep it simple)
-    # The process_signals script saved the transformed data. Let's use that.
+    # Updated path
+    labels_path = "data/feature_discovery/experiments/wavelet_k8_primary/cluster_labels.npy"
+    if not os.path.exists(labels_path):
+        print(f"Error: Could not find labels at {labels_path}")
+        return
+        
+    labels = np.load(labels_path)
     
     features = []
     for c in range(1, 5):
-        features.append(np.load(f"data/processed/wavelet_db8_l6_d12/{c}/data.npy", mmap_mode='r'))
+        path = f"data/processed/wavelet_db8_l6_d12/{c}/data.npy"
+        if os.path.exists(path):
+            features.append(np.load(path, mmap_mode='r'))
+        else:
+            print(f"Warning: Could not find features for class {c} at {path}")
     
-    # features[c] is (16384, 512)
-    # The micro-classifier i was trained on features[0][i], features[1][i], ...
-    
+    if len(features) < 4:
+        print("Error: Missing class features. Cannot verify physical logic.")
+        return
+        
     n_clusters = len(np.unique(labels))
     cluster_stats = []
     
@@ -37,8 +35,6 @@ def verify_physical_interpretation():
         indices = np.where(labels == k)[0]
         
         # Calculate mean "feature magnitude" across the classes for these indices
-        # Since we use Wavelets, a high absolute value indicates a strong signal/fluctuation 
-        # at that specific scale.
         mags = []
         for c in range(4):
             # Take the mean absolute value of the 512 wavelet coefficients for these indices
@@ -55,8 +51,11 @@ def verify_physical_interpretation():
     print("\nCluster Physical Stats:")
     print(stats_df.sort_values('Mean_Wavelet_Mag'))
     
-    # Save the stats
-    stats_df.to_csv("data/feature_discovery/clustering_physical_evidence.csv", index=False)
+    # Save the stats to comparisons
+    output_csv = "data/feature_discovery/comparisons/clustering_physical_evidence.csv"
+    os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+    stats_df.to_csv(output_csv, index=False)
+    print(f"Saved physical evidence to {output_csv}")
 
 if __name__ == "__main__":
     verify_physical_interpretation()
