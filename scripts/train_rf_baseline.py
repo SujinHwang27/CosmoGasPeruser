@@ -24,6 +24,7 @@ from sklearn.metrics import (classification_report, confusion_matrix,
 from scipy.stats import randint
 import mlflow
 import mlflow.sklearn
+from tqdm import tqdm
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -58,8 +59,9 @@ def load_data(data_root="data", mode="wavelet", subset=None):
     y_list = []
     
     print(f"Loading {mode} data...")
-    
-    for i, class_dir in enumerate(CLASS_DIRS):
+    pbar = tqdm(CLASS_DIRS, desc="Classes")
+    for i, class_dir in enumerate(pbar):
+        pbar.set_postfix(cls=CLASS_NAMES[i])
         if mode == "wavelet":
             path = os.path.join(data_root, "processed", "wavelet_db8_l6_d12", class_dir, "data.npy")
         else:
@@ -129,6 +131,7 @@ def run_cv(label, X, y, best_params, experiment_name=None):
     
     print(f"\nRunning CV for: {label}")
     
+    pbar = tqdm(total=N_FOLDS, desc=f"CV: {label[:20]}...")
     with mlflow.start_run(run_name=label, nested=True):
         mlflow.log_params(best_params)
         mlflow.log_param("input_dim", X.shape[1])
@@ -148,8 +151,10 @@ def run_cv(label, X, y, best_params, experiment_name=None):
             all_true[val_idx] = y_val
             
             mlflow.log_metric(f"fold_{fold}_acc", acc)
-            print(f"  Fold {fold+1}/{N_FOLDS}: {acc:.4f}")
+            pbar.set_postfix(acc=f"{acc:.4f}")
+            pbar.update(1)
             
+        pbar.close()
         mean_acc = np.mean(fold_accs)
         std_acc = np.std(fold_accs)
         
@@ -214,7 +219,8 @@ def main():
         levels_dict = split_wavelet_levels(X_wav_cat)
         
         # 2a: Per-Level
-        for lv in LEVELS:
+        print("\nStarting Per-Level Wavelet Experiments...")
+        for lv in tqdm(LEVELS, desc="Wavelet Levels"):
             X_lv = levels_dict[lv]
             cv = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_SEED)
             tr_idx, _ = next(iter(cv.split(X_lv, y_wav)))

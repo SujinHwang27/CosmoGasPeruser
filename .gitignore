@@ -19,3 +19,4 @@ docs/
 docs_archive/
 mlartifacts/
 local/
+/mlruns
