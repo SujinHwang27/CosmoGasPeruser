@@ -14,6 +14,8 @@ Integrated with MLflow for experiment tracking.
 
 import os
 import numpy as np
+import matplotlib
+matplotlib.use('Agg') # Necessary for stability in parallel loops
 import matplotlib.pyplot as plt
 import argparse
 from sklearn.ensemble import RandomForestClassifier
@@ -32,18 +34,18 @@ warnings.filterwarnings('ignore')
 # --- CONFIGURATION ---
 CLASS_NAMES = ['NoFeedback', 'StellarWind', 'WindAGN', 'WindStrongAGN']
 CLASS_DIRS  = ['1', '2', '3', '4']
-LEVELS      = ['D3', 'D4', 'D5', 'D6', 'A6']  # Available in pre-processed data
+LEVELS      = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'A6']  # All levels included
 N_CLASSES   = 4
 N_FOLDS     = 10
-N_JOBS      = -1
+N_JOBS      = 8  # Reduced to avoid memory issues
 RANDOM_SEED = 42
 
 RF_PARAM_DIST = {
-    'n_estimators':      randint(100, 500),
-    'max_depth':         [None, 10, 20, 30],
-    'min_samples_split': randint(2, 10),
-    'min_samples_leaf':  randint(1, 5),
-    'max_features':      ['sqrt', 'log2', 0.2, 0.3],
+    'n_estimators':      [100],
+    'max_depth':         [10, 25],
+    'min_samples_split': [50, 100, 200],
+    'min_samples_leaf':  [50, 100],
+    'max_features':      ['sqrt', 'log2', 0.1]
 }
 RF_SEARCH_ITER = 20
 
@@ -52,7 +54,7 @@ RF_SEARCH_ITER = 20
 def load_data(data_root="data", mode="wavelet", subset=None):
     """
     Loads data for all 4 classes.
-    - wavelet: data/processed/wavelet_db8_l6_d12/[1-4]/data.npy (Shape: (16384, 512))
+    - wavelet: data/processed/wavelet_db8_l6_d12/[1-4]/data.npy (Shape: (16384, 2048))
     - raw: data/preprocessed/Sherwood_z0.3_inf/[1-4]/flux.npy (Shape: (16384, 2048))
     """
     X_list = []
@@ -86,12 +88,12 @@ def load_data(data_root="data", mode="wavelet", subset=None):
 
 def split_wavelet_levels(X_combined):
     """
-    Splits the 512-dim concatenated wavelet vector back into levels.
-    D3: 256, D4: 128, D5: 64, D6: 32, A6: 32 (Total 512)
+    Splits the 2048-dim concatenated wavelet vector back into levels.
+    D1: 1024, D2: 512, D3: 256, D4: 128, D5: 64, D6: 32, A6: 32 (Total 2048)
     """
     levels_dict = {}
     cursor = 0
-    dims = {'D3': 256, 'D4': 128, 'D5': 64, 'D6': 32, 'A6': 32}
+    dims = {'D1': 1024, 'D2': 512, 'D3': 256, 'D4': 128, 'D5': 64, 'D6': 32, 'A6': 32}
     
     for lv in LEVELS:
         d = dims[lv]
@@ -117,7 +119,7 @@ def find_best_params(X_train, y_train):
         scoring='accuracy',
         random_state=RANDOM_SEED,
         n_jobs=N_JOBS,
-        verbose=0
+        verbose=1
     )
     search.fit(X_train, y_train)
     return search.best_params_
@@ -169,8 +171,8 @@ def run_cv(label, X, y, best_params, experiment_name=None):
                                               cmap='Blues', ax=ax, xticks_rotation=45)
         ax.set_title(f"CM: {label} (Acc: {mean_acc:.3f})")
         plt.tight_layout()
-        plot_path = f"results/cm_{label.replace(' ', '_').lower()}.png"
-        os.makedirs("results", exist_ok=True)
+        plot_path = f"results/baseline_rf/cm_{label.replace(' ', '_').lower()}.png"
+        os.makedirs("results/baseline_rf", exist_ok=True)
         plt.savefig(plot_path)
         mlflow.log_artifact(plot_path)
         plt.close()
@@ -188,6 +190,7 @@ def main():
     parser = argparse.ArgumentParser(description="Train Baseline Random Forest Experiment")
     parser.add_argument("--subset", type=int, default=None, help="Use a subset of data for testing")
     parser.add_argument("--mode", type=str, choices=['raw', 'wavelet', 'both'], default='both', help="Experiment mode")
+    parser.add_argument("--levels", type=str, nargs='*', default=None, help="Specific wavelet levels to run (e.g. D3 D4)")
     args = parser.parse_args()
     
     mlflow.set_experiment("Baseline_RF")
@@ -205,8 +208,8 @@ def main():
             X_tr_sc, _ = scale_fold(X_raw[tr_idx], X_raw[tr_idx])
             
             print("Searching hyperparameters for Raw Spectra...")
-            best_params_raw = find_best_params(X_tr_sc[:5000] if len(X_tr_sc) > 5000 else X_tr_sc, 
-                                              y_raw[tr_idx][:5000] if len(X_tr_sc) > 5000 else y_raw[tr_idx])
+            best_params_raw = find_best_params(X_tr_sc[:20000] if len(X_tr_sc) > 20000 else X_tr_sc, 
+                                              y_raw[tr_idx][:20000] if len(X_tr_sc) > 20000 else y_raw[tr_idx])
             
             res_raw = run_cv("RF - Raw Spectra", X_raw, y_raw, best_params_raw)
             results.append(res_raw)
@@ -220,15 +223,16 @@ def main():
         
         # 2a: Per-Level
         print("\nStarting Per-Level Wavelet Experiments...")
-        for lv in tqdm(LEVELS, desc="Wavelet Levels"):
+        target_levels = args.levels if args.levels else LEVELS
+        for lv in tqdm(target_levels, desc="Wavelet Levels"):
             X_lv = levels_dict[lv]
             cv = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_SEED)
             tr_idx, _ = next(iter(cv.split(X_lv, y_wav)))
             X_tr_sc, _ = scale_fold(X_lv[tr_idx], X_lv[tr_idx])
             
             print(f"Searching hyperparameters for Wavelet {lv}...")
-            best_params_lv = find_best_params(X_tr_sc[:5000] if len(X_tr_sc) > 5000 else X_tr_sc,
-                                              y_wav[tr_idx][:5000] if len(X_tr_sc) > 5000 else y_wav[tr_idx])
+            best_params_lv = find_best_params(X_tr_sc[:20000] if len(X_tr_sc) > 20000 else X_tr_sc,
+                                              y_wav[tr_idx][:20000] if len(X_tr_sc) > 20000 else y_wav[tr_idx])
             
             res_lv = run_cv(f"RF - Wavelet {lv}", X_lv, y_wav, best_params_lv)
             results.append(res_lv)
@@ -239,8 +243,8 @@ def main():
         X_tr_sc, _ = scale_fold(X_wav_cat[tr_idx], X_wav_cat[tr_idx])
         
         print("Searching hyperparameters for Concatenated Wavelet...")
-        best_params_cat = find_best_params(X_tr_sc[:5000] if len(X_tr_sc) > 5000 else X_tr_sc,
-                                           y_wav[tr_idx][:5000] if len(X_tr_sc) > 5000 else y_wav[tr_idx])
+        best_params_cat = find_best_params(X_tr_sc[:20000] if len(X_tr_sc) > 20000 else X_tr_sc,
+                                           y_wav[tr_idx][:20000] if len(X_tr_sc) > 20000 else y_wav[tr_idx])
         
         res_cat = run_cv("RF - Concatenated Wavelet", X_wav_cat, y_wav, best_params_cat)
         results.append(res_cat)
@@ -259,7 +263,7 @@ def main():
         plt.title("Baseline Random Forest Performance Comparison")
         plt.legend()
         plt.tight_layout()
-        summary_path = "results/baseline_summary.png"
+        summary_path = "results/baseline_rf/baseline_summary.png"
         plt.savefig(summary_path)
         print(f"\nSummary plot saved to {summary_path}")
         
