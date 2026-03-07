@@ -18,3 +18,5 @@ nohup.out
 docs/
 docs_archive/
 mlartifacts/
+.agent/
+/docs
