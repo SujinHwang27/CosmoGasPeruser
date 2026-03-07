@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument("--type", type=str, choices=['wavelet', 'windowed_dct'], default='wavelet', help="Transform type")
     parser.add_argument("--wavelet", type=str, default="db8", help="Wavelet family")
     parser.add_argument("--level", type=int, default=6, help="Wavelet decomposition level")
-    parser.add_argument("--drop_levels", type=int, nargs='*', default=[1, 2], help="Levels to drop (e.g. 1 2 for D1, D2)")
+    parser.add_argument("--drop_levels", type=int, nargs='*', default=[], help="Levels to drop (e.g. 1 2 for D1, D2)")
     
     args = parser.parse_args()
     

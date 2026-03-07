@@ -5,6 +5,9 @@ from scipy.signal import find_peaks
 from scipy.stats import gaussian_kde
 from tqdm import tqdm
 from src.core.data import DataIngestor
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Constants
 ABS_THRESH = 0.05
