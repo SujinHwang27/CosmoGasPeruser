@@ -19,3 +19,4 @@ docs_archive/
 mlartifacts/
 local/
 .agent/
+/docs
