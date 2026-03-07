@@ -12,26 +12,10 @@ Two Modes of Operation:
 Integrated with MLflow for experiment tracking.
 """
 
-import os
-import numpy as np
-import matplotlib
-matplotlib.use('Agg') # Necessary for stability in parallel loops
-import matplotlib.pyplot as plt
-import argparse
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import (classification_report, confusion_matrix, 
-                              ConfusionMatrixDisplay, accuracy_score)
-from scipy.stats import randint
-import mlflow
-import mlflow.sklearn
-from tqdm import tqdm
-import warnings
-
-warnings.filterwarnings('ignore')
+from dotenv import load_dotenv
 
 # --- CONFIGURATION ---
+load_dotenv()
 CLASS_NAMES = ['NoFeedback', 'StellarWind', 'WindAGN', 'WindStrongAGN']
 CLASS_DIRS  = ['1', '2', '3', '4']
 LEVELS      = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'A6']  # All levels included
@@ -195,77 +179,83 @@ def main():
     
     mlflow.set_experiment("Baseline_RF")
     
-    results = []
-    
-    # --- Mode 1: Raw Spectra ---
-    if args.mode in ['raw', 'both']:
-        try:
-            X_raw, y_raw = load_data(mode="raw", subset=args.subset)
-            
-            # Find params on a subset of the first fold for speed
-            cv = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_SEED)
-            tr_idx, _ = next(iter(cv.split(X_raw, y_raw)))
-            X_tr_sc, _ = scale_fold(X_raw[tr_idx], X_raw[tr_idx])
-            
-            print("Searching hyperparameters for Raw Spectra...")
-            best_params_raw = find_best_params(X_tr_sc[:20000] if len(X_tr_sc) > 20000 else X_tr_sc, 
-                                              y_raw[tr_idx][:20000] if len(X_tr_sc) > 20000 else y_raw[tr_idx])
-            
-            res_raw = run_cv("RF - Raw Spectra", X_raw, y_raw, best_params_raw)
-            results.append(res_raw)
-        except FileNotFoundError as e:
-            print(f"Skipping Mode 1: {e}")
+    # Start a Parent Run to group all sub-experiments
+    with mlflow.start_run(run_name=f"Execution Session: {args.mode}"):
+        results = []
+        
+        # --- Mode 1: Raw Spectra ---
+        if args.mode in ['raw', 'both']:
+            try:
+                X_raw, y_raw = load_data(mode="raw", subset=args.subset)
+                
+                # Find params on a subset of the first fold for speed
+                cv = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_SEED)
+                tr_idx, _ = next(iter(cv.split(X_raw, y_raw)))
+                X_tr_sc, _ = scale_fold(X_raw[tr_idx], X_raw[tr_idx])
+                
+                print("Searching hyperparameters for Raw Spectra...")
+                best_params_raw = find_best_params(X_tr_sc[:20000] if len(X_tr_sc) > 20000 else X_tr_sc, 
+                                                y_raw[tr_idx][:20000] if len(X_tr_sc) > 20000 else y_raw[tr_idx])
+                
+                res_raw = run_cv("RF - Raw Spectra", X_raw, y_raw, best_params_raw)
+                results.append(res_raw)
+            except FileNotFoundError as e:
+                print(f"Skipping Mode 1: {e}")
 
-    # --- Mode 2: Wavelet ---
-    if args.mode in ['wavelet', 'both']:
-        X_wav_cat, y_wav = load_data(mode="wavelet", subset=args.subset)
-        levels_dict = split_wavelet_levels(X_wav_cat)
-        
-        # 2a: Per-Level
-        print("\nStarting Per-Level Wavelet Experiments...")
-        target_levels = args.levels if args.levels else LEVELS
-        for lv in tqdm(target_levels, desc="Wavelet Levels"):
-            X_lv = levels_dict[lv]
+        # --- Mode 2: Wavelet ---
+        if args.mode in ['wavelet', 'both']:
+            X_wav_cat, y_wav = load_data(mode="wavelet", subset=args.subset)
+            levels_dict = split_wavelet_levels(X_wav_cat)
+            
+            # 2a: Per-Level
+            print("\nStarting Per-Level Wavelet Experiments...")
+            target_levels = args.levels if args.levels else LEVELS
+            for lv in tqdm(target_levels, desc="Wavelet Levels"):
+                X_lv = levels_dict[lv]
+                cv = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_SEED)
+                tr_idx, _ = next(iter(cv.split(X_lv, y_wav)))
+                X_tr_sc, _ = scale_fold(X_lv[tr_idx], X_lv[tr_idx])
+                
+                print(f"Searching hyperparameters for Wavelet {lv}...")
+                best_params_lv = find_best_params(X_tr_sc[:20000] if len(X_tr_sc) > 20000 else X_tr_sc,
+                                                y_wav[tr_idx][:20000] if len(X_tr_sc) > 20000 else y_wav[tr_idx])
+                
+                res_lv = run_cv(f"RF - Wavelet {lv}", X_lv, y_wav, best_params_lv)
+                results.append(res_lv)
+                
+            # 2b: Concatenated
             cv = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_SEED)
-            tr_idx, _ = next(iter(cv.split(X_lv, y_wav)))
-            X_tr_sc, _ = scale_fold(X_lv[tr_idx], X_lv[tr_idx])
+            tr_idx, _ = next(iter(cv.split(X_wav_cat, y_wav)))
+            X_tr_sc, _ = scale_fold(X_wav_cat[tr_idx], X_wav_cat[tr_idx])
             
-            print(f"Searching hyperparameters for Wavelet {lv}...")
-            best_params_lv = find_best_params(X_tr_sc[:20000] if len(X_tr_sc) > 20000 else X_tr_sc,
-                                              y_wav[tr_idx][:20000] if len(X_tr_sc) > 20000 else y_wav[tr_idx])
+            print("Searching hyperparameters for Concatenated Wavelet...")
+            best_params_cat = find_best_params(X_tr_sc[:20000] if len(X_tr_sc) > 20000 else X_tr_sc,
+                                            y_wav[tr_idx][:20000] if len(X_tr_sc) > 20000 else y_wav[tr_idx])
             
-            res_lv = run_cv(f"RF - Wavelet {lv}", X_lv, y_wav, best_params_lv)
-            results.append(res_lv)
-            
-        # 2b: Concatenated
-        cv = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=RANDOM_SEED)
-        tr_idx, _ = next(iter(cv.split(X_wav_cat, y_wav)))
-        X_tr_sc, _ = scale_fold(X_wav_cat[tr_idx], X_wav_cat[tr_idx])
-        
-        print("Searching hyperparameters for Concatenated Wavelet...")
-        best_params_cat = find_best_params(X_tr_sc[:20000] if len(X_tr_sc) > 20000 else X_tr_sc,
-                                           y_wav[tr_idx][:20000] if len(X_tr_sc) > 20000 else y_wav[tr_idx])
-        
-        res_cat = run_cv("RF - Concatenated Wavelet", X_wav_cat, y_wav, best_params_cat)
-        results.append(res_cat)
+            res_cat = run_cv("RF - Concatenated Wavelet", X_wav_cat, y_wav, best_params_cat)
+            results.append(res_cat)
 
-    # Summary Plot
-    if results:
-        plt.figure(figsize=(12, 6))
-        labels = [r['label'] for r in results]
-        accs = [r['mean_acc'] for r in results]
-        stds = [r['std_acc'] for r in results]
-        
-        plt.barh(labels, accs, xerr=stds, capsize=5, color='skyblue')
-        plt.axvline(0.25, color='red', linestyle='--', label='Chance (0.25)')
-        plt.xlim(0, 1.0)
-        plt.xlabel("Accuracy")
-        plt.title("Baseline Random Forest Performance Comparison")
-        plt.legend()
-        plt.tight_layout()
-        summary_path = "results/baseline_rf/baseline_summary.png"
-        plt.savefig(summary_path)
-        print(f"\nSummary plot saved to {summary_path}")
+        # Summary Plot
+        if results:
+            plt.figure(figsize=(12, 6))
+            labels = [r['label'] for r in results]
+            accs = [r['mean_acc'] for r in results]
+            stds = [r['std_acc'] for r in results]
+            
+            plt.barh(labels, accs, xerr=stds, capsize=5, color='skyblue')
+            plt.axvline(0.25, color='red', linestyle='--', label='Chance (0.25)')
+            plt.xlim(0, 1.0)
+            plt.xlabel("Accuracy")
+            plt.title("Baseline Random Forest Performance Comparison")
+            plt.legend()
+            plt.tight_layout()
+            summary_path = "results/baseline_rf/baseline_summary.png"
+            os.makedirs("results/baseline_rf", exist_ok=True)
+            plt.savefig(summary_path)
+            
+            # Log the summary plot to the PARENT run
+            mlflow.log_artifact(summary_path)
+            print(f"\nSummary plot saved to {summary_path} and logged to MLflow.")
         
 if __name__ == "__main__":
     main()
