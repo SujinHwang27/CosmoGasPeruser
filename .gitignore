@@ -1,7 +1,6 @@
-
-
 .dvc/cache/
 .dvc/tmp/
+.dvc/config.local
 
 # Python cache files
 __pycache__/
