@@ -49,25 +49,19 @@ def survey_clusters(labels_path, params_path, name):
 if __name__ == "__main__":
     # Wavelet K=8
     survey_clusters(
-        'data/feature_discovery/experiments/wavelet_k8/cluster_labels.npy',
-        'data/feature_discovery/base_data/micro_classifier_params.npy',
+        'data/feature_discovery/experiments/wavelet_k8_primary/cluster_labels.npy',
+        'data/feature_discovery/base_data/params_wavelet.npy',
         'Wavelet K=8'
     )
     # Wavelet K=5
     survey_clusters(
         'data/feature_discovery/experiments/wavelet_k5_test/cluster_labels.npy',
-        'data/feature_discovery/base_data/micro_classifier_params.npy',
+        'data/feature_discovery/base_data/params_wavelet.npy',
         'Wavelet K=5'
     )
-    # DCT K=8 (if available, guessing paths based on patterns)
+    # DCT K=8
     survey_clusters(
-        'data/feature_discovery/experiments/dct_k8/cluster_labels.npy',
-        'data/feature_discovery/base_data/micro_classifier_params.npy',  # Assuming same base params or need a different one? 
+        'data/feature_discovery/experiments/dct_k8_test/cluster_labels.npy',
+        'data/feature_discovery/base_data/params_dct.npy',
         'DCT K=8'
-    )
-    # DCT K=5
-    survey_clusters(
-        'data/feature_discovery/experiments/dct_k5/cluster_labels.npy',
-        'data/feature_discovery/base_data/micro_classifier_params.npy',
-        'DCT K=5'
     )
