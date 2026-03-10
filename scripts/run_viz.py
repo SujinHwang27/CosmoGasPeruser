@@ -28,7 +28,7 @@ def main():
                        help='Which clustering to visualize')
     parser.add_argument('--view', type=str, choices=['A', 'B', 'C', 'all'], default='all',
                        help='Which view to generate')
-    parser.add_argument('--k', type=int, default=8,
+    parser.add_argument('--k', type=int, default=5,
                        help='Number of clusters')
     parser.add_argument('--output_dir', type=str, default='data/feature_discovery',
                        help='Input directory for fingerprints/labels')

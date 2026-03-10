@@ -16,7 +16,7 @@ from scipy.optimize import linear_sum_assignment
 from sklearn.cluster import KMeans
 
 
-def compute_contingency(labels1: np.ndarray, labels2: np.ndarray, n_clusters1: int = 8, n_clusters2: int = 8) -> np.ndarray:
+def compute_contingency(labels1: np.ndarray, labels2: np.ndarray, n_clusters1: int = 5, n_clusters2: int = 5) -> np.ndarray:
     """
     Compute contingency matrix between two label arrays.
 
@@ -36,13 +36,13 @@ def compute_contingency(labels1: np.ndarray, labels2: np.ndarray, n_clusters1: i
     return contingency
 
 
-def cross_run_overlap(labels_wavelet: np.ndarray, labels_raw: np.ndarray, k: int = 8) -> pd.DataFrame:
+def cross_run_overlap(labels_wavelet: np.ndarray, labels_raw: np.ndarray, k: int = 5) -> pd.DataFrame:
     """
     Compute cross-run overlap analysis.
 
     Args:
-        labels_wavelet: K=8 cluster labels from wavelet run
-        labels_raw: K=8 cluster labels from raw run
+        labels_wavelet: K=5 cluster labels from wavelet run
+        labels_raw: K=5 cluster labels from raw run
         k: Number of clusters
 
     Returns:
@@ -84,7 +84,7 @@ def cross_run_overlap(labels_wavelet: np.ndarray, labels_raw: np.ndarray, k: int
 
 
 def plot_cross_run_overlap(overlap_df: pd.DataFrame, contingency: np.ndarray,
-                           save_path: str, k: int = 8):
+                           save_path: str, k: int = 5):
     """
     Plot cross-run overlap as grouped bar chart.
     """
@@ -113,7 +113,7 @@ def plot_cross_run_overlap(overlap_df: pd.DataFrame, contingency: np.ndarray,
 
     ax.set_xlabel('Wavelet Cluster')
     ax.set_ylabel('Count / Percentage')
-    ax.set_title('Cross-Run Cluster Overlap: Wavelet K=8 vs Raw K=8')
+    ax.set_title('Cross-Run Cluster Overlap: Wavelet K=5 vs Raw K=5')
     ax.set_xticks(x)
     ax.set_xticklabels([f'C{i}' for i in range(k)])
     ax.legend()
@@ -130,16 +130,15 @@ def plot_cross_run_overlap(overlap_df: pd.DataFrame, contingency: np.ndarray,
     print(f"Saved: {save_path}")
 
 
-def wavelet_attribution(output_dir: str, k: int = 8) -> pd.DataFrame:
+def wavelet_attribution(output_dir: str, k: int = 5) -> pd.DataFrame:
     """
     Compute wavelet level attribution per cluster.
 
     Loads wavelet features and computes mean absolute activation per level.
-    Note: D1 and D2 are excluded due to sparsity issues.
+    Uses all wavelet levels: D1-D6 + A6.
     """
     # Load wavelet data (need to know level boundaries)
-    # The wavelet data is D1-D6 + A6 concatenated
-    # Assuming 2048 features: D1(1) + D2(2) + D3(4) + D4(8) + D5(16) + D6(32) + A6(64) = 127
+    # The wavelet data is D1-D6 + A6 concatenated, 2048 features total
 
     # Load labels
     labels = np.load(f'{output_dir}/labels_wavelet_k{k}.npy')
@@ -149,14 +148,13 @@ def wavelet_attribution(output_dir: str, k: int = 8) -> pd.DataFrame:
     for c in range(1, 5):
         wavelet_per_class.append(np.load(f'{output_dir}/../feature_discovery/wavelet_class{c}.npy'))
 
-    # Use levels D3-D6+A6 (skip D1, D2 which are sparse)
-    # Approximate level boundaries for db8 with 6 decomposition levels:
-    # Level boundaries (approximate): D1=1, D2=2, D3=4, D4=8, D5=16, D6=32, A6=64
-    level_sizes = [1, 2, 4, 8, 16, 32, 64]
+    # Level boundaries for 2048 features:
+    # D1: 0-1024, D2: 1024-1536, D3: 1536-1792, D4: 1792-1920, D5: 1920-1984, D6: 1984-2016, A6: 2016-2048
+    level_sizes = [1024, 512, 256, 128, 64, 32, 32]
     level_names = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'A6']
 
-    # Skip D1, D2 - use D3-D6, A6 (indices 2-6)
-    level_indices = [2, 3, 4, 5, 6]  # D3, D4, D5, D6, A6
+    # Use all levels (D1-D6 + A6)
+    level_indices = [0, 1, 2, 3, 4, 5, 6]
     selected_levels = [level_names[i] for i in level_indices]
     selected_sizes = [level_sizes[i] for i in level_indices]
 
@@ -225,7 +223,7 @@ def plot_wavelet_attribution(attribution_df: pd.DataFrame, save_path: str):
     print(f"Saved: {save_path}")
 
 
-def raw_attribution(output_dir: str, k: int = 8, n_bins: int = 64) -> pd.DataFrame:
+def raw_attribution(output_dir: str, k: int = 5, n_bins: int = 64) -> pd.DataFrame:
     """
     Compute raw spectral attribution per cluster.
 
@@ -303,7 +301,7 @@ def plot_raw_attribution(attribution_df: pd.DataFrame, save_path: str, n_bins: i
     print(f"Saved: {save_path}")
 
 
-def variance_audit(labels_wavelet: np.ndarray, labels_raw: np.ndarray, k: int = 8) -> pd.DataFrame:
+def variance_audit(labels_wavelet: np.ndarray, labels_raw: np.ndarray, k: int = 5) -> pd.DataFrame:
     """
     Compute inter-class variance audit.
 
@@ -375,6 +373,9 @@ def plot_variance_ratios(variance_df: pd.DataFrame, save_path: str):
     runs = variance_df['run'].unique()
     k = len(variance_df) // len(runs)
 
+    # Use distinct colors for Wavelet vs Raw
+    run_colors = {'wavelet': 'steelblue', 'raw': 'coral'}
+
     fig, ax = plt.subplots(figsize=(12, 6))
 
     x = np.arange(k)
@@ -384,9 +385,9 @@ def plot_variance_ratios(variance_df: pd.DataFrame, save_path: str):
         run_data = variance_df[variance_df['run'] == run]
         offsets = width * (i - 0.5 * (len(runs) - 1))
         values = run_data['normalized_variance'].values
-        colors = ['steelblue' if r == 'bulk' else ('coral' if r == 'transition' else 'darkred')
-                  for r in run_data['regime']]
-        ax.bar(x + offsets, values, width, label=run.capitalize(), color=colors, alpha=0.7)
+        # Use same color for all bars within each run
+        color = run_colors.get(run, 'gray')
+        ax.bar(x + offsets, values, width, label=run.capitalize(), color=color, alpha=0.7)
 
     ax.axhline(y=1.0, color='gray', linestyle='--', label='Bulk baseline')
     ax.set_xlabel('Cluster')

@@ -7,7 +7,7 @@ class SignalClustered(BaseModel):
     """
     Logic for grouping sightlines into k-clusters based on feature similarity.
     """
-    def __init__(self, n_clusters: int = 8, random_seed: int = 42):
+    def __init__(self, n_clusters: int = 5, random_seed: int = 42):
         self.n_clusters = n_clusters
         self.random_seed = random_seed
         self.kmeans = KMeans(n_clusters=n_clusters, random_state=random_seed, n_init='auto')

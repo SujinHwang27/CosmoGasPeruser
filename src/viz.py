@@ -83,12 +83,15 @@ def plot_cluster_profiles(X_abs_per_class: List[np.ndarray], labels: np.ndarray,
     n_clusters = len(np.unique(labels))
     n_classes = len(X_abs_per_class)
 
-    # Determine layout
-    n_cols = 4
-    n_rows = (n_clusters + n_cols - 1) // n_cols
+    # Layout: 1 row, n_clusters columns (up to 5)
+    n_cols = n_clusters
+    n_rows = 1
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 4 * n_rows))
-    axes = axes.flatten()
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 5))
+    if n_clusters == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten()
 
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
     class_names = ['NoFeedback', 'StellarWind', 'WindAGN', 'WindStrongAGN']
@@ -118,11 +121,7 @@ def plot_cluster_profiles(X_abs_per_class: List[np.ndarray], labels: np.ndarray,
         if cluster_id == 0:
             ax.legend(loc='upper right', fontsize=8)
 
-    # Hide unused axes
-    for i in range(n_clusters, len(axes)):
-        axes[i].axis('off')
-
-    plt.suptitle(f'Mean Absorption Profiles: {run_name}', fontsize=14, y=1.01)
+    plt.suptitle(f'Mean Absorption Profiles: {run_name}', fontsize=14, y=1.02)
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
     plt.close()

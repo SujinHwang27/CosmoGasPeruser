@@ -8,7 +8,6 @@ Outputs:
     - data/feature_discovery/labels_wavelet_k*.npy: Cluster labels
     - data/feature_discovery/centroids_wavelet_k*.npy: Cluster centroids
     - results/cluster_stats_*.csv: Per-cluster statistics
-    - results/contingency_k5_vs_k8_*.csv: K=5 vs K=8 contingency
     - figs/fig_elbow_*.png: Elbow plots
 """
 
@@ -61,7 +60,7 @@ def main():
     parser = argparse.ArgumentParser(description='Stage 3: Clustering')
     parser.add_argument('--run', type=str, choices=['wavelet', 'raw', 'both'], default='both',
                        help='Which fingerprint to cluster')
-    parser.add_argument('--k', type=int, default=8,
+    parser.add_argument('--k', type=int, default=5,
                        help='Target K for final clustering')
     parser.add_argument('--k_sweep_range', type=str, default='2,21',
                        help='K range for sweep (start,end exclusive)')
@@ -143,9 +142,9 @@ def main():
         for _, row in stats_df.iterrows():
             print(f"  Cluster {row['cluster']}: {row['size']} ({row['pct_total']:.1f}%)")
 
-        # K=5 stability check
+        # K=8 stability check (run if primary is not K=5)
         if args.k != 5:
-            print(f"\nRunning K=5 stability check...")
+            print(f"\nRunning K=8 stability check...")
             labels_k5, centroids_k5 = fit_kmeans(fingerprints, 5, seed=args.seed)
 
             # Save K=5

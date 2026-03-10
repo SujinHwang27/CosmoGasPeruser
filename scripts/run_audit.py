@@ -24,7 +24,7 @@ def main():
     parser = argparse.ArgumentParser(description='Stage 5: Auditing')
     parser.add_argument('--run', type=str, choices=['wavelet', 'raw', 'both'], default='both',
                        help='Which clustering runs to audit')
-    parser.add_argument('--k', type=int, default=8,
+    parser.add_argument('--k', type=int, default=5,
                        help='Number of clusters')
     parser.add_argument('--output_dir', type=str, default='data/feature_discovery',
                        help='Input directory for fingerprints/labels')

@@ -25,15 +25,23 @@ from src.probe import run_probe
 def plot_fingerprint_norms(fingerprints_wavelet, fingerprints_raw, save_path):
     """
     Plot side-by-side histograms of L2 norms for both runs.
+    Uses the same x and y axis limits for both panels for fair comparison.
     """
     norms_wavelet = np.linalg.norm(fingerprints_wavelet, axis=1)
     norms_raw = np.linalg.norm(fingerprints_raw, axis=1)
+
+    # Compute common axis limits for both panels
+    x_max = max(np.max(norms_wavelet), np.max(norms_raw))
+    y_max = max(np.max(np.histogram(norms_wavelet, bins=50)[0]),
+                 np.max(np.histogram(norms_raw, bins=50)[0]))
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
     # Wavelet
     axes[0].hist(norms_wavelet, bins=50, color='steelblue', alpha=0.7, edgecolor='black')
     axes[0].axvline(np.mean(norms_wavelet), color='red', linestyle='--', label=f'Mean: {np.mean(norms_wavelet):.3f}')
+    axes[0].set_xlim(0, x_max * 1.05)
+    axes[0].set_ylim(0, y_max * 1.1)
     axes[0].set_xlabel('L2 Norm')
     axes[0].set_ylabel('Count')
     axes[0].set_title('Wavelet Fingerprint Norms')
@@ -42,6 +50,8 @@ def plot_fingerprint_norms(fingerprints_wavelet, fingerprints_raw, save_path):
     # Raw
     axes[1].hist(norms_raw, bins=50, color='coral', alpha=0.7, edgecolor='black')
     axes[1].axvline(np.mean(norms_raw), color='red', linestyle='--', label=f'Mean: {np.mean(norms_raw):.3f}')
+    axes[1].set_xlim(0, x_max * 1.05)
+    axes[1].set_ylim(0, y_max * 1.1)
     axes[1].set_xlabel('L2 Norm')
     axes[1].set_ylabel('Count')
     axes[1].set_title('Raw Absorption Fingerprint Norms')
