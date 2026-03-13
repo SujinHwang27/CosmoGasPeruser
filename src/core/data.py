@@ -175,6 +175,26 @@ class SignalClusteringData:
         X_normalized = [self.normalize_wavelet_per_level(X) for X in X_list]
         return X_normalized, y
 
+    def load_wavelet_global_normalized(self) -> Tuple[List[np.ndarray], np.ndarray]:
+        """
+        Load wavelet features as list of per-class arrays with global z-score normalization per level.
+        Normalization is computed across ALL data (all classes combined) before splitting per class.
+        Returns: (list of 4 normalized wavelet arrays, class labels)
+        """
+        X_list, y = self.load_wavelet_per_class()
+        # Stack all classes to compute global statistics
+        X_all = np.vstack(X_list)
+        # Normalize using global statistics per level
+        X_all_normalized = self.normalize_wavelet_per_level(X_all)
+        # Split back into per-class
+        X_normalized = []
+        start = 0
+        for X in X_list:
+            end = start + X.shape[0]
+            X_normalized.append(X_all_normalized[start:end])
+            start = end
+        return X_normalized, y
+
     def load_flux_per_class(self) -> Tuple[List[np.ndarray], np.ndarray]:
         """
         Load flux as list of per-class arrays.

@@ -75,6 +75,13 @@ def plot_wavelet_scalogram(X_wavelet, y, save_path):
     class_indices = [0, 16384, 32768, 49152]
     class_names = ['NoFeedback', 'StellarWind', 'WindAGN', 'WindStrongAGN']
 
+    # Compute global y-axis limits across all classes being plotted
+    y_min = min(X_wavelet[idx].min() for idx in class_indices)
+    y_max = max(X_wavelet[idx].max() for idx in class_indices)
+    # Add 5% padding
+    y_margin = (y_max - y_min) * 0.05
+    y_lim = (y_min - y_margin, y_max + y_margin)
+
     fig, axes = plt.subplots(4, 1, figsize=(14, 12))
 
     for row, (class_idx, class_name) in enumerate(zip(class_indices, class_names)):
@@ -89,6 +96,7 @@ def plot_wavelet_scalogram(X_wavelet, y, save_path):
 
         ax.set_ylabel(class_name)
         ax.set_xlim(0, 2048)
+        ax.set_ylim(y_lim)
         ax.legend(loc='upper right', ncol=7, fontsize=8)
 
     axes[-1].set_xlabel('Pixel Position')
@@ -151,10 +159,10 @@ def main():
     # Initialize data loader
     data = SignalClusteringData(flux_path=args.flux_path, wavelet_path=args.wavelet_path)
 
-    # Load data (wavelet with per-level z-score normalization)
-    print("\nLoading wavelet features (normalized per level)...")
-    X_wavelet_per_class, y = data.load_wavelet_per_class_normalized()
-    # Concatenate for overall statistics
+    # Load data (wavelet with per-level z-score normalization across all data)
+    print("\nLoading wavelet features (normalized per level across all classes)...")
+    X_wavelet_per_class, y = data.load_wavelet_global_normalized()
+    # Stack for overall statistics
     X_wavelet = np.vstack(X_wavelet_per_class)
     print(f"  Wavelet shape: {X_wavelet.shape}")
 
