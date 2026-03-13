@@ -1,7 +1,7 @@
 """
 Stage 3: Clustering for Signal Clustering Analysis
 
-Runs K-Means clustering on behavioral fingerprints with K-sweep,
+4: Runs K-Means clustering on separability fingerprints with K-sweep,
 elbow detection, and silhouette analysis.
 
 Outputs:

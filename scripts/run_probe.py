@@ -1,7 +1,7 @@
 """
 Stage 2: Micro-Probing for Signal Clustering Analysis
 
-Computes 24-dimensional behavioral fingerprints for each spectral index
+Computes 24-dimensional separability fingerprints for each spectral index
 using RBF SVM one-vs-one micro-probing.
 
 Outputs:

@@ -1,7 +1,7 @@
 """
 Clustering module for signal clustering analysis.
 
-Performs K-Means clustering on behavioral fingerprints with
+Performs K-Means clustering on separability fingerprints with
 K-sweep for elbow detection and silhouette analysis.
 """
 

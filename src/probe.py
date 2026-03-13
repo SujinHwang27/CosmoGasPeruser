@@ -1,7 +1,7 @@
 """
 Micro-probing module for signal clustering analysis.
 
-Uses RBF SVM to compute behavioral fingerprints (24-dim decision distances)
+Uses RBF SVM to compute separability fingerprints (24-dim decision distances)
 for each sightline across 4 physics classes.
 """
 
@@ -24,7 +24,7 @@ OVO_PAIRS = [
 
 def probe_sightline(s: int, X_per_class: List[np.ndarray]) -> np.ndarray:
     """
-    Compute the 24-dimensional behavioral fingerprint for a single sightline.
+    Compute the 24-dimensional separability fingerprint for a single sightline.
 
     For each of the 6 one-vs-one class pairs, fit an RBF SVM and record
     the signed decision distances from all 4 classes to the hyperplane.
@@ -67,7 +67,7 @@ def run_probe(X_per_class: List[np.ndarray], n_jobs: int = -1) -> np.ndarray:
         n_jobs: Number of parallel jobs (-1 for all cores)
 
     Returns:
-        np.ndarray shape (n_sightlines, 24) - behavioral fingerprints
+        np.ndarray shape (n_sightlines, 24) - separability fingerprints
     """
     n_sightlines = X_per_class[0].shape[0]
     n_features = X_per_class[0].shape[1]

@@ -11,7 +11,7 @@ load_dotenv()
 def train_single_svm_rbf(X_i, y, C=1.0, gamma='scale'):
     """
     Trains a series of RBF-kernel SVMs for 6 One-Vs-One pairs.
-    Returns a 30-dimensional behavioral (sensitivity) vector:
+    Returns a 30-dimensional separability (sensitivity) vector:
       - 24 dims: decision function values for the 4 training points
                  across the 6 OvO binary classifiers.
       - 6 dims:  intercept (bias) terms of the 6 binary classifiers.
@@ -70,7 +70,7 @@ def train_single_svm_rbf(X_i, y, C=1.0, gamma='scale'):
 def train_all_micro_classifiers(data_dir, output_file, n_jobs=-1, C=1.0, gamma='scale'):
     """
     Trains 16384 micro-classifiers (RBF SVM) and saves their 30-dim
-    behavioral fingerprints to a .npy file.
+    separability fingerprints to a .npy file.
 
     Output shape: (n_probes, 30)
       - 24 dims: OvO decision function values for all 4 training points
@@ -98,24 +98,24 @@ def train_all_micro_classifiers(data_dir, output_file, n_jobs=-1, C=1.0, gamma='
     )
 
     results_array = np.array(results)
-    print(f"Training complete. Behavioral vector shape: {results_array.shape}")
+    print(f"Training complete. Separability vector shape: {results_array.shape}")
     assert results_array.shape == (n_probes, 30), \
         f"Expected shape ({n_probes}, 30), got {results_array.shape}"
 
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     np.save(output_file, results_array)
-    print(f"Saved behavioral fingerprints to {output_file}")
+    print(f"Saved separability fingerprints to {output_file}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Train RBF micro-classifiers and extract 30-dim behavioral fingerprints."
+        description="Train RBF micro-classifiers and extract 30-dim separability fingerprints."
     )
     parser.add_argument("--data_dir", type=str, required=True,
                         help="Directory with class folders 1-4, each containing data.npy")
     parser.add_argument("--output", type=str,
                         default="data/feature_discovery/base_data/micro_classifier_params.npy",
-                        help="Output .npy file for behavioral vectors")
+                        help="Output .npy file for separability vectors")
     parser.add_argument("--C", type=float, default=1.0,
                         help="SVM regularization parameter")
     parser.add_argument("--gamma", type=str, default="scale",
