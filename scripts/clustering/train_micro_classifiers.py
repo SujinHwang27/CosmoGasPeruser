@@ -70,7 +70,7 @@ def train_single_svm_rbf(X_i, y, C=1.0, gamma='scale'):
 def train_all_micro_classifiers(data_dir, output_file, n_jobs=-1, C=1.0, gamma='scale'):
     """
     Trains 16384 micro-classifiers (RBF SVM) and saves their 30-dim
-    separability fingerprints to a .npy file.
+    separability vectors to a .npy file.
 
     Output shape: (n_probes, 30)
       - 24 dims: OvO decision function values for all 4 training points
@@ -104,12 +104,12 @@ def train_all_micro_classifiers(data_dir, output_file, n_jobs=-1, C=1.0, gamma='
 
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     np.save(output_file, results_array)
-    print(f"Saved separability fingerprints to {output_file}")
+    print(f"Saved separability vectors to {output_file}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Train RBF micro-classifiers and extract 30-dim separability fingerprints."
+        description="Train RBF micro-classifiers and extract 30-dim separability vectors."
     )
     parser.add_argument("--data_dir", type=str, required=True,
                         help="Directory with class folders 1-4, each containing data.npy")

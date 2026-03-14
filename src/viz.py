@@ -17,17 +17,17 @@ from sklearn.preprocessing import StandardScaler
 import umap
 
 
-def plot_umap_2d(fingerprints: np.ndarray, labels: np.ndarray, run_name: str, save_path: str):
+def plot_umap_2d(separability_vectors: np.ndarray, labels: np.ndarray, run_name: str, save_path: str):
     """
     Plot 2D UMAP embedding colored by cluster labels.
     """
     # Standardize
     scaler = StandardScaler()
-    fingerprints_scaled = scaler.fit_transform(fingerprints)
+    separability_vectors_scaled = scaler.fit_transform(separability_vectors)
 
     # UMAP
     reducer = umap.UMAP(n_neighbors=15, min_dist=0.1, n_components=2, random_state=42)
-    embedding = reducer.fit_transform(fingerprints_scaled)
+    embedding = reducer.fit_transform(separability_vectors_scaled)
 
     # Plot
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -48,17 +48,17 @@ def plot_umap_2d(fingerprints: np.ndarray, labels: np.ndarray, run_name: str, sa
     return embedding
 
 
-def plot_umap_3d_html(fingerprints: np.ndarray, labels: np.ndarray, run_name: str, save_path: str):
+def plot_umap_3d_html(separability_vectors: np.ndarray, labels: np.ndarray, run_name: str, save_path: str):
     """
     Create interactive 3D UMAP plot with Plotly.
     """
     # Standardize
     scaler = StandardScaler()
-    fingerprints_scaled = scaler.fit_transform(fingerprints)
+    separability_vectors_scaled = scaler.fit_transform(separability_vectors)
 
     # UMAP
     reducer = umap.UMAP(n_neighbors=15, min_dist=0.1, n_components=3, random_state=42)
-    embedding = reducer.fit_transform(fingerprints_scaled)
+    embedding = reducer.fit_transform(separability_vectors_scaled)
 
     # Plotly
     df = pd.DataFrame({
@@ -166,16 +166,16 @@ def plot_umap_comparison(output_dir: str, k: int, figs_dir: str):
     from sklearn.preprocessing import StandardScaler
 
     # Load data
-    fingerprints_wavelet = np.load(os.path.join(output_dir, 'fingerprints_wavelet.npy'))
-    fingerprints_raw = np.load(os.path.join(output_dir, 'fingerprints_raw.npy'))
+    separability_vectors_wavelet = np.load(os.path.join(output_dir, 'separability_vectors_wavelet.npy'))
+    separability_vectors_raw = np.load(os.path.join(output_dir, 'separability_vectors_raw.npy'))
     labels_wavelet = np.load(os.path.join(output_dir, f'labels_wavelet_k{k}.npy'))
     labels_raw = np.load(os.path.join(output_dir, f'labels_raw_k{k}.npy'))
 
     # Standardize
     scaler_w = StandardScaler()
-    fp_w = scaler_w.fit_transform(fingerprints_wavelet)
+    fp_w = scaler_w.fit_transform(separability_vectors_wavelet)
     scaler_r = StandardScaler()
-    fp_r = scaler_r.fit_transform(fingerprints_raw)
+    fp_r = scaler_r.fit_transform(separability_vectors_raw)
 
     # UMAP
     reducer_w = umap.UMAP(n_neighbors=15, min_dist=0.1, n_components=2, random_state=42)

@@ -1,7 +1,7 @@
 """
 Stage 3: Clustering for Signal Clustering Analysis
 
-4: Runs K-Means clustering on separability fingerprints with K-sweep,
+Runs K-Means clustering on separability vectors with K-sweep,
 elbow detection, and silhouette analysis.
 
 Outputs:
@@ -18,7 +18,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from src.cluster import k_sweep, fit_kmeans, compute_cluster_stats, contingency_matrix
+from project_src.cluster import k_sweep, fit_kmeans, compute_cluster_stats, contingency_matrix
 
 
 def plot_elbow(sweep_df, run_name, k_chosen, save_path):
@@ -59,7 +59,7 @@ def plot_elbow(sweep_df, run_name, k_chosen, save_path):
 def main():
     parser = argparse.ArgumentParser(description='Stage 3: Clustering')
     parser.add_argument('--run', type=str, choices=['wavelet', 'raw', 'both'], default='both',
-                       help='Which fingerprint to cluster')
+                       help='Which separability vector set to cluster')
     parser.add_argument('--k', type=int, default=5,
                        help='Target K for final clustering')
     parser.add_argument('--k_sweep_range', type=str, default='2,21',
@@ -87,25 +87,25 @@ def main():
     print("Stage 3: Clustering")
     print("=" * 60)
 
-    fingerprints_wavelet = None
-    fingerprints_raw = None
+    separability_vectors_wavelet = None
+    separability_vectors_raw = None
 
-    # Load fingerprints if needed
+    # Load separability vectors if needed
     if args.run in ['wavelet', 'both']:
-        fp_path = os.path.join(args.output_dir, 'fingerprints_wavelet.npy')
-        fingerprints_wavelet = np.load(fp_path)
-        print(f"Loaded wavelet fingerprints: {fingerprints_wavelet.shape}")
+        sv_path = os.path.join(args.output_dir, 'separability_vectors_wavelet.npy')
+        separability_vectors_wavelet = np.load(sv_path)
+        print(f"Loaded wavelet separability vectors: {separability_vectors_wavelet.shape}")
 
     if args.run in ['raw', 'both']:
-        fp_path = os.path.join(args.output_dir, 'fingerprints_raw.npy')
-        fingerprints_raw = np.load(fp_path)
-        print(f"Loaded raw fingerprints: {fingerprints_raw.shape}")
+        sv_path = os.path.join(args.output_dir, 'separability_vectors_raw.npy')
+        separability_vectors_raw = np.load(sv_path)
+        print(f"Loaded raw separability vectors: {separability_vectors_raw.shape}")
 
-    def process_fingerprints(fingerprints, run_name):
-        """Process a single fingerprint set."""
+    def process_separability_vectors(separability_vectors, run_name):
+        """Process a single separability vector set."""
         from sklearn.preprocessing import StandardScaler
         scaler = StandardScaler()
-        fingerprints_scaled = scaler.fit_transform(fingerprints)
+        separability_vectors_scaled = scaler.fit_transform(separability_vectors)
 
         print(f"\n{'='*40}")
         print(f"Running: {run_name}")
@@ -113,7 +113,7 @@ def main():
 
         # K-sweep
         print(f"\nK-sweep over range {list(k_range)}...")
-        sweep_df = k_sweep(fingerprints_scaled, k_range, seed=args.seed)
+        sweep_df = k_sweep(separability_vectors_scaled, k_range, seed=args.seed)
         sweep_df.to_csv(os.path.join(args.results_dir, f'sweep_{run_name}.csv'), index=False)
 
         # Plot elbow
@@ -122,7 +122,7 @@ def main():
 
         # Fit final K
         print(f"\nFitting final K={args.k}...")
-        labels, centroids = fit_kmeans(fingerprints, args.k, seed=args.seed)
+        labels, centroids = fit_kmeans(separability_vectors, args.k, seed=args.seed)
 
         # Save labels and centroids
         labels_path = os.path.join(args.output_dir, f'labels_{run_name}_k{args.k}.npy')
@@ -133,7 +133,7 @@ def main():
         print(f"Saved: {centroids_path}")
 
         # Compute stats
-        stats_df = compute_cluster_stats(fingerprints, labels, centroids)
+        stats_df = compute_cluster_stats(separability_vectors, labels, centroids)
         stats_path = os.path.join(args.results_dir, f'cluster_stats_{run_name}_k{args.k}.csv')
         stats_df.to_csv(stats_path, index=False)
         print(f"Saved: {stats_path}")
@@ -144,8 +144,8 @@ def main():
 
         # K=8 stability check (run if primary is not K=5)
         if args.k != 5:
-            print(f"\nRunning K=8 stability check...")
-            labels_k5, centroids_k5 = fit_kmeans(fingerprints, 5, seed=args.seed)
+            print(f"\nRunning K=5 stability check...")
+            labels_k5, centroids_k5 = fit_kmeans(separability_vectors, 5, seed=args.seed)
 
             # Save K=5
             labels_k5_path = os.path.join(args.output_dir, f'labels_{run_name}_k5.npy')
@@ -155,7 +155,7 @@ def main():
             # Contingency
             cont = contingency_matrix(labels_k5, labels, 5, args.k)
             cont_df = pd.DataFrame(cont, index=[f'K5_{i}' for i in range(5)],
-                                   columns=[f'K{args.k}_{i}' for i in range(args.k)])
+                                    columns=[f'K{args.k}_{i}' for i in range(args.k)])
             cont_path = os.path.join(args.results_dir, f'contingency_k5_vs_k{args.k}_{run_name}.csv')
             cont_df.to_csv(cont_path)
             print(f"Saved: {cont_path}")
@@ -165,10 +165,10 @@ def main():
     # Process
     results = {}
     if args.run in ['wavelet', 'both']:
-        results['wavelet'] = process_fingerprints(fingerprints_wavelet, 'wavelet')
+        results['wavelet'] = process_separability_vectors(separability_vectors_wavelet, 'wavelet')
 
     if args.run in ['raw', 'both']:
-        results['raw'] = process_fingerprints(fingerprints_raw, 'raw')
+        results['raw'] = process_separability_vectors(separability_vectors_raw, 'raw')
 
     print("\n" + "=" * 60)
     print("Stage 3 Complete!")

@@ -1,7 +1,7 @@
 """
 Micro-probing module for signal clustering analysis.
 
-Uses RBF SVM to compute separability fingerprints (24-dim decision distances)
+Uses RBF SVM to compute separability vectors (24-dim decision distances)
 for each sightline across 4 physics classes.
 """
 
@@ -24,7 +24,7 @@ OVO_PAIRS = [
 
 def probe_sightline(s: int, X_per_class: List[np.ndarray]) -> np.ndarray:
     """
-    Compute the 24-dimensional separability fingerprint for a single sightline.
+    Compute the 24-dimensional separability vector for a single sightline.
 
     For each of the 6 one-vs-one class pairs, fit an RBF SVM and record
     the signed decision distances from all 4 classes to the hyperplane.
@@ -40,7 +40,7 @@ def probe_sightline(s: int, X_per_class: List[np.ndarray]) -> np.ndarray:
     # Each is a 1D feature vector of shape (n_features,)
     class_vectors = np.array([X_per_class[c][s] for c in range(4)])
 
-    fingerprint = []
+    separability_vector = []
 
     for (p, q) in OVO_PAIRS:
         # Get the two class vectors for this pair
@@ -53,9 +53,9 @@ def probe_sightline(s: int, X_per_class: List[np.ndarray]) -> np.ndarray:
 
         # Get decision distances for all 4 classes
         distances = svm.decision_function(class_vectors)
-        fingerprint.extend(distances)
+        separability_vector.extend(distances)
 
-    return np.array(fingerprint, dtype=np.float64)
+    return np.array(separability_vector, dtype=np.float64)
 
 
 def run_probe(X_per_class: List[np.ndarray], n_jobs: int = -1) -> np.ndarray:
@@ -67,7 +67,7 @@ def run_probe(X_per_class: List[np.ndarray], n_jobs: int = -1) -> np.ndarray:
         n_jobs: Number of parallel jobs (-1 for all cores)
 
     Returns:
-        np.ndarray shape (n_sightlines, 24) - separability fingerprints
+        np.ndarray shape (n_sightlines, 24) - separability vectors
     """
     n_sightlines = X_per_class[0].shape[0]
     n_features = X_per_class[0].shape[1]
@@ -79,10 +79,10 @@ def run_probe(X_per_class: List[np.ndarray], n_jobs: int = -1) -> np.ndarray:
         delayed(probe_sightline)(s, X_per_class) for s in range(n_sightlines)
     )
 
-    fingerprints = np.array(results, dtype=np.float64)
-    print(f"Fingerprints shape: {fingerprints.shape}")
+    separability_vectors = np.array(results, dtype=np.float64)
+    print(f"Separability vectors shape: {separability_vectors.shape}")
 
-    return fingerprints
+    return separability_vectors
 
 
 def probe_single_feature_set(X: np.ndarray, y: np.ndarray, n_jobs: int = -1) -> np.ndarray:

@@ -1,14 +1,14 @@
 """
 Stage 2: Micro-Probing for Signal Clustering Analysis
 
-Computes 24-dimensional separability fingerprints for each spectral index
+Computes 24-dimensional separability vectors for each spectral index
 using RBF SVM one-vs-one micro-probing.
 
 Outputs:
-    - data/feature_discovery/fingerprints_wavelet.npy: Fingerprints from wavelet input
-    - data/feature_discovery/fingerprints_raw.npy: Fingerprints from raw absorption input
-    - results/stage2_fingerprint_summary.csv: Summary statistics
-    - figs/fig_fingerprint_norms.png: L2 norm histograms
+    - data/feature_discovery/separability_vectors_wavelet.npy: Separability vectors from wavelet input
+    - data/feature_discovery/separability_vectors_raw.npy: Separability vectors from raw absorption input
+    - results/stage2_separability_vector_summary.csv: Summary statistics
+    - figs/fig_separability_vector_norms.png: L2 norm histograms
 """
 
 import argparse
@@ -18,17 +18,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from src.core.data import SignalClusteringData
-from src.probe import run_probe
+from project_src.core.data import SignalClusteringData
+from project_src.probe import run_probe
 
 
-def plot_fingerprint_norms(fingerprints_wavelet, fingerprints_raw, save_path):
+def plot_separability_vector_norms(separability_vectors_wavelet, separability_vectors_raw, save_path):
     """
     Plot side-by-side histograms of L2 norms for both runs.
     Uses the same x and y axis limits for both panels for fair comparison.
     """
-    norms_wavelet = np.linalg.norm(fingerprints_wavelet, axis=1)
-    norms_raw = np.linalg.norm(fingerprints_raw, axis=1)
+    norms_wavelet = np.linalg.norm(separability_vectors_wavelet, axis=1)
+    norms_raw = np.linalg.norm(separability_vectors_raw, axis=1)
 
     # Compute common axis limits for both panels
     x_max = max(np.max(norms_wavelet), np.max(norms_raw))
@@ -44,7 +44,7 @@ def plot_fingerprint_norms(fingerprints_wavelet, fingerprints_raw, save_path):
     axes[0].set_ylim(0, y_max * 1.1)
     axes[0].set_xlabel('L2 Norm')
     axes[0].set_ylabel('Count')
-    axes[0].set_title('Wavelet Fingerprint Norms')
+    axes[0].set_title('Wavelet Separability Vector Norms')
     axes[0].legend()
 
     # Raw
@@ -54,7 +54,7 @@ def plot_fingerprint_norms(fingerprints_wavelet, fingerprints_raw, save_path):
     axes[1].set_ylim(0, y_max * 1.1)
     axes[1].set_xlabel('L2 Norm')
     axes[1].set_ylabel('Count')
-    axes[1].set_title('Raw Absorption Fingerprint Norms')
+    axes[1].set_title('Raw Absorption Separability Vector Norms')
     axes[1].legend()
 
     plt.tight_layout()
@@ -63,7 +63,7 @@ def plot_fingerprint_norms(fingerprints_wavelet, fingerprints_raw, save_path):
     print(f"Saved: {save_path}")
 
 
-def save_fingerprint_summary(fingerprints_wavelet, fingerprints_raw, save_path):
+def save_separability_vector_summary(separability_vectors_wavelet, separability_vectors_raw, save_path):
     """
     Save summary statistics per dimension.
     """
@@ -72,14 +72,14 @@ def save_fingerprint_summary(fingerprints_wavelet, fingerprints_raw, save_path):
     for dim in range(24):
         stats.append({
             'dimension': dim,
-            'wavelet_mean': float(np.mean(fingerprints_wavelet[:, dim])),
-            'wavelet_std': float(np.std(fingerprints_wavelet[:, dim])),
-            'wavelet_min': float(np.min(fingerprints_wavelet[:, dim])),
-            'wavelet_max': float(np.max(fingerprints_wavelet[:, dim])),
-            'raw_mean': float(np.mean(fingerprints_raw[:, dim])),
-            'raw_std': float(np.std(fingerprints_raw[:, dim])),
-            'raw_min': float(np.min(fingerprints_raw[:, dim])),
-            'raw_max': float(np.max(fingerprints_raw[:, dim])),
+            'wavelet_mean': float(np.mean(separability_vectors_wavelet[:, dim])),
+            'wavelet_std': float(np.std(separability_vectors_wavelet[:, dim])),
+            'wavelet_min': float(np.min(separability_vectors_wavelet[:, dim])),
+            'wavelet_max': float(np.max(separability_vectors_wavelet[:, dim])),
+            'raw_mean': float(np.mean(separability_vectors_raw[:, dim])),
+            'raw_std': float(np.std(separability_vectors_raw[:, dim])),
+            'raw_min': float(np.min(separability_vectors_raw[:, dim])),
+            'raw_max': float(np.max(separability_vectors_raw[:, dim])),
         })
 
     df = pd.DataFrame(stats)
@@ -96,7 +96,7 @@ def main():
     parser.add_argument('--n_jobs', type=int, default=-1,
                        help='Number of parallel jobs (-1 for all cores)')
     parser.add_argument('--output_dir', type=str, default='data/feature_discovery',
-                       help='Output directory for fingerprints')
+                       help='Output directory for separability vectors')
     parser.add_argument('--results_dir', type=str, default='results',
                        help='Output directory for summaries')
     parser.add_argument('--figs_dir', type=str, default='figs',
@@ -115,8 +115,8 @@ def main():
     # Initialize data loader
     data = SignalClusteringData()
 
-    fingerprints_wavelet = None
-    fingerprints_raw = None
+    separability_vectors_wavelet = None
+    separability_vectors_raw = None
 
     if args.run in ['wavelet', 'both']:
         print("\n" + "=" * 40)
@@ -134,11 +134,11 @@ def main():
 
         # Run probe
         print("\nRunning micro-probing...")
-        fingerprints_wavelet = run_probe(X_wavelet_per_class, n_jobs=args.n_jobs)
+        separability_vectors_wavelet = run_probe(X_wavelet_per_class, n_jobs=args.n_jobs)
 
         # Save
-        output_path = os.path.join(args.output_dir, 'fingerprints_wavelet.npy')
-        np.save(output_path, fingerprints_wavelet)
+        output_path = os.path.join(args.output_dir, 'separability_vectors_wavelet.npy')
+        np.save(output_path, separability_vectors_wavelet)
         print(f"Saved: {output_path}")
 
     if args.run in ['raw', 'both']:
@@ -154,31 +154,31 @@ def main():
 
         # Run probe
         print("\nRunning micro-probing...")
-        fingerprints_raw = run_probe(X_abs_per_class, n_jobs=args.n_jobs)
+        separability_vectors_raw = run_probe(X_abs_per_class, n_jobs=args.n_jobs)
 
         # Save
-        output_path = os.path.join(args.output_dir, 'fingerprints_raw.npy')
-        np.save(output_path, fingerprints_raw)
+        output_path = os.path.join(args.output_dir, 'separability_vectors_raw.npy')
+        np.save(output_path, separability_vectors_raw)
         print(f"Saved: {output_path}")
 
     # Generate summary and plots if both runs completed
-    if args.run == 'both' and fingerprints_wavelet is not None and fingerprints_raw is not None:
+    if args.run == 'both' and separability_vectors_wavelet is not None and separability_vectors_raw is not None:
         print("\n" + "=" * 40)
         print("Generating Summaries and Plots")
         print("=" * 40)
 
         # Summary CSV
-        summary_path = os.path.join(args.results_dir, 'stage2_fingerprint_summary.csv')
-        save_fingerprint_summary(fingerprints_wavelet, fingerprints_raw, summary_path)
+        summary_path = os.path.join(args.results_dir, 'stage2_separability_vector_summary.csv')
+        save_separability_vector_summary(separability_vectors_wavelet, separability_vectors_raw, summary_path)
 
-        # Plot fingerprint norms
-        norms_path = os.path.join(args.figs_dir, 'fig_fingerprint_norms.png')
-        plot_fingerprint_norms(fingerprints_wavelet, fingerprints_raw, norms_path)
+        # Plot separability vector norms
+        norms_path = os.path.join(args.figs_dir, 'fig_separability_vector_norms.png')
+        plot_separability_vector_norms(separability_vectors_wavelet, separability_vectors_raw, norms_path)
 
         # Print statistics
-        print("\nFingerprint Statistics:")
-        print(f"  Wavelet: shape={fingerprints_wavelet.shape}, mean_norm={np.mean(np.linalg.norm(fingerprints_wavelet, axis=1)):.4f}")
-        print(f"  Raw:     shape={fingerprints_raw.shape}, mean_norm={np.mean(np.linalg.norm(fingerprints_raw, axis=1)):.4f}")
+        print("\nSeparability Vector Statistics:")
+        print(f"  Wavelet: shape={separability_vectors_wavelet.shape}, mean_norm={np.mean(np.linalg.norm(separability_vectors_wavelet, axis=1)):.4f}")
+        print(f"  Raw:     shape={separability_vectors_raw.shape}, mean_norm={np.mean(np.linalg.norm(separability_vectors_raw, axis=1)):.4f}")
 
     print("\n" + "=" * 60)
     print("Stage 2 Complete!")

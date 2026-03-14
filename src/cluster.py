@@ -1,7 +1,7 @@
 """
 Clustering module for signal clustering analysis.
 
-Performs K-Means clustering on separability fingerprints with
+Performs K-Means clustering on separability vectors with
 K-sweep for elbow detection and silhouette analysis.
 """
 
@@ -13,12 +13,12 @@ from sklearn.metrics import silhouette_score
 from typing import Tuple, List, Dict
 
 
-def k_sweep(fingerprints: np.ndarray, k_range: range, seed: int = 42, n_init: int = 20) -> pd.DataFrame:
+def k_sweep(separability_vectors: np.ndarray, k_range: range, seed: int = 42, n_init: int = 20) -> pd.DataFrame:
     """
     Run K-Means sweep over a range of K values.
 
     Args:
-        fingerprints: Input data, shape (n_samples, n_features)
+        separability_vectors: Input data, shape (n_samples, n_features)
         k_range: Range of K values to sweep
         seed: Random seed
         n_init: Number of initializations
@@ -30,10 +30,10 @@ def k_sweep(fingerprints: np.ndarray, k_range: range, seed: int = 42, n_init: in
 
     for k in k_range:
         kmeans = KMeans(n_clusters=k, random_state=seed, n_init=n_init)
-        labels = kmeans.fit_predict(fingerprints)
+        labels = kmeans.fit_predict(separability_vectors)
 
         inertia = kmeans.inertia_
-        silhouette = silhouette_score(fingerprints, labels)
+        silhouette = silhouette_score(separability_vectors, labels)
 
         results.append({
             'k': k,
@@ -46,12 +46,12 @@ def k_sweep(fingerprints: np.ndarray, k_range: range, seed: int = 42, n_init: in
     return pd.DataFrame(results)
 
 
-def fit_kmeans(fingerprints: np.ndarray, k: int, seed: int = 42, n_init: int = 20) -> Tuple[np.ndarray, np.ndarray]:
+def fit_kmeans(separability_vectors: np.ndarray, k: int, seed: int = 42, n_init: int = 20) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fit KMeans with specified K.
 
     Args:
-        fingerprints: Input data
+        separability_vectors: Input data
         k: Number of clusters
         seed: Random seed
         n_init: Number of initializations
@@ -60,20 +60,20 @@ def fit_kmeans(fingerprints: np.ndarray, k: int, seed: int = 42, n_init: int = 2
         (labels, centroids) - cluster labels and cluster centroids
     """
     scaler = StandardScaler()
-    fingerprints_scaled = scaler.fit_transform(fingerprints)
+    separability_vectors_scaled = scaler.fit_transform(separability_vectors)
 
     kmeans = KMeans(n_clusters=k, random_state=seed, n_init=n_init)
-    labels = kmeans.fit_predict(fingerprints_scaled)
+    labels = kmeans.fit_predict(separability_vectors_scaled)
 
     return labels, kmeans.cluster_centers_
 
 
-def compute_cluster_stats(fingerprints: np.ndarray, labels: np.ndarray, centroids: np.ndarray) -> pd.DataFrame:
+def compute_cluster_stats(separability_vectors: np.ndarray, labels: np.ndarray, centroids: np.ndarray) -> pd.DataFrame:
     """
     Compute statistics for each cluster.
 
     Args:
-        fingerprints: Original fingerprints (unscaled)
+        separability_vectors: Original separability vectors (unscaled)
         labels: Cluster labels
         centroids: Cluster centroids (in scaled space)
 
@@ -85,7 +85,7 @@ def compute_cluster_stats(fingerprints: np.ndarray, labels: np.ndarray, centroid
 
     for label in unique_labels:
         mask = labels == label
-        cluster_points = fingerprints[mask]
+        cluster_points = separability_vectors[mask]
 
         # Distance to centroid in original space
         # Note: centroids are in scaled space, compute distances in original for consistency

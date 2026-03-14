@@ -1,35 +1,35 @@
 """
 Stage 5: Auditing for Signal Clustering Analysis
 
-Runs all three audit components:
-- 5.1: Cross-run cluster overlap
-- 5.2: Post-hoc feature attribution
-- 5.3: Inter-class variance audit
+Performs statistical auditing and confusion matrix analysis
+for the clustering results.
+
+Outputs:
+    - results/audit_stats_*.csv: Cluster-class alignment statistics
+    - figs/fig_audit_cm_*.png: Confusion matrices
 """
 
 import argparse
 import os
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from pathlib import Path
 
-from src.audit import (
-    cross_run_overlap, plot_cross_run_overlap,
-    wavelet_attribution, plot_wavelet_attribution,
-    raw_attribution, plot_raw_attribution,
-    variance_audit, plot_variance_ratios
-)
+from project_src.core.data import SignalClusteringData
+from project_src.audit import perform_cluster_audit, plot_audit_confusion_matrix
 
 
 def main():
     parser = argparse.ArgumentParser(description='Stage 5: Auditing')
     parser.add_argument('--run', type=str, choices=['wavelet', 'raw', 'both'], default='both',
-                       help='Which clustering runs to audit')
+                       help='Which run to audit')
     parser.add_argument('--k', type=int, default=5,
-                       help='Number of clusters')
+                       help='Target K used for clustering')
     parser.add_argument('--output_dir', type=str, default='data/feature_discovery',
-                       help='Input directory for fingerprints/labels')
+                       help='Directory containing labels')
     parser.add_argument('--results_dir', type=str, default='results',
-                       help='Output directory for tables')
+                       help='Output directory for audit stats')
     parser.add_argument('--figs_dir', type=str, default='figs',
                        help='Output directory for figures')
     args = parser.parse_args()
@@ -42,42 +42,6 @@ def main():
     print("Stage 5: Auditing")
     print("=" * 60)
 
-    # Load labels
-    labels_wavelet = np.load(os.path.join(args.output_dir, f'labels_wavelet_k{args.k}.npy'))
-    labels_raw = np.load(os.path.join(args.output_dir, f'labels_raw_k{args.k}.npy'))
-
-    print(f"Loaded labels: wavelet={labels_wavelet.shape}, raw={labels_raw.shape}")
-
-    # ============================================================
-    # 5.1: Cross-Run Cluster Overlap
-    # ============================================================
-    print("\n" + "="*40)
-    print("5.1: Cross-Run Cluster Overlap")
-    print("="*40)
-
-    overlap_df, contingency = cross_run_overlap(labels_wavelet, labels_raw, args.k)
-
-    # Save tables
-    contingency_path = os.path.join(args.results_dir, 'cross_run_contingency_k8.csv')
-    pd.DataFrame(contingency).to_csv(contingency_path, index_label='wavelet_cluster')
-    print(f"Saved: {contingency_path}")
-
-    overlap_path = os.path.join(args.results_dir, 'cross_run_overlap_summary.csv')
-    overlap_df.to_csv(overlap_path, index=False)
-    print(f"Saved: {overlap_path}")
-
-    # Plot
-    overlap_plot_path = os.path.join(args.figs_dir, 'fig_cross_run_overlap.png')
-    plot_cross_run_overlap(overlap_df, contingency, overlap_plot_path, args.k)
-
-    print("\nCross-run overlap summary:")
-    print(overlap_df.to_string(index=False))
-
-    # ============================================================
-    # 5.2: Post-Hoc Feature Attribution
-    # ============================================================
-    print("\n" + "="*40)
-    print("5.2: Post-Hoc Feature Attribution")
     print("="*40)
 
     # Wavelet attribution
