@@ -128,7 +128,7 @@ def plot_cluster_profiles(X_abs_per_class: List[np.ndarray], labels: np.ndarray,
     print(f"Saved: {save_path}")
 
 
-def plot_spatial_map(labels: np.ndarray, X_abs: np.ndarray, run_name: str, save_path: str):
+def plot_spatial_cluster_map(labels: np.ndarray, X_abs: np.ndarray, run_name: str, save_path: str):
     """
     Plot spatial index map: colored strip of cluster assignments + mean absorption.
     """

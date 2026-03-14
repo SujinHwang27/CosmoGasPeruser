@@ -28,7 +28,13 @@ def run_command(command, stage_name):
     try:
         # Use uv run to ensure the environment is correct
         full_command = ["uv", "run"] + command
-        result = subprocess.run(full_command, check=True)
+        
+        # Add current directory to PYTHONPATH so 'src' is found in sub-processes
+        env = os.environ.copy()
+        current_pythonpath = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = f".:{current_pythonpath}" if current_pythonpath else "."
+        
+        result = subprocess.run(full_command, check=True, env=env)
         elapsed = time.time() - start_time
         print(f"\n" + "-"*60)
         print(f"COMPLETED STAGE: {stage_name} (Time: {elapsed:.2f}s)")

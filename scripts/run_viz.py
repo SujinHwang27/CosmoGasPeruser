@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+from src.core.data import SignalClusteringData
 from src.viz import plot_umap_2d, plot_umap_3d_html, plot_spatial_cluster_map
 
 
@@ -24,8 +25,8 @@ def main():
                        help='Which run to visualize')
     parser.add_argument('--k', type=int, default=5,
                        help='Target K used for clustering')
-    parser.add_argument('--view', action='store_true',
-                       help='Open HTML plots in browser')
+    parser.add_argument('--view', type=str, default='all',
+                       help='View mode (legacy/orchestrator support)')
     parser.add_argument('--output_dir', type=str, default='data/feature_discovery',
                        help='Directory containing labels and separability vectors')
     parser.add_argument('--figs_dir', type=str, default='figs',
@@ -38,6 +39,11 @@ def main():
     print("=" * 60)
     print("Stage 4: Visualization")
     print("=" * 60)
+
+    # Initialize data loader for absorption data (needed for spatial map)
+    data = SignalClusteringData()
+    X_flux, _ = data.load_flux()
+    X_abs = np.clip(1.0 - X_flux, 0.0, 1.0)
 
     def process_run(run_name):
         """Generate plots for a single run."""
@@ -60,16 +66,13 @@ def main():
 
         # 1. Static 2D UMAP
         print("\nGenerating 2D UMAP...")
-        fig_2d = plot_umap_2d(separability_vectors, labels, f'UMAP: {run_name} (K={args.k})')
         save_2d = os.path.join(args.figs_dir, f'fig_umap_2d_{run_name}_k{args.k}.png')
-        fig_2d.savefig(save_2d, dpi=150, bbox_inches='tight')
-        print(f"Saved: {save_2d}")
+        plot_umap_2d(separability_vectors, labels, run_name, save_2d)
 
         # 2. Interactive 3D UMAP
         print("Generating 3D UMAP (HTML)...")
         save_3d = os.path.join(args.figs_dir, f'fig_umap_3d_{run_name}_k{args.k}.html')
-        plot_umap_3d_html(separability_vectors, labels, f'UMAP 3D: {run_name} (K={args.k})', save_3d)
-        print(f"Saved: {save_3d}")
+        plot_umap_3d_html(separability_vectors, labels, run_name, save_3d)
 
         if args.view:
             import webbrowser
@@ -77,10 +80,8 @@ def main():
 
         # 3. Spatial Map
         print("Generating Spatial Cluster Map...")
-        fig_spatial = plot_spatial_cluster_map(labels, f'Spatial Clusters: {run_name} (K={args.k})')
         save_spatial = os.path.join(args.figs_dir, f'fig_spatial_map_{run_name}_k{args.k}.png')
-        fig_spatial.savefig(save_spatial, dpi=150, bbox_inches='tight')
-        print(f"Saved: {save_spatial}")
+        plot_spatial_cluster_map(labels, X_abs, run_name, save_spatial)
 
     # Process runs
     if args.run in ['wavelet', 'both']:
@@ -89,23 +90,18 @@ def main():
     if args.run in ['raw', 'both']:
         process_run('raw')
 
-    # Generate comparison plot if both runs
-    if args.run == 'both' and args.view in ['A', 'all']:
+    # Generate comparison plots if both runs
+    if args.run == 'both':
         print("\n" + "="*40)
         print("Generating comparison plots...")
         print("="*40)
 
-        # Load both labels
-        labels_wavelet = np.load(os.path.join(args.output_dir, f'labels_wavelet_k{args.k}.npy'))
-        labels_raw = np.load(os.path.join(args.output_dir, f'labels_raw_k{args.k}.npy'))
-
-        # Generate UMAP comparison (P8)
+        # Generate UMAP comparison
         from src.viz import plot_umap_comparison
         print("\nGenerating UMAP comparison...")
         plot_umap_comparison(args.output_dir, args.k, args.figs_dir)
 
-    if args.run == 'both' and args.view in ['C', 'all']:
-        # Generate spatial map comparison (P15)
+        # Generate spatial map comparison
         from src.viz import plot_spatial_map_comparison
         print("\nGenerating spatial map comparison...")
         plot_spatial_map_comparison(args.output_dir, args.k, args.figs_dir)
