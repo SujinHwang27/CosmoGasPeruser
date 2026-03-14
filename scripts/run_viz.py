@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from project_src.viz import plot_umap_2d, plot_umap_3d_html, plot_spatial_cluster_map
+from src.viz import plot_umap_2d, plot_umap_3d_html, plot_spatial_cluster_map
 
 
 def main():

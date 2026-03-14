@@ -18,8 +18,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from project_src.core.data import SignalClusteringData
-from project_src.probe import run_probe
+from src.core.data import SignalClusteringData
+from src.probe import run_probe
 
 
 def plot_separability_vector_norms(separability_vectors_wavelet, separability_vectors_raw, save_path):

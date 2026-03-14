@@ -18,7 +18,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from project_src.cluster import k_sweep, fit_kmeans, compute_cluster_stats, contingency_matrix
+from src.cluster import k_sweep, fit_kmeans, compute_cluster_stats, contingency_matrix
 
 
 def plot_elbow(sweep_df, run_name, k_chosen, save_path):

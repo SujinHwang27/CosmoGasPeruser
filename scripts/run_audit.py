@@ -16,8 +16,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from project_src.core.data import SignalClusteringData
-from project_src.audit import perform_cluster_audit, plot_audit_confusion_matrix
+from src.core.data import SignalClusteringData
+from src.audit import perform_cluster_audit, plot_audit_confusion_matrix
 
 
 def main():
