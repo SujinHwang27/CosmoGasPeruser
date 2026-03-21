@@ -1,0 +1,6 @@
+outs:
+- md5: e0ed0f8891310e6a13e17ef82ce87670.dir
+  size: 1086459264
+  nfiles: 12
+  hash: md5
+  path: data/feature_discovery
