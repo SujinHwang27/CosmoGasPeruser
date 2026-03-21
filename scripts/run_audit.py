@@ -35,9 +35,9 @@ def main():
                        help='Target K used for clustering')
     parser.add_argument('--output_dir', type=str, default='data/feature_discovery',
                        help='Directory containing labels and features')
-    parser.add_argument('--results_dir', type=str, default='results',
+    parser.add_argument('--results_dir', type=str, default='results/signal_clustering_v2',
                        help='Output directory for audit stats')
-    parser.add_argument('--figs_dir', type=str, default='figs',
+    parser.add_argument('--figs_dir', type=str, default='results/signal_clustering_v2/figs',
                        help='Output directory for figures')
     args = parser.parse_args()
 
@@ -68,6 +68,14 @@ def main():
         print(f"Saved: {overlap_csv}")
 
         contingency = compute_contingency(labels_wavelet, labels_raw, args.k, args.k)
+        
+        # Save contingency as CSV (T7)
+        cont_df = pd.DataFrame(contingency, index=[f'W_{i}' for i in range(args.k)], 
+                               columns=[f'R_{i}' for i in range(args.k)])
+        cont_csv = os.path.join(args.results_dir, f'cross_run_contingency_k{args.k}.csv')
+        cont_df.to_csv(cont_csv)
+        print(f"Saved: {cont_csv}")
+
         overlap_fig = os.path.join(args.figs_dir, 'fig_cross_run_overlap.png')
         plot_cross_run_overlap(overlap_df, contingency, overlap_fig, args.k)
 

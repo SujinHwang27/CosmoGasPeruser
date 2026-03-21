@@ -29,7 +29,7 @@ def main():
                        help='View mode (legacy/orchestrator support)')
     parser.add_argument('--output_dir', type=str, default='data/feature_discovery',
                        help='Directory containing labels and separability vectors')
-    parser.add_argument('--figs_dir', type=str, default='figs',
+    parser.add_argument('--figs_dir', type=str, default='results/signal_clustering_v2/figs',
                        help='Output directory for figures')
     args = parser.parse_args()
 
@@ -52,7 +52,7 @@ def main():
         print(f"{'='*40}")
 
         # Load data
-        sv_path = os.path.join(args.output_dir, f'separability_vectors_{run_name}.npy')
+        sv_path = os.path.join(args.output_dir, f'fingerprints_{run_name}.npy')
         labels_path = os.path.join(args.output_dir, f'labels_{run_name}_k{args.k}.npy')
 
         if not os.path.exists(sv_path) or not os.path.exists(labels_path):

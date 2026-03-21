@@ -68,9 +68,9 @@ def main():
                        help='Random seed')
     parser.add_argument('--output_dir', type=str, default='data/feature_discovery',
                        help='Output directory for labels')
-    parser.add_argument('--results_dir', type=str, default='results',
+    parser.add_argument('--results_dir', type=str, default='results/signal_clustering_v2',
                        help='Output directory for stats')
-    parser.add_argument('--figs_dir', type=str, default='figs',
+    parser.add_argument('--figs_dir', type=str, default='results/signal_clustering_v2/figs',
                        help='Output directory for figures')
     args = parser.parse_args()
 
@@ -92,12 +92,12 @@ def main():
 
     # Load separability vectors if needed
     if args.run in ['wavelet', 'both']:
-        sv_path = os.path.join(args.output_dir, 'separability_vectors_wavelet.npy')
+        sv_path = os.path.join(args.output_dir, 'fingerprints_wavelet.npy')
         separability_vectors_wavelet = np.load(sv_path)
         print(f"Loaded wavelet separability vectors: {separability_vectors_wavelet.shape}")
 
     if args.run in ['raw', 'both']:
-        sv_path = os.path.join(args.output_dir, 'separability_vectors_raw.npy')
+        sv_path = os.path.join(args.output_dir, 'fingerprints_raw.npy')
         separability_vectors_raw = np.load(sv_path)
         print(f"Loaded raw separability vectors: {separability_vectors_raw.shape}")
 

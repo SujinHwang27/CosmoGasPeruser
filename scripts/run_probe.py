@@ -97,9 +97,9 @@ def main():
                        help='Number of parallel jobs (-1 for all cores)')
     parser.add_argument('--output_dir', type=str, default='data/feature_discovery',
                        help='Output directory for separability vectors')
-    parser.add_argument('--results_dir', type=str, default='results',
+    parser.add_argument('--results_dir', type=str, default='results/signal_clustering_v2',
                        help='Output directory for summaries')
-    parser.add_argument('--figs_dir', type=str, default='figs',
+    parser.add_argument('--figs_dir', type=str, default='results/signal_clustering_v2/figs',
                        help='Output directory for figures')
     args = parser.parse_args()
 
@@ -137,7 +137,7 @@ def main():
         separability_vectors_wavelet = run_probe(X_wavelet_per_class, n_jobs=args.n_jobs)
 
         # Save
-        output_path = os.path.join(args.output_dir, 'separability_vectors_wavelet.npy')
+        output_path = os.path.join(args.output_dir, 'fingerprints_wavelet.npy')
         np.save(output_path, separability_vectors_wavelet)
         print(f"Saved: {output_path}")
 
@@ -157,7 +157,7 @@ def main():
         separability_vectors_raw = run_probe(X_abs_per_class, n_jobs=args.n_jobs)
 
         # Save
-        output_path = os.path.join(args.output_dir, 'separability_vectors_raw.npy')
+        output_path = os.path.join(args.output_dir, 'fingerprints_raw.npy')
         np.save(output_path, separability_vectors_raw)
         print(f"Saved: {output_path}")
 
@@ -168,7 +168,7 @@ def main():
         print("=" * 40)
 
         # Summary CSV
-        summary_path = os.path.join(args.results_dir, 'stage2_separability_vector_summary.csv')
+        summary_path = os.path.join(args.results_dir, 'stage2_fingerprint_summary.csv')
         save_separability_vector_summary(separability_vectors_wavelet, separability_vectors_raw, summary_path)
 
         # Plot separability vector norms

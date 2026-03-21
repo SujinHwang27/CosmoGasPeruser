@@ -1,5 +1,5 @@
 """
-Stage 1: Prepare Inputs for Signal Clustering Analysis
+Stage: Prepare Inputs for Signal Clustering Analysis
 
 Loads wavelet features and raw flux, computes absorption field,
 runs sanity checks, and produces validation plots.
@@ -135,10 +135,10 @@ def save_summary_csv(X_wavelet, X_abs, y, save_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Stage 1: Prepare Inputs for Signal Clustering')
-    parser.add_argument('--output_dir', type=str, default='results',
+    parser = argparse.ArgumentParser(description='Prepare Inputs for Signal Clustering')
+    parser.add_argument('--output_dir', type=str, default='results/signal_clustering_v2',
                         help='Output directory for results')
-    parser.add_argument('--figs_dir', type=str, default='figs',
+    parser.add_argument('--figs_dir', type=str, default='results/signal_clustering_v2/figs',
                         help='Output directory for figures')
     parser.add_argument('--flux_path', type=str,
                         default='data/preprocessed/Sherwood_z0.3_inf',
@@ -153,7 +153,7 @@ def main():
     os.makedirs(args.figs_dir, exist_ok=True)
 
     print("=" * 60)
-    print("Stage 1: Preparing Inputs")
+    print("Preparing Inputs")
     print("=" * 60)
 
     # Initialize data loader

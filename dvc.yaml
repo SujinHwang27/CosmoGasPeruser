@@ -1,0 +1,77 @@
+# DVC Pipeline for Signal Clustering Analysis
+# Orchestrates the end-to-end workflow defined in Project Plan (v4)
+
+stages:
+  prepare:
+    cmd: python scripts/run_prep.py
+    deps:
+      - scripts/run_prep.py
+      - src/core/data.py
+      - data/preprocessed/Sherwood_z0.3_inf
+      - data/processed/wavelet_db8_l6_d12
+    outs:
+      - data/feature_discovery/wavelet_class1.npy
+      - data/feature_discovery/wavelet_class2.npy
+      - data/feature_discovery/wavelet_class3.npy
+      - data/feature_discovery/wavelet_class4.npy
+    metrics:
+      - results/signal_clustering_v2/stage1_input_summary.csv:
+          cache: false
+
+  probe:
+    cmd: python scripts/run_probe.py --run both
+    deps:
+      - scripts/run_probe.py
+      - src/probe.py
+      - data/feature_discovery/wavelet_class1.npy
+      - data/feature_discovery/wavelet_class2.npy
+      - data/feature_discovery/wavelet_class3.npy
+      - data/feature_discovery/wavelet_class4.npy
+    outs:
+      - data/feature_discovery/fingerprints_wavelet.npy
+      - data/feature_discovery/fingerprints_raw.npy
+    metrics:
+      - results/signal_clustering_v2/stage2_fingerprint_summary.csv:
+          cache: false
+
+  cluster:
+     cmd: python scripts/run_cluster.py --run both --k 5
+     deps:
+       - scripts/run_cluster.py
+       - src/cluster.py
+       - data/feature_discovery/fingerprints_wavelet.npy
+       - data/feature_discovery/fingerprints_raw.npy
+     outs:
+       - data/feature_discovery/labels_wavelet_k5.npy
+       - data/feature_discovery/labels_raw_k5.npy
+       - data/feature_discovery/centroids_wavelet_k5.npy
+       - data/feature_discovery/centroids_raw_k5.npy
+     metrics:
+       - results/signal_clustering_v2/sweep_wavelet.csv
+       - results/signal_clustering_v2/sweep_raw.csv
+       - results/signal_clustering_v2/cluster_stats_wavelet_k5.csv
+       - results/signal_clustering_v2/cluster_stats_raw_k5.csv
+
+  viz:
+    cmd: python scripts/run_viz.py --run both --view all --k 5
+    deps:
+      - scripts/run_viz.py
+      - src/viz.py
+      - data/feature_discovery/labels_wavelet_k5.npy
+      - data/feature_discovery/labels_raw_k5.npy
+      - data/feature_discovery/fingerprints_wavelet.npy
+      - data/feature_discovery/fingerprints_raw.npy
+    outs:
+      - results/signal_clustering_v2/figs
+
+  audit:
+    cmd: python scripts/run_audit.py --k 5
+    deps:
+      - scripts/run_audit.py
+      - src/audit.py
+      - data/feature_discovery/labels_wavelet_k5.npy
+      - data/feature_discovery/labels_raw_k5.npy
+    metrics:
+      - results/signal_clustering_v2/cross_run_contingency_k5.csv
+      - results/signal_clustering_v2/cross_run_overlap_summary.csv
+      - results/signal_clustering_v2/variance_audit.csv

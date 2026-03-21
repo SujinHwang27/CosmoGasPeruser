@@ -3,7 +3,7 @@ Signal Clustering Analysis - End-to-End Pipeline Orchestrator
 Executes the 5 stages defined in docs/feature/signal-clustering-analysis/signal_clustering_project_plan_v4.md
 
 Stages:
-1. Input Preparation (run_stage1.py)
+1. Input Preparation (run_prep.py)
 2. Micro-Probing (run_probe.py)
 3. Clustering (run_cluster.py)
 4. Visualization (run_viz.py)
@@ -76,7 +76,7 @@ def main():
 
     # Stage 1: Input Preparation
     if 1 in stages_to_run:
-        cmd = ["python", "scripts/run_stage1.py"]
+        cmd = ["python", "scripts/run_prep.py"]
         if not run_command(cmd, "Stage 1: Input Preparation"):
             sys.exit(1)
 

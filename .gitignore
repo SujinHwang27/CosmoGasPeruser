@@ -1,25 +1,3 @@
-<<<<<<< HEAD
-
-
-.dvc/cache/
-.dvc/tmp/
-
-# Python cache files
-__pycache__/
-*.pyc
-*.pyo
-mlruns/
-reports/
-
-# Sensitive and temporary files
-.env
-logs/
-nohup.out
-*.log
-docs/
-docs_archive/
-mlartifacts/
-=======
 .dvc/cache/
 .dvc/tmp/
 .dvc/config.local
@@ -40,6 +18,6 @@ docs/
 docs_archive/
 mlartifacts/
 local/
->>>>>>> feature/baseline-random-forest
 .agent/
 /docs
+/mlruns
