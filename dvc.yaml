@@ -75,3 +75,22 @@ stages:
       - results/signal_clustering_v2/cross_run_contingency_k5.csv
       - results/signal_clustering_v2/cross_run_overlap_summary.csv
       - results/signal_clustering_v2/variance_audit.csv
+
+  rf:
+    cmd: PYTHONPATH=. uv run python scripts/run_rf.py --run both --k 5
+    deps:
+      - scripts/run_rf.py
+      - src/rf_classifier.py
+      - src/core/data.py
+      - data/feature_discovery/labels_wavelet_k5.npy
+      - data/feature_discovery/labels_raw_k5.npy
+      - data/feature_discovery/wavelet_class1.npy
+      - data/feature_discovery/wavelet_class2.npy
+      - data/feature_discovery/wavelet_class3.npy
+      - data/feature_discovery/wavelet_class4.npy
+      - data/preprocessed/Sherwood_z0.3_inf
+    metrics:
+      - results/signal_clustering_v2/rf_summary_wavelet_k5.csv:
+          cache: false
+      - results/signal_clustering_v2/rf_summary_raw_k5.csv:
+          cache: false
