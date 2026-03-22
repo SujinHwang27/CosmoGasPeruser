@@ -165,9 +165,9 @@ stages:
     outs:
     - path: results/signal_clustering_v2/figs
       hash: md5
-      md5: 41605a8c62d3e2af23342f664fc5c1e0.dir
-      size: 14679761
-      nfiles: 8
+      md5: 65b217e39640d7325adde53fc2c9f679.dir
+      size: 14960682
+      nfiles: 12
   audit:
     cmd: PYTHONPATH=. uv run python scripts/run_audit.py --k 5
     deps:
