@@ -1,0 +1,202 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: PYTHONPATH=. uv run python scripts/run_prep.py
+    deps:
+    - path: data/preprocessed/Sherwood_z0.3_inf
+      hash: md5
+      md5: 63709f45620b1c96f585c1a3b5cd4050.dir
+      size: 2149743150
+      nfiles: 21
+    - path: data/processed/wavelet_db8_l6_d12
+      hash: md5
+      md5: 937faf9a9fe5678256c6a73463e13f82.dir
+      size: 2147484288
+      nfiles: 5
+    - path: scripts/run_prep.py
+      hash: md5
+      md5: b6882a73a838f35aed542b97423adba5
+      size: 8957
+    - path: src/core/data.py
+      hash: md5
+      md5: 7280a1dca9861b4688897832209104b8
+      size: 10118
+    outs:
+    - path: data/feature_discovery/wavelet_class1.npy
+      hash: md5
+      md5: ac464d456b8819e0ec5aa3fd4935d517
+      size: 268435584
+    - path: data/feature_discovery/wavelet_class2.npy
+      hash: md5
+      md5: 3fd0290a3dbefa4c7e436590e67736e0
+      size: 268435584
+    - path: data/feature_discovery/wavelet_class3.npy
+      hash: md5
+      md5: f64ad740e2c0349641378d467c8971ec
+      size: 268435584
+    - path: data/feature_discovery/wavelet_class4.npy
+      hash: md5
+      md5: ad426c205a765f2b7f0ab444a23f0016
+      size: 268435584
+    - path: results/signal_clustering_v2/stage1_input_summary.csv
+      hash: md5
+      md5: d61c99bd2c423774a9cfef444df66fc6
+      size: 351
+  probe:
+    cmd: PYTHONPATH=. uv run python scripts/run_probe.py --run both
+    deps:
+    - path: data/feature_discovery/wavelet_class1.npy
+      hash: md5
+      md5: ac464d456b8819e0ec5aa3fd4935d517
+      size: 268435584
+    - path: data/feature_discovery/wavelet_class2.npy
+      hash: md5
+      md5: 3fd0290a3dbefa4c7e436590e67736e0
+      size: 268435584
+    - path: data/feature_discovery/wavelet_class3.npy
+      hash: md5
+      md5: f64ad740e2c0349641378d467c8971ec
+      size: 268435584
+    - path: data/feature_discovery/wavelet_class4.npy
+      hash: md5
+      md5: ad426c205a765f2b7f0ab444a23f0016
+      size: 268435584
+    - path: scripts/run_probe.py
+      hash: md5
+      md5: 06b94611e9b0c5285e03af90e09fe117
+      size: 7719
+    - path: src/probe.py
+      hash: md5
+      md5: 0731ac43691a7a65ef36ecdb048627b1
+      size: 3328
+    outs:
+    - path: data/feature_discovery/fingerprints_raw.npy
+      hash: md5
+      md5: c39fcdfd81ed1c7bdbcad7348c385b35
+      size: 3145856
+    - path: data/feature_discovery/fingerprints_wavelet.npy
+      hash: md5
+      md5: b7160641e12650c0e536cb510690f12d
+      size: 3145856
+    - path: results/signal_clustering_v2/stage2_fingerprint_summary.csv
+      hash: md5
+      md5: 03745aed95017aa6fa08dffff3b4b0d3
+      size: 4005
+  cluster:
+    cmd: PYTHONPATH=. uv run python scripts/run_cluster.py --run both --k 5
+    deps:
+    - path: data/feature_discovery/fingerprints_raw.npy
+      hash: md5
+      md5: c39fcdfd81ed1c7bdbcad7348c385b35
+      size: 3145856
+    - path: data/feature_discovery/fingerprints_wavelet.npy
+      hash: md5
+      md5: b7160641e12650c0e536cb510690f12d
+      size: 3145856
+    - path: scripts/run_cluster.py
+      hash: md5
+      md5: 25067f62e59fac7bed5269b8d52b41fc
+      size: 7079
+    - path: src/cluster.py
+      hash: md5
+      md5: aaf87ff7769b84a34cbe998a870c50eb
+      size: 3893
+    outs:
+    - path: data/feature_discovery/centroids_raw_k5.npy
+      hash: md5
+      md5: b5499797d7678566834f6410cf4cdb2d
+      size: 1088
+    - path: data/feature_discovery/centroids_wavelet_k5.npy
+      hash: md5
+      md5: 9c97ecc44efa102b7f300e2d159588da
+      size: 1088
+    - path: data/feature_discovery/labels_raw_k5.npy
+      hash: md5
+      md5: 24f722b09c8472611c7d0fb8ea8854b0
+      size: 65664
+    - path: data/feature_discovery/labels_wavelet_k5.npy
+      hash: md5
+      md5: 67fb124aadbb4936ea0806e4b6ab8e7f
+      size: 65664
+    - path: results/signal_clustering_v2/cluster_stats_raw_k5.csv
+      hash: md5
+      md5: 817aa309943b091165b07761b3a5ae1e
+      size: 440
+    - path: results/signal_clustering_v2/cluster_stats_wavelet_k5.csv
+      hash: md5
+      md5: af892d98c8a0a0378be9c0f77fe5acf3
+      size: 431
+    - path: results/signal_clustering_v2/sweep_raw.csv
+      hash: md5
+      md5: e1369ee73ceb705834416357a8806480
+      size: 785
+    - path: results/signal_clustering_v2/sweep_wavelet.csv
+      hash: md5
+      md5: 94c413be55d6497133fdf2c8c39ac6fa
+      size: 796
+  viz:
+    cmd: PYTHONPATH=. uv run python scripts/run_viz.py --run both --view all --k
+      5
+    deps:
+    - path: data/feature_discovery/fingerprints_raw.npy
+      hash: md5
+      md5: c39fcdfd81ed1c7bdbcad7348c385b35
+      size: 3145856
+    - path: data/feature_discovery/fingerprints_wavelet.npy
+      hash: md5
+      md5: b7160641e12650c0e536cb510690f12d
+      size: 3145856
+    - path: data/feature_discovery/labels_raw_k5.npy
+      hash: md5
+      md5: 24f722b09c8472611c7d0fb8ea8854b0
+      size: 65664
+    - path: data/feature_discovery/labels_wavelet_k5.npy
+      hash: md5
+      md5: 67fb124aadbb4936ea0806e4b6ab8e7f
+      size: 65664
+    - path: scripts/run_viz.py
+      hash: md5
+      md5: ab3bff585edd8b7b07f924a1a056fbbb
+      size: 4302
+    - path: src/viz.py
+      hash: md5
+      md5: e3f8b59bbfc0f45edcf8fb2dc5fde4bd
+      size: 10689
+    outs:
+    - path: results/signal_clustering_v2/figs
+      hash: md5
+      md5: 41605a8c62d3e2af23342f664fc5c1e0.dir
+      size: 14679761
+      nfiles: 8
+  audit:
+    cmd: PYTHONPATH=. uv run python scripts/run_audit.py --k 5
+    deps:
+    - path: data/feature_discovery/labels_raw_k5.npy
+      hash: md5
+      md5: 24f722b09c8472611c7d0fb8ea8854b0
+      size: 65664
+    - path: data/feature_discovery/labels_wavelet_k5.npy
+      hash: md5
+      md5: 67fb124aadbb4936ea0806e4b6ab8e7f
+      size: 65664
+    - path: scripts/run_audit.py
+      hash: md5
+      md5: 18b4e9979ebfaf9aa790fbce9cadfd2e
+      size: 5121
+    - path: src/audit.py
+      hash: md5
+      md5: 99bcb9955796a1f470dd4403081ba1fd
+      size: 13681
+    outs:
+    - path: results/signal_clustering_v2/cross_run_contingency_k5.csv
+      hash: md5
+      md5: a89c4ee1d858da54323d76ec4a462f86
+      size: 138
+    - path: results/signal_clustering_v2/cross_run_overlap_summary.csv
+      hash: md5
+      md5: 8c5dfb791c37102755600dc20b0af1ad
+      size: 360
+    - path: results/signal_clustering_v2/variance_audit.csv
+      hash: md5
+      md5: 75fa1cb8bcc5545188bb20664617027d
+      size: 827

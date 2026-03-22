@@ -62,7 +62,7 @@ def main():
         print("5.1: Cross-run Overlap Analysis")
         print("="*40)
         
-        overlap_df = cross_run_overlap(labels_wavelet, labels_raw, args.k)
+        overlap_df, contingency = cross_run_overlap(labels_wavelet, labels_raw, args.k)
         overlap_csv = os.path.join(args.results_dir, 'cross_run_overlap_summary.csv')
         overlap_df.to_csv(overlap_csv, index=False)
         print(f"Saved: {overlap_csv}")
