@@ -2,7 +2,10 @@ import numpy as np
 import mlflow
 import mlflow.sklearn
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import RandomizedSearchCV, RepeatedStratifiedKFold, train_test_split
+from sklearn.model_selection import GridSearchCV, RepeatedStratifiedKFold, train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def prep_cluster_data(X_list, cluster_indices):
     """
@@ -28,7 +31,7 @@ def prep_cluster_data(X_list, cluster_indices):
 
 def train_rf_for_cluster(X, y, cluster_id, run_flavor):
     """
-    Train a Random Forest classifier for a single cluster using RandomizedSearchCV.
+    Train a Random Forest classifier for a single cluster using GridSearchCV.
     Logs metrics, params, and the model to MLflow.
     
     Args:
@@ -46,27 +49,23 @@ def train_rf_for_cluster(X, y, cluster_id, run_flavor):
             X, y, test_size=0.2, stratify=y, random_state=42
         )
         
-        cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=42)
+        from sklearn.model_selection import StratifiedKFold
+        cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
         param_dist = {
-            'n_estimators':      [100, 200, 500],
-            'max_depth':         [None, 5, 10, 20],
-            'min_samples_leaf':  [1, 2, 5, 10],
-            'min_samples_split': [2, 5, 10],
-            'max_features':      ['sqrt', 'log2', 0.3, 0.5],
+            'n_estimators':      [100],
+            'max_depth':         [25],
+            'min_samples_split': [100, 200],
+            'min_samples_leaf':  [50, 100],
+            'max_features':      ['sqrt', 0.1]
         }
 
-        # Scale down n_iter if dataset is small, largely as a safeguard (though 100 is generally fine)
-        n_iter = 100
-        
-        search = RandomizedSearchCV(
+        search = GridSearchCV(
             RandomForestClassifier(random_state=42),
-            param_distributions=param_dist,
-            n_iter=n_iter,
+            param_grid=param_dist,
             scoring='f1_weighted',
             cv=cv,
-            n_jobs=-1,
-            random_state=42
+            n_jobs=4
         )
 
         print(f"  -> Fitting RF for cluster {cluster_id} (train size: {len(y_train)}, test size: {len(y_test)})...")
@@ -87,7 +86,39 @@ def train_rf_for_cluster(X, y, cluster_id, run_flavor):
         mlflow.log_metric("cv_f1_weighted", best_score)
         mlflow.log_metric("test_score", test_score)
         
-        # Log the scikit-learn model
-        mlflow.sklearn.log_model(search.best_estimator_, f"model_cluster_{cluster_id}")
+        # Calculate Accuracy and Confusion Matrix on the hold-out test set
+        y_pred = search.best_estimator_.predict(X_test)
+        test_acc = accuracy_score(y_test, y_pred)
         
-        return search.best_estimator_, search.best_params_, best_score, test_score
+        # Plot and log confusion matrix
+        cm = confusion_matrix(y_test, y_pred)
+        plt.figure(figsize=(6, 5))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                    xticklabels=['Class 1', 'Class 2', 'Class 3', 'Class 4'],
+                    yticklabels=['Class 1', 'Class 2', 'Class 3', 'Class 4'])
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
+        plt.title(f'Confusion Matrix - Cluster {cluster_id}')
+        plt.tight_layout()
+        cm_path = f"confusion_matrix_cluster_{cluster_id}.png"
+        plt.savefig(cm_path)
+        plt.close()
+        
+        # Log to MLflow
+        mlflow.log_metric("test_accuracy", test_acc)
+        mlflow.log_artifact(cm_path)
+        
+        # Log the scikit-learn model with signature
+        from mlflow.models.signature import infer_signature
+        signature = infer_signature(X_train[:5], search.predict(X_train[:5]))
+        mlflow.sklearn.log_model(
+            search.best_estimator_, 
+            f"model_cluster_{cluster_id}",
+            signature=signature,
+            input_example=X_train[:5]
+        )
+        
+        import os
+        if os.path.exists(cm_path): os.remove(cm_path)
+        
+        return search.best_estimator_, search.best_params_, best_score, test_score, test_acc

@@ -71,6 +71,7 @@ def plot_umap_3d_html(separability_vectors: np.ndarray, labels: np.ndarray, run_
     fig = px.scatter_3d(df, x='UMAP1', y='UMAP2', z='UMAP3', color='Cluster',
                         title=f'UMAP 3D: {run_name}')
     fig.update_layout(scene=dict(xaxis_title='UMAP1', yaxis_title='UMAP2', zaxis_title='UMAP3'))
+    fig.update_traces(marker=dict(size=2))
     fig.write_html(save_path)
     print(f"Saved: {save_path}")
 
@@ -301,3 +302,36 @@ def find_cluster_regions(indices):
     regions.append((indices[prev], indices[-1]))
 
     return regions
+
+
+def plot_cluster_score_distribution(labels: np.ndarray, scores: np.ndarray, run_name: str, save_path: str):
+    """
+    Generate a 100% stacked bar chart showing the distribution of RF accuracy scores 
+    (0.0 to 1.0, derived from right out of 4 classes) for each cluster.
+    """
+    df = pd.DataFrame({'Cluster': labels, 'Score': scores})
+    
+    # Calculate percentages for each score bin within each cluster
+    score_counts = df.groupby(['Cluster', 'Score']).size().unstack(fill_value=0)
+    score_percentages = score_counts.div(score_counts.sum(axis=1), axis=0) * 100
+
+    import seaborn as sns
+    fig, ax = plt.subplots(figsize=(10, 6))
+    colors = sns.color_palette("coolwarm_r", len(score_percentages.columns))
+    
+    score_percentages.plot(kind='bar', stacked=True, color=colors, ax=ax, edgecolor='black', linewidth=0.5)
+
+    ax.set_title(f"Random Forest Score Distribution per Cluster: {run_name}", fontsize=14, pad=15)
+    ax.set_ylabel("Percentage of Sightlines (%)", fontsize=12)
+    ax.set_xlabel("Cluster ID", fontsize=12)
+    ax.tick_params(axis='x', rotation=0)
+
+    # Format legend (reverse order to match physical top-to-bottom stack intuitively)
+    handles, legend_labels = ax.get_legend_handles_labels()
+    ax.legend(handles[::-1], [f"Score: {float(l):.2f}" for l in legend_labels[::-1]], 
+              title="Accuracy vs 4 Classes", bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"Saved: {save_path}")

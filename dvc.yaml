@@ -71,10 +71,11 @@ stages:
       - src/audit.py
       - data/feature_discovery/labels_wavelet_k5.npy
       - data/feature_discovery/labels_raw_k5.npy
+      - data/feature_discovery/fingerprints_wavelet.npy
+      - data/feature_discovery/fingerprints_raw.npy
     metrics:
       - results/signal_clustering_v2/cross_run_contingency_k5.csv
       - results/signal_clustering_v2/cross_run_overlap_summary.csv
-      - results/signal_clustering_v2/variance_audit.csv
 
   rf:
     cmd: PYTHONPATH=. uv run python scripts/run_rf.py --run both --k 5

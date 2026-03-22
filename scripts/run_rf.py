@@ -34,6 +34,8 @@ def run_rf_pipeline(flavor, k, output_dir):
 
     # Wrapper MLflow run for the entire flavor execution
     with mlflow.start_run(run_name=f"{flavor}_Stage6_RF"):
+        sightline_correct_counts = np.zeros(len(cluster_labels))
+        
         for cluster_id in unique_clusters:
             print(f"\n--- Cluster {cluster_id} ---")
             cluster_indices = np.where(cluster_labels == cluster_id)[0]
@@ -42,7 +44,7 @@ def run_rf_pipeline(flavor, k, output_dir):
             X_cluster, y_cluster = prep_cluster_data(X_list, cluster_indices)
             
             # Train model
-            _, best_params, cv_score, test_score = train_rf_for_cluster(
+            best_estimator, best_params, cv_score, test_score, test_acc = train_rf_for_cluster(
                 X=X_cluster, 
                 y=y_cluster, 
                 cluster_id=cluster_id, 
@@ -55,11 +57,30 @@ def run_rf_pipeline(flavor, k, output_dir):
                 'cluster_id': cluster_id,
                 'cluster_size': len(cluster_indices),
                 'train_samples': len(y_cluster) * 0.8,
+                'test_f1_score': test_score,
+                'test_accuracy': test_acc,
                 'cv_f1_score': cv_score,
-                'test_score': test_score,
                 **best_params
             }
             summary_results.append(res)
+            
+            # Evaluate back on the physical sightlines for the accuracy score metric
+            for c_idx, X_class in enumerate(X_list):
+                true_label = c_idx + 1
+                X_comp = X_class[cluster_indices]
+                preds = best_estimator.predict(X_comp)
+                sightline_correct_counts[cluster_indices] += (preds == true_label).astype(int)
+                
+        # Calculate resulting score mapping for bar chart visual
+        sightline_scores = sightline_correct_counts / 4.0
+        
+        print("Generating 100% stacked bar chart of RF performance scores...")
+        from src.viz import plot_cluster_score_distribution
+        figs_dir = os.path.join(output_dir, "figs")
+        os.makedirs(figs_dir, exist_ok=True)
+        rf_png_path = os.path.join(figs_dir, f"fig_score_dist_{flavor}_k{k}.png")
+        plot_cluster_score_distribution(cluster_labels, sightline_scores, flavor, rf_png_path)
+        mlflow.log_artifact(rf_png_path)
             
     # Save CSV summary
     df_summary = pd.DataFrame(summary_results)

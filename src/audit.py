@@ -83,46 +83,171 @@ def cross_run_overlap(labels_wavelet: np.ndarray, labels_raw: np.ndarray, k: int
     return pd.DataFrame(results), contingency
 
 
-def plot_cross_run_overlap(overlap_df: pd.DataFrame, contingency: np.ndarray,
-                           save_path: str, k: int = 5):
+def plot_contingency_heatmap(contingency: np.ndarray, save_path: str, k: int = 5):
     """
-    Plot cross-run overlap as grouped bar chart.
+    Plot the 5×5 contingency matrix as an annotated heatmap.
+    Rows = Wavelet clusters, Columns = Raw clusters.
+    Each cell shows absolute count and row-percentage.
     """
-    fig, ax = plt.subplots(figsize=(12, 6))
+    import seaborn as sns
 
-    x = np.arange(k)
-    width = 0.35
+    # Compute row-wise percentages
+    row_sums = contingency.sum(axis=1, keepdims=True)
+    pct_matrix = 100.0 * contingency / row_sums
 
-    # Get wavelet size and overlap
-    wavelet_sizes = overlap_df['wavelet_size'].values
-    overlaps = overlap_df['overlap_count'].values
+    # Build annotation strings: count\n(pct%)
+    annot = np.empty_like(contingency, dtype=object)
+    for i in range(k):
+        for j in range(k):
+            annot[i, j] = f"{contingency[i, j]:,}\n({pct_matrix[i, j]:.1f}%)"
 
-    # Normalize overlaps to percentages
-    overlap_pcts = 100 * overlaps / wavelet_sizes
+    fig, ax = plt.subplots(figsize=(9, 7))
+    sns.heatmap(contingency, annot=annot, fmt='', cmap='YlOrRd',
+                xticklabels=[f'Raw {j}' for j in range(k)],
+                yticklabels=[f'Wavelet {i}' for i in range(k)],
+                linewidths=0.5, linecolor='white', ax=ax,
+                cbar_kws={'label': 'Count'})
+    ax.set_title('Cross-Run Contingency Matrix (K=5)', fontsize=14, pad=15)
+    ax.set_xlabel('Raw Cluster', fontsize=12)
+    ax.set_ylabel('Wavelet Cluster', fontsize=12)
 
-    bars1 = ax.bar(x - width/2, wavelet_sizes, width, label='Wavelet Cluster Size', color='steelblue', alpha=0.7)
-    bars2 = ax.bar(x + width/2, overlap_pcts * wavelet_sizes / 100, width,
-                   label='Overlap with Best Raw', color='coral', alpha=0.7)
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"Saved: {save_path}")
 
-    # Color signal islands differently
-    regimes = overlap_df['regime'].values
-    for i, regime in enumerate(regimes):
-        if regime == 'signal_island':
-            bars1[i].set_color('darkblue')
-            bars2[i].set_color('darkred')
 
-    ax.set_xlabel('Wavelet Cluster')
-    ax.set_ylabel('Count / Percentage')
-    ax.set_title('Cross-Run Cluster Overlap: Wavelet K=5 vs Raw K=5')
-    ax.set_xticks(x)
-    ax.set_xticklabels([f'C{i}' for i in range(k)])
-    ax.legend()
+def plot_shared_umap_overlay_3d(fp_wavelet: np.ndarray, fp_raw: np.ndarray,
+                                 labels_wavelet: np.ndarray, labels_raw: np.ndarray,
+                                 overlap_df: pd.DataFrame,
+                                 save_path: str, k: int = 5):
+    """
+    Create a 3D interactive plot where wavelet and raw fingerprints are
+    projected into the same 3D UMAP space via a single joint UMAP fit.
 
-    # Add percentage labels on overlap bars
-    ax2 = ax.twinx()
-    ax2.plot(x, overlap_pcts, 'go-', linewidth=2, markersize=6, label='Overlap %')
-    ax2.set_ylabel('Overlap Percentage (%)', color='green')
-    ax2.tick_params(axis='y', labelcolor='green')
+    Both fingerprint arrays (each 16384 × 24) are concatenated into a
+    (32768 × 24) matrix, standardized together, and projected through one
+    3D UMAP. The resulting embedding is split back: wavelet half and raw half
+    live in identical coordinates. Matched cluster pairs share the same color.
+    Both layers use opacity=0.5 so overlapping sightlines appear denser.
+    """
+    import umap
+    import plotly.graph_objects as go
+
+    n = fp_wavelet.shape[0]  # 16384
+
+    # ── Step 1: Concatenate and fit a single 3D UMAP ──
+    combined = np.vstack([fp_wavelet, fp_raw])  # (32768, 24)
+    scaler = StandardScaler()
+    combined_scaled = scaler.fit_transform(combined)
+
+    reducer = umap.UMAP(n_neighbors=15, min_dist=0.1, n_components=3, random_state=42)
+    embedding = reducer.fit_transform(combined_scaled)
+
+    emb_w = embedding[:n]    # wavelet half
+    emb_r = embedding[n:]    # raw half
+
+    # ── Step 2: Build matched cluster pair mapping ──
+    match_map = {}
+    for _, row in overlap_df.iterrows():
+        match_map[int(row['wavelet_cluster'])] = int(row['best_raw_match'])
+
+    cluster_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+
+    # Map raw cluster labels → wavelet cluster color index
+    raw_to_wavelet_color = {}
+    for w_clust, r_clust in match_map.items():
+        raw_to_wavelet_color[r_clust] = w_clust
+
+    # ── Step 3: Plot in 3D with Plotly ──
+    fig = go.Figure()
+
+    # Wavelet points
+    for w_clust in range(k):
+        mask = (labels_wavelet == w_clust)
+        fig.add_trace(go.Scatter3d(
+            x=emb_w[mask, 0], y=emb_w[mask, 1], z=emb_w[mask, 2],
+            mode='markers',
+            marker=dict(size=2, color=cluster_colors[w_clust], opacity=0.5, symbol='circle'),
+            name=f'Wavelet C{w_clust}',
+            legendgroup=f'cluster_{w_clust}',
+        ))
+
+    # Raw points
+    for r_clust in np.unique(labels_raw):
+        mask = (labels_raw == r_clust)
+        color_idx = raw_to_wavelet_color.get(int(r_clust), int(r_clust))
+        fig.add_trace(go.Scatter3d(
+            x=emb_r[mask, 0], y=emb_r[mask, 1], z=emb_r[mask, 2],
+            mode='markers',
+            marker=dict(size=2, color=cluster_colors[color_idx], opacity=0.5, symbol='diamond'),
+            name=f'Raw C{r_clust} (→W{color_idx})',
+            legendgroup=f'cluster_{color_idx}',
+        ))
+
+    fig.update_layout(
+        title='Shared 3D UMAP: Wavelet vs Raw Fingerprints (K=5)',
+        scene=dict(
+            xaxis_title='UMAP 1',
+            yaxis_title='UMAP 2',
+            zaxis_title='UMAP 3',
+        ),
+        legend=dict(itemsizing='constant'),
+    )
+    fig.write_html(save_path)
+    print(f"Saved: {save_path}")
+
+
+def plot_separability_greyscale(fp: np.ndarray, labels: np.ndarray,
+                                run_name: str, save_path: str, k: int = 5):
+    """
+    Generate a greyscale image of separability vectors (fingerprints) grouped
+    by cluster assignment.
+
+    Each row is a sightline (sorted by cluster), each column is one of the 24
+    fingerprint dimensions. Pixel intensity = normalised separability value.
+    Cluster boundaries are drawn as horizontal red lines.
+    """
+    # Sort sightlines by cluster
+    sort_idx = np.argsort(labels)
+    sorted_labels = labels[sort_idx]
+    sorted_fp = fp[sort_idx]
+
+    # Normalize to [0, 1] for greyscale display
+    vmin, vmax = sorted_fp.min(), sorted_fp.max()
+    if vmax - vmin > 0:
+        normed = (sorted_fp - vmin) / (vmax - vmin)
+    else:
+        normed = np.zeros_like(sorted_fp)
+
+    fig, ax = plt.subplots(figsize=(10, 12))
+    ax.imshow(normed, aspect='auto', cmap='gray', interpolation='nearest',
+              vmin=0, vmax=1)
+
+    # Draw cluster boundaries
+    boundaries = []
+    for c in range(k):
+        cluster_end = np.searchsorted(sorted_labels, c, side='right')
+        if cluster_end < len(sorted_labels):
+            boundaries.append(cluster_end)
+            ax.axhline(y=cluster_end - 0.5, color='red', linewidth=1.0, alpha=0.8)
+
+    # Label clusters on the y-axis
+    cluster_centers = []
+    prev = 0
+    for b in boundaries:
+        cluster_centers.append((prev + b) / 2)
+        prev = b
+    cluster_centers.append((prev + len(sorted_labels)) / 2)
+    ax.set_yticks(cluster_centers[:k])
+    ax.set_yticklabels([f'Cluster {i}' for i in range(k)])
+
+    ax.set_xlabel('Fingerprint Dimension (0–23)', fontsize=12)
+    ax.set_ylabel('Sightlines (sorted by cluster)', fontsize=12)
+    ax.set_title(f'Separability Vectors — {run_name} (K={k})', fontsize=14, pad=15)
+
+    cbar = plt.colorbar(ax.images[0], ax=ax, fraction=0.02, pad=0.04)
+    cbar.set_label('Normalized Intensity')
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
