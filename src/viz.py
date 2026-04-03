@@ -167,8 +167,8 @@ def plot_umap_comparison(output_dir: str, k: int, figs_dir: str):
     from sklearn.preprocessing import StandardScaler
 
     # Load data
-    separability_vectors_wavelet = np.load(os.path.join(output_dir, 'separability_vectors_wavelet.npy'))
-    separability_vectors_raw = np.load(os.path.join(output_dir, 'separability_vectors_raw.npy'))
+    separability_vectors_wavelet = np.load(os.path.join(output_dir, 'fingerprints_wavelet.npy'))
+    separability_vectors_raw = np.load(os.path.join(output_dir, 'fingerprints_raw.npy'))
     labels_wavelet = np.load(os.path.join(output_dir, f'labels_wavelet_k{k}.npy'))
     labels_raw = np.load(os.path.join(output_dir, f'labels_raw_k{k}.npy'))
 

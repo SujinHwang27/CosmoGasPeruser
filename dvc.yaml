@@ -22,7 +22,7 @@ stages:
     cmd: PYTHONPATH=. uv run python scripts/run_probe.py --run both
     deps:
       - scripts/run_probe.py
-      - src/probe.py
+      - src/core/probe.py
       - data/feature_discovery/wavelet_class1.npy
       - data/feature_discovery/wavelet_class2.npy
       - data/feature_discovery/wavelet_class3.npy
@@ -31,7 +31,7 @@ stages:
       - data/feature_discovery/fingerprints_wavelet.npy
       - data/feature_discovery/fingerprints_raw.npy
     metrics:
-      - results/signal_clustering_v2/stage2_fingerprint_summary.csv:
+      - results/signal_clustering_v2/stage2_separability_vector_summary.csv:
           cache: false
 
   cluster:
@@ -47,41 +47,54 @@ stages:
        - data/feature_discovery/centroids_wavelet_k5.npy
        - data/feature_discovery/centroids_raw_k5.npy
      metrics:
-       - results/signal_clustering_v2/sweep_wavelet.csv
-       - results/signal_clustering_v2/sweep_raw.csv
-       - results/signal_clustering_v2/cluster_stats_wavelet_k5.csv
-       - results/signal_clustering_v2/cluster_stats_raw_k5.csv
+       - results/signal_clustering_v2/sweep_wavelet.csv:
+            cache: false
+       - results/signal_clustering_v2/sweep_raw.csv:
+            cache: false
+       - results/signal_clustering_v2/cluster_stats_wavelet_k5.csv:
+            cache: false
+       - results/signal_clustering_v2/cluster_stats_raw_k5.csv:
+            cache: false
 
   viz:
     cmd: PYTHONPATH=. uv run python scripts/run_viz.py --run both --view all --k 5
     deps:
       - scripts/run_viz.py
-      - src/viz.py
+      - src/core/viz.py
       - data/feature_discovery/labels_wavelet_k5.npy
       - data/feature_discovery/labels_raw_k5.npy
       - data/feature_discovery/fingerprints_wavelet.npy
       - data/feature_discovery/fingerprints_raw.npy
     outs:
-      - results/signal_clustering_v2/figs
+      - results/signal_clustering_v2/figs:
+          cache: false
 
   audit:
     cmd: PYTHONPATH=. uv run python scripts/run_audit.py --k 5
     deps:
       - scripts/run_audit.py
-      - src/audit.py
+      - src/core/audit.py
+      - src/core/drift_animation.py
       - data/feature_discovery/labels_wavelet_k5.npy
       - data/feature_discovery/labels_raw_k5.npy
       - data/feature_discovery/fingerprints_wavelet.npy
       - data/feature_discovery/fingerprints_raw.npy
     metrics:
-      - results/signal_clustering_v2/cross_run_contingency_k5.csv
-      - results/signal_clustering_v2/cross_run_overlap_summary.csv
+      - results/signal_clustering_v2/cross_run_contingency_k5.csv:
+          cache: false
+      - results/signal_clustering_v2/cross_run_overlap_summary.csv:
+          cache: false
+    plots:
+      - results/signal_clustering_v2/figs/fig_drift_animation.gif:
+          cache: false
+      - results/signal_clustering_v2/figs/fig_drift_animation.mp4:
+          cache: false
 
   rf:
     cmd: PYTHONPATH=. uv run python scripts/run_rf.py --run both --k 5
     deps:
       - scripts/run_rf.py
-      - src/rf_classifier.py
+      - src/core/models/rf_classifier.py
       - src/core/data.py
       - data/feature_discovery/labels_wavelet_k5.npy
       - data/feature_discovery/labels_raw_k5.npy

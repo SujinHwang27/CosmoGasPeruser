@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from src.audit import (
+from src.core.audit import (
     cross_run_overlap,
     compute_contingency,
     plot_contingency_heatmap,
@@ -112,6 +112,19 @@ def main():
     if fp_raw is not None:
         raw_gs_fig = os.path.join(args.figs_dir, 'fig_separability_greyscale_raw_k5.png')
         plot_separability_greyscale(fp_raw, labels_raw, 'Raw', raw_gs_fig, args.k)
+    # ── 5.3: Cluster Membership Drift Animation ────────────────
+    print("\n" + "="*40)
+    print("5.3: Cluster Membership Drift Animation")
+    print("="*40)
+
+    if fp_wavelet is not None and fp_raw is not None:
+        from src.core.drift_animation import create_drift_animation
+        create_drift_animation(
+            data_dir=args.output_dir,
+            results_dir=args.results_dir,
+            figs_dir=args.figs_dir,
+            k=args.k
+        )
 
     print("\n" + "=" * 60)
     print("Stage 5 Complete!")

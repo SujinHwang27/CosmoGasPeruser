@@ -16,7 +16,7 @@ import pandas as pd
 from pathlib import Path
 
 from src.core.data import SignalClusteringData
-from src.viz import plot_umap_2d, plot_umap_3d_html, plot_spatial_cluster_map
+from src.core.viz import plot_umap_2d, plot_umap_3d_html, plot_spatial_cluster_map
 
 
 def main():
@@ -97,12 +97,12 @@ def main():
         print("="*40)
 
         # Generate UMAP comparison
-        from src.viz import plot_umap_comparison
+        from src.core.viz import plot_umap_comparison
         print("\nGenerating UMAP comparison...")
         plot_umap_comparison(args.output_dir, args.k, args.figs_dir)
 
         # Generate spatial map comparison
-        from src.viz import plot_spatial_map_comparison
+        from src.core.viz import plot_spatial_map_comparison
         print("\nGenerating spatial map comparison...")
         plot_spatial_map_comparison(args.output_dir, args.k, args.figs_dir)
 

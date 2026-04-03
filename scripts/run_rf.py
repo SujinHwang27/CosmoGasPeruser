@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 
 from src.core.data import SignalClusteringData
-from src.rf_classifier import prep_cluster_data, train_rf_for_cluster
+from src.core.models.rf_classifier import prep_cluster_data, train_rf_for_cluster
 
 def run_rf_pipeline(flavor, k, output_dir):
     """
@@ -75,7 +75,7 @@ def run_rf_pipeline(flavor, k, output_dir):
         sightline_scores = sightline_correct_counts / 4.0
         
         print("Generating 100% stacked bar chart of RF performance scores...")
-        from src.viz import plot_cluster_score_distribution
+        from src.core.viz import plot_cluster_score_distribution
         figs_dir = os.path.join(output_dir, "figs")
         os.makedirs(figs_dir, exist_ok=True)
         rf_png_path = os.path.join(figs_dir, f"fig_score_dist_{flavor}_k{k}.png")

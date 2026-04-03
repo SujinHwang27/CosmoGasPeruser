@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 from src.core.data import SignalClusteringData
-from src.probe import run_probe
+from src.core.probe import run_probe
 
 
 def plot_separability_vector_norms(separability_vectors_wavelet, separability_vectors_raw, save_path):
@@ -168,7 +168,7 @@ def main():
         print("=" * 40)
 
         # Summary CSV
-        summary_path = os.path.join(args.results_dir, 'stage2_fingerprint_summary.csv')
+        summary_path = os.path.join(args.results_dir, 'stage2_separability_vector_summary.csv')
         save_separability_vector_summary(separability_vectors_wavelet, separability_vectors_raw, summary_path)
 
         # Plot separability vector norms
