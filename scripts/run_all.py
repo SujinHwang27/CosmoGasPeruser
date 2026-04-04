@@ -1,6 +1,6 @@
 """
 Signal Clustering Analysis - End-to-End Pipeline Orchestrator
-Executes the 5 stages defined in docs/feature/signal-clustering-analysis/signal_clustering_project_plan_v4.md
+Executes the 6 stages defined in docs/feature/signal-clustering-analysis/signal_clustering_project_plan_v4.md
 
 Stages:
 1. Input Preparation (run_prep.py)
@@ -8,6 +8,7 @@ Stages:
 3. Clustering (run_cluster.py)
 4. Visualization (run_viz.py)
 5. Auditing (run_audit.py)
+6. Random Forest Classification (run_rf.py)
 """
 
 import argparse
@@ -49,7 +50,7 @@ def run_command(command, stage_name):
 
 def main():
     parser = argparse.ArgumentParser(description="Orchestrator for Signal Clustering Analysis Pipeline")
-    parser.add_argument("--stages", type=str, default="1,2,3,4,5",
+    parser.add_argument("--stages", type=str, default="1,2,3,4,5,6",
                         help="Comma-separated list of stages to run (e.g., '1,2,3') or 'all'")
     parser.add_argument("--run", type=str, choices=['wavelet', 'raw', 'both'], default='both',
                         help="Which data representation to use (Stage 2, 3, 4, 5)")
@@ -63,7 +64,7 @@ def main():
     args = parser.parse_args()
     
     if args.stages == 'all':
-        stages_to_run = [1, 2, 3, 4, 5]
+        stages_to_run = [1, 2, 3, 4, 5, 6]
     else:
         stages_to_run = [int(s.strip()) for s in args.stages.split(',')]
         
@@ -102,6 +103,12 @@ def main():
     if 5 in stages_to_run:
         cmd = ["python", "scripts/run_audit.py", "--run", args.run, "--k", str(args.k)]
         if not run_command(cmd, "Stage 5: Auditing"):
+            sys.exit(1)
+
+    # Stage 6: Random Forest Classification
+    if 6 in stages_to_run:
+        cmd = ["python", "scripts/run_rf.py", "--run", args.run, "--k", str(args.k)]
+        if not run_command(cmd, "Stage 6: Random Forest Classification"):
             sys.exit(1)
 
     print("\n" + "#"*60)

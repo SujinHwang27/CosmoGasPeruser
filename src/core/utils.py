@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import mlflow
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 def cleanup_mlflow_local(experiment_name: str, keep_last: int = 5):
     """

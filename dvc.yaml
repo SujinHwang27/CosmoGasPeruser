@@ -38,7 +38,7 @@ stages:
      cmd: PYTHONPATH=. uv run python scripts/run_cluster.py --run both --k 5
      deps:
        - scripts/run_cluster.py
-       - src/cluster.py
+       - src/core/cluster.py
        - data/feature_discovery/fingerprints_wavelet.npy
        - data/feature_discovery/fingerprints_raw.npy
      outs:

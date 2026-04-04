@@ -97,7 +97,7 @@ stages:
       hash: md5
       md5: 25067f62e59fac7bed5269b8d52b41fc
       size: 7079
-    - path: src/cluster.py
+    - path: src/core/cluster.py
       hash: md5
       md5: aaf87ff7769b84a34cbe998a870c50eb
       size: 3893
