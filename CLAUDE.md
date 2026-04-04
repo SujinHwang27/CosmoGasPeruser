@@ -64,11 +64,13 @@ PYTHONPATH=. uv run python scripts/run_all.py --stages 1,2,3,4,5,6 --run both --
 
 ### MLflow
 - Experiment tracking with nested parent-child runs
-- Artifacts stored on S3 (`s3://cosmo-gas-peruser/mlflow-artifacts`)
-- Backend store: local SQLite or remote server (see `.env.example` for options)
+- Backend: `sqlite:///mlflow.db` (S3 is NOT a valid backend — only SQLite/PostgreSQL/MySQL)
+- Artifacts: `s3://cosmo-gas-peruser/mlflow-artifacts`
+- Multi-machine sync: `dvc add mlflow.db` + `dvc push` (one small file)
+- View UI: `uv run mlflow ui --backend-store-uri sqlite:///mlflow.db`
 - Experiment names auto-generated per branch via `provenance.mlflow_experiment_name()`
-- `mlruns/` and `mlartifacts/` are gitignored — NOT tracked by DVC
-- See `.agent/skills/mlflow-sync-guide/SKILL.md` for multi-machine setup
+- `mlruns/` and `mlartifacts/` are gitignored (legacy local state)
+- See `.agent/skills/mlflow-sync-guide/SKILL.md` for full setup
 
 ### Git Workflow
 - Feature branches: `feature/<name>`
