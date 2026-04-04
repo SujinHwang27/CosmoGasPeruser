@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Check imports
+        run: |
+          PYTHONPATH=. uv run python -c "
+          import src.core.data
+          import src.core.probe
+          import src.core.cluster
+          import src.core.viz
+          import src.core.audit
+          import src.core.base
+          import src.core.transforms
+          import src.core.utils
+          import src.core.models.rf_classifier
+          print('All imports OK')
+          "
+
+      - name: Run tests
+        run: uv run pytest tests/ -v --tb=short
+
+      - name: Verify DVC pipeline deps exist
+        run: |
+          # Extract dep paths from dvc.yaml and check they exist
+          grep '^\s*- ' dvc.yaml | grep -v 'cache:' | sed 's/^\s*- //' | while read -r path; do
+            # Skip paths that are output dirs or metrics
+            if [ -e "$path" ] || echo "$path" | grep -q "results/\|data/feature_discovery/"; then
+              continue
+            fi
+            # Only check source code deps
+            if echo "$path" | grep -q "^src/\|^scripts/"; then
+              if [ ! -e "$path" ]; then
+                echo "ERROR: dvc.yaml references $path but file does not exist"
+                exit 1
+              fi
+            fi
+          done
+          echo "All DVC source deps verified"
