@@ -16,3 +16,4 @@ Key enforcement points:
 - Always apply continuous learning before ending a session
 - Never skip documentation when code structure changes
 - Commit in logical groups with conventional commit messages
+- Never recommend external tool behavior (MLflow URIs, DVC commands, library APIs) without verifying it works first — test it or check official docs before presenting as fact
