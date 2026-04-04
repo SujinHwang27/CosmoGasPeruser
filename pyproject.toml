@@ -1,9 +1,12 @@
 [project]
 name = "cosmogasperuser"
 version = "0.1.0"
-description = "Add your description here"
+description = "ML-driven analysis of diffuse gas in cosmological simulations using unsupervised clustering of sightline separability vectors"
 readme = "README.md"
 requires-python = ">=3.12"
+authors = [
+    { name = "Sujin Hwang", email = "sujinhwang000@gmail.com" },
+]
 dependencies = [
     "mlflow>=3.4.0",
     "plotly>=6.4.0",
@@ -20,4 +23,10 @@ dependencies = [
     "pywavelets>=1.9.0",
     "umap-learn>=0.5.6",
     "seaborn>=0.13.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]

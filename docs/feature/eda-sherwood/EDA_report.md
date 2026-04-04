@@ -11,8 +11,8 @@ This report summarizes the Exploratory Data Analysis (EDA) performed on the Sher
 
 ## 2. Representative Spectra
 
-![Representative Spectra 2x2](eda_plots/tier1_representative_spectra_2x2.png)
-![Representative Spectra Overlap](eda_plots/tier1_representative_spectra_overlap.png)
+![Representative Spectra 2x2](../../../results/eda/tier1_representative_spectra_2x2.png)
+![Representative Spectra Overlap](../../../results/eda/tier1_representative_spectra_overlap.png)
 
 ### Analysis
 These plots show the first spectrum from each class to visualize the raw flux data against the real wavelength axis ($\mathrm{\AA}$).
@@ -42,10 +42,10 @@ These plots show the first spectrum from each class to visualize the raw flux da
 
 ## 3. Greyscale Stacks
 
-![Class 1 Stack](eda_plots/greyscale_class_1.png)
-![Class 2 Stack](eda_plots/greyscale_class_2.png)
-![Class 3 Stack](eda_plots/greyscale_class_3.png)
-![Class 4 Stack](eda_plots/greyscale_class_4.png)
+![Class 1 Stack](../../../results/eda/greyscale_class_1.png)
+![Class 2 Stack](../../../results/eda/greyscale_class_2.png)
+![Class 3 Stack](../../../results/eda/greyscale_class_3.png)
+![Class 4 Stack](../../../results/eda/greyscale_class_4.png)
 
 ### Analysis
 The greyscale stacks visualize 100 spectra per class, where darker regions indicate stronger absorption (lower flux). 
@@ -59,7 +59,7 @@ The greyscale stacks visualize 100 spectra per class, where darker regions indic
 
 ## 4. Total Absorption vs. Line Density
 
-![EW vs Density](eda_plots/tier1_ew_vs_density_2x2.png)
+![EW vs Density](../../../results/eda/tier1_ew_vs_density_2x2.png)
 
 ### Analysis
 This log-log plot reveals the relationship between how many absorption lines exist (X-axis) and how much total absorption they produce (Y-axis).
@@ -75,8 +75,8 @@ This log-log plot reveals the relationship between how many absorption lines exi
 
 ## 5. Local Equivalent Width Distribution
 
-![Local EW Dist](eda_plots/tier1_local_ew_dist_2x2.png)
-![Local EW KDE Overlap](eda_plots/tier1_local_ew_kde_overlap.png)
+![Local EW Dist](../../../results/eda/tier1_local_ew_dist_2x2.png)
+![Local EW KDE Overlap](../../../results/eda/tier1_local_ew_kde_overlap.png)
 
 ### Analysis
 These plots show the distribution of individual absorption feature strengths after deblending.
@@ -97,7 +97,7 @@ These plots show the distribution of individual absorption feature strengths aft
 
 ## 6. Depth vs. Local Equivalent Width
 
-![Depth vs EW](eda_plots/tier1_depth_vs_ew_2x2.png)
+![Depth vs EW](../../../results/eda/tier1_depth_vs_ew_2x2.png)
 
 ### Analysis
 This plot examines the relationship between how deep an absorption feature is (X-axis: depth = 1 - flux at minimum) and how wide/strong it is (Y-axis: local EW, log₂ scale).
@@ -114,7 +114,7 @@ This plot examines the relationship between how deep an absorption feature is (X
 
 ## 7. Gap Distribution
 
-![Gap Distribution](eda_plots/tier1_gap_dist_2x2.png)
+![Gap Distribution](../../../results/eda/tier1_gap_dist_2x2.png)
 
 ### Analysis
 This plot shows the distribution of spacing between adjacent absorption features, with histogram (left Y-axis) and cumulative distribution function (CDF, right Y-axis).
@@ -136,7 +136,7 @@ This plot shows the distribution of spacing between adjacent absorption features
 
 ## 8. Mean Gap vs. Line Density
 
-![Mean Gap vs Density](eda_plots/tier1_mean_gap_vs_density_2x2.png)
+![Mean Gap vs Density](../../../results/eda/tier1_mean_gap_vs_density_2x2.png)
 
 ### Analysis
 This log-log plot examines the inverse relationship between line density (X-axis) and average spacing (Y-axis).
@@ -154,7 +154,7 @@ This log-log plot examines the inverse relationship between line density (X-axis
 
 ## 9. Depth Dispersion vs. Line Density
 
-![Depth Dispersion vs Density](eda_plots/tier1_depth_disp_vs_density_2x2.png)
+![Depth Dispersion vs Density](../../../results/eda/tier1_depth_disp_vs_density_2x2.png)
 
 ### Analysis
 This plot explores whether denser environments have more variable absorption depths (Y-axis: standard deviation of depths within a spectrum).
@@ -169,8 +169,8 @@ This plot explores whether denser environments have more variable absorption dep
 
 ## 10. Spatial Absorption Activity Profile
 
-![Activity Profile 2x2](eda_plots/tier1_activity_profile_2x2.png)
-![Activity Overlap](eda_plots/tier1_activity_overlap.png)
+![Activity Profile 2x2](../../../results/eda/tier1_activity_profile_2x2.png)
+![Activity Overlap](../../../results/eda/tier1_activity_overlap.png)
 
 ### Analysis
 These plots show how absorption is distributed across wavelength space (X-axis: wavelength in Å, Y-axis: mean EW per bin).
@@ -218,7 +218,7 @@ These plots show how absorption is distributed across wavelength space (X-axis: 
 
 ## 12. Activity vs. Density (Per Bin)
 
-![Activity vs Density Binned](eda_plots/tier1_activity_vs_density_binned_2x2.png)
+![Activity vs Density Binned](../../../results/eda/tier1_activity_vs_density_binned_2x2.png)
 
 ### Analysis
 This plot examines the relationship between line density and activity on a **per-bin basis** (each point represents one wavelength bin from one spectrum).
