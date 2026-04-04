@@ -6,7 +6,6 @@
 __pycache__/
 *.pyc
 *.pyo
-mlruns/
 reports/
 
 # Sensitive and temporary files
@@ -21,3 +20,6 @@ local/
 # Claude Code user-specific settings (permissions, etc.)
 .claude/settings.local.json
 
+# DVC-tracked directories (pointer files *.dvc are in git)
+/mlruns
+mlflow.db
