@@ -7,6 +7,7 @@ from pathlib import Path
 
 from src.core.data import SignalClusteringData
 from src.core.models.rf_classifier import prep_cluster_data, train_rf_for_cluster
+from src.core.provenance import mlflow_experiment_name, provenance_header
 
 def run_rf_pipeline(flavor, k, output_dir):
     """
@@ -82,10 +83,16 @@ def run_rf_pipeline(flavor, k, output_dir):
         plot_cluster_score_distribution(cluster_labels, sightline_scores, flavor, rf_png_path)
         mlflow.log_artifact(rf_png_path)
             
-    # Save CSV summary
+    # Save CSV summary with provenance
     df_summary = pd.DataFrame(summary_results)
+    prov = provenance_header({"k": k, "flavor": flavor, "stage": 6})
+    for key, val in prov.items():
+        df_summary.attrs[key] = val
+    # Write provenance as a comment header
     out_csv = os.path.join(output_dir, f"rf_summary_{flavor}_k{k}.csv")
-    df_summary.to_csv(out_csv, index=False)
+    with open(out_csv, 'w') as f:
+        f.write(f"# provenance: {prov}\n")
+        df_summary.to_csv(f, index=False)
     print(f"\nSaved RF summary to: {out_csv}")
 
 
@@ -102,7 +109,7 @@ def main():
     
     os.makedirs(args.output_dir, exist_ok=True)
     
-    mlflow.set_experiment("SignalClustering_Stage6")
+    mlflow.set_experiment(mlflow_experiment_name())
     
     runs = ['wavelet', 'raw'] if args.run == 'both' else [args.run]
     

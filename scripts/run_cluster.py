@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 from src.core.cluster import k_sweep, fit_kmeans, compute_cluster_stats, contingency_matrix
+from src.core.provenance import provenance_header
 
 
 def plot_elbow(sweep_df, run_name, k_chosen, save_path):
@@ -114,7 +115,11 @@ def main():
         # K-sweep
         print(f"\nK-sweep over range {list(k_range)}...")
         sweep_df = k_sweep(separability_vectors_scaled, k_range, seed=args.seed)
-        sweep_df.to_csv(os.path.join(args.results_dir, f'sweep_{run_name}.csv'), index=False)
+        prov = provenance_header({"k": args.k, "run": run_name, "stage": 3, "seed": args.seed})
+        sweep_path = os.path.join(args.results_dir, f'sweep_{run_name}.csv')
+        with open(sweep_path, 'w') as f:
+            f.write(f"# provenance: {prov}\n")
+            sweep_df.to_csv(f, index=False)
 
         # Plot elbow
         plot_elbow(sweep_df, run_name, args.k,
@@ -135,7 +140,9 @@ def main():
         # Compute stats
         stats_df = compute_cluster_stats(separability_vectors, labels, centroids)
         stats_path = os.path.join(args.results_dir, f'cluster_stats_{run_name}_k{args.k}.csv')
-        stats_df.to_csv(stats_path, index=False)
+        with open(stats_path, 'w') as f:
+            f.write(f"# provenance: {prov}\n")
+            stats_df.to_csv(f, index=False)
         print(f"Saved: {stats_path}")
 
         print(f"\nCluster sizes ({run_name}):")
