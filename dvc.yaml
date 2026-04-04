@@ -65,8 +65,22 @@ stages:
       - data/feature_discovery/labels_raw_k5.npy
       - data/feature_discovery/fingerprints_wavelet.npy
       - data/feature_discovery/fingerprints_raw.npy
-    outs:
-      - results/signal_clustering_v2/figs:
+    plots:
+      - results/signal_clustering_v2/figs/fig_umap_2d_wavelet_k5.png:
+          cache: false
+      - results/signal_clustering_v2/figs/fig_umap_2d_raw_k5.png:
+          cache: false
+      - results/signal_clustering_v2/figs/fig_umap_3d_wavelet_k5.html:
+          cache: false
+      - results/signal_clustering_v2/figs/fig_umap_3d_raw_k5.html:
+          cache: false
+      - results/signal_clustering_v2/figs/fig_spatial_map_wavelet_k5.png:
+          cache: false
+      - results/signal_clustering_v2/figs/fig_spatial_map_raw_k5.png:
+          cache: false
+      - results/signal_clustering_v2/figs/fig_umap2d_comparison.png:
+          cache: false
+      - results/signal_clustering_v2/figs/fig_spatial_map_comparison.png:
           cache: false
 
   audit:
