@@ -27,6 +27,9 @@ alwaysApply: false
 - `feature/*` — active development
 - Merge via PR after pipeline passes `dvc repro` cleanly.
 
-## Secrets
-- Never commit `.env`, credentials, or API keys.
+## Tracked vs Ignored
+- `.claude/` — tracked in Git (rules and skills are project-specific, travel with the repo)
+- `.claude/settings.local.json` — gitignored (user-specific permissions)
+- `.agent/` — gitignored (local agent skills, not shared)
+- `.env` — gitignored (secrets)
 - Use `.env.example` as a template for required environment variables.
