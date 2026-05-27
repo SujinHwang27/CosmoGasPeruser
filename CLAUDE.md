@@ -1,104 +1,93 @@
-# CosmoGasPeruser
+# CLAUDE.md
 
-## Project Overview
-Computational astrophysics + ML research project analyzing diffuse gas in cosmological simulations (Sherwood simulation, z=0.3). Uses unsupervised clustering of sightline separability vectors to discover physically meaningful spectral features across 4 physics feedback classes (NoFeedback, StellarWind, WindAGN, WindStrongAGN).
+> **At the start of every session, dispatch the `project-architect` (PI) agent for orientation before any other work.** The PI reads the active track's `experiments/<track>/LEDGER.md` (§1 Pulse + §3 current plan-of-record decision), the binding rules in `.claude/agents/project-architect.md`, and reports the current state + next-step authorization gate. Skipping this step risks acting on stale context — sprint state changes per-session; the LEDGER is the only source of truth that survives compaction.
 
-## Architecture
+**CosmoGasPeruser**: computational-astrophysics + ML research project that discovers physically meaningful spectral features in diffuse gas from the Sherwood cosmological simulation (z=0.3), by unsupervised clustering of per-sightline **separability vectors** across 4 physics feedback classes (1=NoFeedback, 2=StellarWind, 3=WindAGN, 4=WindStrongAGN). Active track is `signal-clustering-v2` — RBF-SVM micro-probing → 24-dim separability vectors → K-Means (K=5) → UMAP/audit/RF, run in parallel over wavelet and raw representations. Plan-of-record at `experiments/signal-clustering-v2/LEDGER.md` §3.
 
-### Core Library (`src/core/`)
-All reusable logic lives here. Follows ABC pattern (`BaseTransformer`, `BaseModel`).
-- `data.py` — Data ingestion (`DataIngestor`, `SignalClusteringData`)
-- `probe.py` — RBF SVM micro-probing (24-dim separability vectors)
-- `cluster.py` — K-Means with k-sweep and silhouette analysis
-- `viz.py` — UMAP, spatial maps, comparison plots
-- `audit.py` — Cross-run overlap, variance, feature attribution
-- `models/rf_classifier.py` — Per-cluster Random Forest with GridSearchCV
-- `base.py` — Abstract base classes
-- `transforms.py` — PCA, DCT, Wavelet, Fisher transforms
-- `provenance.py` — Git metadata capture for result traceability
-- `utils.py` — MLflow cleanup, shape checks, directory helpers
+**Before starting work, read the active branch's LEDGER first**: `experiments/<branch_basename>/LEDGER.md`. It is the single source of truth for stage status, decisions (D-XX), data lineage, and next steps.
 
-### Scripts (`scripts/`)
-Thin orchestration wrappers only. **No logic in scripts** — all computation delegates to `src/core/`.
-- `run_all.py` — Master pipeline orchestrator (stages 1-6)
-- `run_prep.py` — Stage 1: Data preparation
-- `run_probe.py` — Stage 2: Micro-probing
-- `run_cluster.py` — Stage 3: K-Means clustering
-- `run_viz.py` — Stage 4: Visualization
-- `run_audit.py` — Stage 5: Cross-run auditing
-- `run_rf.py` — Stage 6: Random Forest classifiers
+## Tooling
 
-### Pipeline Execution
-```bash
-# Via DVC (preferred — tracks dependencies, skips unchanged stages)
-dvc repro
+- Package manager: **`uv`** (Python 3.12+). Stay on `uv.lock`; install with `uv sync`, run with `uv run python <script>`. Quote version specifiers when adding packages so the shell does not create junk redirect files.
+- Run scripts with `PYTHONPATH=.` from the repo root so `src.core.` imports resolve. The pipeline scripts set this; `run_all.py` injects it into subprocesses.
+- Upstream raw data under `data/` is DVC-managed and read-only — **never modify files in `data/` directly**. Pull/push through DVC (`data/raw.dvc`, `data/preprocessed.dvc`, `data/processed.dvc`, `data/feature_analysis.dvc`).
 
-# Via orchestrator (always re-runs)
-PYTHONPATH=. uv run python scripts/run_all.py --stages 1,2,3,4,5,6 --run both --k 5
-```
+## Source layout
 
-## Key Conventions
+All reusable logic lives in `src/core/` and below — **never place modules at `src/` level** (a stray `src/viz.py` once shadowed `src/core/viz.py` and broke imports). Scripts in `scripts/` are thin orchestration wrappers — no logic in scripts.
 
-### Data
-- **Do NOT modify `data/` directly** — managed by DVC
-- Large files tracked via DVC, small results/docs tracked via Git
-- 4 physics classes stored in directories named `1/`, `2/`, `3/`, `4/`
-- Wavelet features: `data/processed/wavelet_db8_l6_d12/`
-- Raw flux: `data/preprocessed/Sherwood_z0.3_inf/`
+- `src/core/data.py` — data ingestion (`DataIngestor`, `SignalClusteringData`). Load via `SignalClusteringData`, never raw `np.load()` in scripts.
+- `src/core/probe.py` — RBF SVM micro-probing → 24-dim separability vectors.
+- `src/core/cluster.py` — K-Means with k-sweep + silhouette analysis.
+- `src/core/viz.py` — UMAP, spatial maps, comparison plots.
+- `src/core/audit.py`, `src/core/drift_animation.py` — cross-run overlap, variance, attribution, drift animation.
+- `src/core/models/rf_classifier.py` — per-cluster Random Forest with GridSearchCV.
+- `src/core/base.py` — ABCs (`BaseTransformer`, `BaseModel`). `src/core/transforms.py` — PCA/DCT/Wavelet/Fisher. `src/core/provenance.py` — git-metadata stamping. `src/core/utils.py` — MLflow cleanup, shape checks.
+- `scripts/run_{prep,probe,cluster,viz,audit,rf}.py` — stages 1–6. `scripts/run_all.py` — always-re-runs orchestrator.
+- `experiments/<name>/LEDGER.md` — command center per track (7-section schema below). The active pipeline entry-point for this project is the DVC DAG (`dvc.yaml`) + `scripts/`, not a per-track `pipeline.py` (project-specific adaptation of the Research-OS template).
+- `dvc.yaml` — 6-stage reproducible pipeline. `results/<track>/` — CSVs, plots, figures (git-tracked via `cache: false`).
 
-### Terminology (standardized)
-- **Separability vector**: The 24-dim feature vector per sightline (6 OVO pairs x 4 class distances)
-- File naming uses `fingerprints_*.npy` for historical reasons but code/docs should say "separability vector"
-- **Sightline**: A single line-of-sight spectrum (2048 pixels)
+### Legacy (already removed — do not resurrect)
+- An earlier config-driven orchestrator (`src/main.py`), standalone scripts (`scripts/baseline|clustering|utils/`), and `src/core/models.py` (`BaselineRFClassifier`, `MicroProbingClassifier`, `SimpleTransformerClassifier`) were removed in prior cleanup and are **absent on disk** (verified 2026-05-26). Their history is captured in the per-track LEDGERs. The current RF lives at `src/core/models/rf_classifier.py` (a package, not the old `models.py`).
+- `configs/*.yaml` and `local/utils.py` are dangling remnants of the removed config-driven flow — no current code references them (candidate orphans; left in place pending owner confirmation).
 
-### Dependencies
-- Python 3.12+, managed via `uv`
-- Install: `uv sync`
-- Run commands: `uv run python <script>`
+## Coding conventions
 
-### DVC Pipeline
-- Pipeline defined in `dvc.yaml` (6 stages)
-- Dependency paths must match actual file locations in `src/core/`
-- Results go to `results/signal_clustering_v2/`
-- Metrics CSV files use `cache: false` so they're always readable
+- **ABC pattern**: transforms inherit `BaseTransformer` (`fit_transform(X, y)`); models inherit `BaseModel` (`train(...)`, `predict(X)`). New `src/core/` modules need a docstring stating scientific purpose.
+- **Type hints on all public functions.** Every annotated type must be explicitly imported — Python only crashes when the function is *called*, not at import, so CI import-checks alone won't catch a missing `Optional`/`Dict`/`Tuple`. This has bitten the repo; verify typing imports.
+- NumPy arrays carry shape comments (`# shape: (n_sightlines, 24)`). Use `np.float64` for scientific computation. Random seeds are explicit parameters, never hardcoded without a default.
+- Validate data shapes and NaN/Inf before computation; no silent NaN passthrough — replace with a documented, physically defensible default.
 
-### MLflow
-- Experiment tracking with nested parent-child runs
-- Backend: `mlruns/` directory (file-based, gitignored, synced via DVC)
-- View UI: `uv run mlflow ui --backend-store-uri mlruns`
-- Multi-machine sync: `dvc add mlruns && dvc push` / `dvc pull mlruns`
-- Experiment names auto-generated per branch via `provenance.mlflow_experiment_name()`
-- See `.agent/skills/mlflow-sync-guide/SKILL.md` for full setup
+## Terminology (standardized)
+- **Separability vector** — the canonical term for the 24-dim feature per sightline (6 one-vs-one class pairs × 4 class decision distances). File outputs use `fingerprints_*.npy` for backward compatibility, but variable names and prose say `separability_vectors`.
+- **Sightline** — a single line-of-sight spectrum (2048 pixels).
+- Physics classes: `1`=NoFeedback, `2`=StellarWind, `3`=WindAGN, `4`=WindStrongAGN.
 
-### Git Workflow
-- Feature branches: `feature/<name>`
-- Conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`
-- Current active branch: `feature/signal-clustering-v2`
-- Tag stable checkpoints: `git tag -a v0.X-name -m "description" <commit>`
-- Existing tags: `v0.1-eda`, `v0.2-baseline-rf`, `v0.3-clustering-v1`, `v0.4-clustering-v2`
+## Domain conventions
+- Data shapes (Sherwood z=0.3): raw flux `(16384, 2048)` per class; wavelet features `(16384, 2048)` per class (db8, 6 levels, 12 detail; per-level z-score so D5/D6/A6 don't dominate); separability vectors `(16384, 24)`; cluster labels `(16384,)` ∈ `0..K-1`.
+- The micro-probing algorithm: per sightline, for each of the 6 one-vs-one class pairs, train an RBF SVM on the 2 class vectors and record signed decision distances from all 4 classes → 24-dim vector. Encodes the per-position separability landscape.
+- Every loader/preprocessor includes a `_validate_data` bounds/type/NaN check.
 
-### Testing
-- Framework: pytest
-- Run: `uv run pytest tests/`
-- Tests should cover `src/core/` modules
+## Experiment workflow (mandatory)
+- Each methodology is isolated on its own branch (`exp/<name>` for new tracks; existing tracks keep their `feature/<name>` names) with `experiments/<name>/{LEDGER.md, artifacts/}` and its results under `results/<name>/`.
+- MLflow experiment names are branch-aware and hierarchical via `src.core.provenance.mlflow_experiment_name()` → `CosmoGasPeruser/<branch>`. Run names are stage-prefixed `Stage<N>-<ShortDescription>`. Mandatory tags: `model_type`, `stage`, `run` (wavelet/raw), `k`. See `.claude/skills/mlflow-run/SKILL.md`.
+- Version-track any artifact > 10 MB or matching `.npy/.pt/.ckpt/.dat/.html/.mp4/.h5/.hdf5`. See `.claude/skills/dvc-track/SKILL.md`.
 
-### Environment
-- `.env` contains credentials — never commit secrets
-- `.env` is in `.gitignore`
-- `.env.example` documents required variables without real values
+## Testing
+- `uv run pytest tests/`. Test files `tests/test_<module>.py` mirror `src/core/<module>.py`. Use small synthetic arrays with a fixed-seed `np.random.default_rng(seed)` — tests must not depend on real data in `data/`.
+- Cover: data loading (shape/dtype/NaN), transforms (shape/range/determinism), clustering (label count == K, all assigned), probe (24-dim, finite, deterministic). Mark slow tests `@pytest.mark.slow`.
 
-### CI/CD
-- GitHub Actions workflow in `.github/workflows/ci.yml`
-- Runs on push to `main` and `feature/**` branches
-- Checks: import validation, pytest, DVC dep verification
+## Git conventions
+- Branches: `main` (stable), `exp/<name>` (new methodologies), `feat/<name>`, `refactor/<name>`. Existing tracks: `feature/<name>` (kept as-is). Hyphenated names.
+- Conventional commits: `feat:`, `fix:`, `chore:`, `paper:`, `docs:`, `refactor:`, `test:`. Reference the pipeline stage when changing stage code. Commit in logical groups.
+- Tag stable checkpoints: `git tag -a v0.X-name -m "..." <commit>`. Existing: `v0.1-eda`, `v0.2-baseline-rf`, `v0.3-clustering-v1`, `v0.4-clustering-v2`.
 
-### Provenance
-- Use `src/core/provenance.py` to stamp results with git SHA, branch, timestamp
-- `provenance_header(params)` — returns dict with commit, branch, dirty, timestamp + params
-- `mlflow_experiment_name()` — returns branch-aware name like `CosmoGasPeruser/feature/signal-clustering-v2`
-- Use `mlflow_experiment_name()` instead of hardcoded experiment names in scripts
+### DVC ↔ Git discipline
+- `dvc.yaml` dep paths must match disk exactly — DVC silently skips re-execution on a missing dep, it does not error. After moving/renaming source, update `dvc.yaml` deps AND `dvc.lock` (via `dvc repro`). `run_all.py` and `dvc.yaml` must list the same stages.
+- Results CSVs/plots use `cache: false` so they are Git-readable without `dvc pull`.
+- Migrations: Git→DVC (`dvc add` → `git rm -r --cached` → `git add *.dvc .gitignore`); DVC→Git (`git rm *.dvc` → `git add <actual files>` — **verify the files land in Git**; data was lost here once when a `.dvc` pointer was deleted but files never made it to Git or DVC). Never leave orphaned `.dvc` pointers.
 
-### Legacy Code
-- `src/main.py` — old config-driven orchestrator (superseded by `scripts/run_all.py`)
-- `scripts/baseline/`, `scripts/clustering/`, `scripts/utils/` — old standalone scripts (superseded by pipeline stages)
-- `src/core/models.py` — contains `BaselineRFClassifier`, `MicroProbingClassifier`, `SimpleTransformerClassifier` (legacy, not used by current pipeline)
+## Documentation
+- Each track gets `docs/feature/<branch-name>/` (historical analysis archives) and a live `experiments/<track>/LEDGER.md` (command center). This CLAUDE.md is the single source of truth for architecture/conventions.
+- Anti-duplication: if a doc is a strict subset of another, delete the subset. Theory sections live in one place and are cross-referenced. After cleanup, grep docs for removed paths — docs must not reference deleted files or stale paths, and terminology must match code ("separability vector" not "fingerprint"; "K=5" not "K=8" unless describing v1 history).
+- Image paths: EDA `results/eda/`, baseline RF `results/baseline_rf/`, clustering-v2 `results/signal_clustering_v2/figs/`.
+
+## Security
+- Never commit `.env` or hardcode credentials. Load secrets via `python-dotenv` at runtime. `.env` is gitignored; `.env.example` documents required vars without real values. DVC remote credentials via `dvc remote modify --local`. MLflow tracking URI is configurable (`MLFLOW_TRACKING_URI`), not hardcoded.
+
+## Failure handling
+If the same command fails 3 times with no progress, **stop and surface to the user** with exact commands, observed output, hypothesized cause, proposed fix. Don't keep retrying. Don't fabricate an "Error Report" file unless asked.
+
+## Reporting findings (honest-reporting rule, the [D-37] discipline)
+Lead with the empirical observation as observed. Framing-for-paper is a separate, downstream call. When a finding could either strengthen or weaken a current paper claim, the first-pass report favors the **honest** framing — the claim narrows to match the evidence unless extra evidence justifies the broader claim. Null results are scientific outcomes, not problems to spin. See `.claude/agents/project-architect.md` for the full [D-37]-extension rules.
+
+## Never recommend unverified external-tool behavior
+Never present MLflow URIs, DVC commands, or library APIs as fact without verifying — test it or check official docs first. (The MLflow backend was mis-stated as S3-capable once; it is file/sqlite/postgres/mysql only — see `mlflow-run` skill.)
+
+## Subagents, commands, skills
+- `.claude/agents/` — `project-architect` (PI), `data-engineer`, `core-implementer`, `infrastructure-manager`, `support-researcher`, `paper-author`, `defense-panel`. Dispatched by description match.
+- `.claude/commands/` — `/new-experiment <name>`, `/update-ledger`.
+- `.claude/skills/` — `ledger-update` (LEDGER write contract), `mlflow-run` (MLflow run contract + sync), `dvc-track` (DVC pipeline + heavy-artifact contract), `skill-transplant` (graft a capability from another agentic repo).
+
+## Master-source architecture for paper authoring (when a paper track starts)
+Multi-venue authoring = one decision-log + one set of atoms + N venue manifests. Source-of-truth order (resolve conflicts up-chain): `experiments/<name>/LEDGER.md` → `papers/shared/numbers.tex` → `papers/shared/sec/*.tex` → `papers/<venue>/main.tex`. The `papers/` tree is not yet created; the `paper-author` agent scaffolds it when paper work begins.

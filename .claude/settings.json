@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git show:*)",
+      "Bash(git ls-files:*)",
+      "Bash(uv run python:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(uv sync:*)",
+      "Bash(dvc status:*)",
+      "Bash(dvc dag:*)",
+      "Bash(dvc repro:*)",
+      "Bash(ruff:*)",
+      "Bash(black:*)"
+    ],
+    "deny": [
+      "Write(data/**)",
+      "Edit(data/**)"
+    ]
+  },
+  "hooks": {}
+}

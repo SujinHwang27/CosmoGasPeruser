@@ -15,6 +15,7 @@ It uses a novel **micro-probing** technique (RBF SVM decision distances) to enco
 ## Project Structure
 ```
 CosmoGasPeruser/
+├── CLAUDE.md           # Project kernel — conventions, points at the active LEDGER
 ├── src/core/           # Core library (all reusable logic)
 │   ├── data.py         # Data ingestion (DataIngestor, SignalClusteringData)
 │   ├── probe.py        # RBF SVM micro-probing (24-dim separability vectors)
@@ -24,14 +25,19 @@ CosmoGasPeruser/
 │   └── models/         # ML models (Random Forest classifiers)
 ├── scripts/            # Thin orchestration wrappers (stages 1-6)
 │   └── run_all.py      # Master pipeline orchestrator
+├── experiments/        # Per-track command centers (Research-OS)
+│   └── <track>/LEDGER.md   # Single source of truth per experiment track
+├── .claude/            # Agentic OS: agents/, commands/, skills/
+├── templates/          # Scaffold for new experiment tracks
 ├── data/               # Dataset storage (DVC-tracked)
 ├── results/            # Pipeline outputs (CSVs, plots, figures)
-├── configs/            # Experiment YAML configurations
-├── docs/               # Design documents and analysis reports
+├── docs/               # Design documents and analysis reports (historical archive)
 ├── tests/              # Unit tests (pytest)
 ├── dvc.yaml            # DVC pipeline definition (6 stages)
 └── pyproject.toml      # Python project metadata (uv)
 ```
+
+This repo follows the **Research-OS** discipline: each methodology is isolated on its own branch with an `experiments/<track>/LEDGER.md` (7-section command center: Pulse / Methodology / Logic / Data / Evaluation / Visualization / History). Specialist agents under `.claude/agents/` (PI, data, core, infra, analysis, paper, defense-panel) are coordinated through the active LEDGER. See `CLAUDE.md`.
 
 ## Setup
 
@@ -75,19 +81,19 @@ PYTHONPATH=. uv run python scripts/run_all.py --stages 3,4 --run wavelet --k 5
 uv run pytest tests/
 ```
 
-## Configuration
+## Experiment tracks
 
-Experiments are defined in YAML (`configs/`):
-```yaml
-name: "my_experiment"
-data: "path/to/data"
-transforms:
-  - type: "dct"
-    params: { mode: "full" }
-model:
-  type: "transformer"
-  params: { lr: 0.001, epochs: 10 }
+Each methodology is isolated on its own branch with a command-center LEDGER:
+
+```bash
+# Scaffold a new track (creates exp/<name> branch + experiments/<name>/LEDGER.md)
+/new-experiment <name>          # in Claude Code
+
+# Update the active track's LEDGER with the session's progress
+/update-ledger                  # in Claude Code
 ```
+
+Active track: `signal-clustering-v2` — see `experiments/signal-clustering-v2/LEDGER.md`. Reconstructed LEDGERs for the historical tracks (`eda-sherwood`, `baseline-random-forest`, `signal-clustering-v1`) live alongside it. MLflow runs are branch-aware (`CosmoGasPeruser/<branch>`) and synced across machines via DVC (`mlruns.dvc`).
 
 ---
 Contact: **Sujin Hwang** (sujinhwang000@gmail.com)
