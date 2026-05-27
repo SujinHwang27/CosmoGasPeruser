@@ -1,0 +1,2 @@
+wavelet_shape,wavelet_dtype,wavelet_min,wavelet_max,wavelet_mean,wavelet_std,absorption_shape,absorption_dtype,absorption_min,absorption_max,absorption_mean,absorption_std
+"(65536, 2048)",float64,-361.1357899520445,439.4242478028588,-1.4094628242311558e-18,1.0,"(65536, 2048)",float64,6.317903444852391e-08,1.0,0.02212493817185022,0.08562329953691365
