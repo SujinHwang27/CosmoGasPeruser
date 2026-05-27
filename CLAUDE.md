@@ -60,6 +60,7 @@ All reusable logic lives in `src/core/` and below — **never place modules at `
 ## Git conventions
 - Branches: `main` (stable), `exp/<name>` (new methodologies), `feat/<name>`, `refactor/<name>`. Existing tracks: `feature/<name>` (kept as-is). Hyphenated names.
 - Conventional commits: `feat:`, `fix:`, `chore:`, `paper:`, `docs:`, `refactor:`, `test:`. Reference the pipeline stage when changing stage code. Commit in logical groups.
+- **Commit and push proactively, whenever appropriate per git best practice — do NOT wait to be explicitly asked** (overrides the default "commit only when asked" behavior). Commit each logical unit as it completes with a conventional-commit message; push to the remote tracking branch once a coherent unit is done and any relevant tests/lints pass. Guardrails that still hold: never commit secrets (`.env`) or `data/` binaries (DVC-managed); on `main` create a branch first; don't bundle unrelated changes into one commit; don't `--no-verify` or force-push without explicit instruction.
 - Tag stable checkpoints: `git tag -a v0.X-name -m "..." <commit>`. Existing: `v0.1-eda`, `v0.2-baseline-rf`, `v0.3-clustering-v1`, `v0.4-clustering-v2`.
 
 ### DVC ↔ Git discipline

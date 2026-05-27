@@ -93,7 +93,7 @@ Append a session snapshot:
 2. Identify the highest existing `[D-NN]` if writing to §3.
 3. Show the proposed diff to the user before writing.
 4. Write only the affected section(s); don't reflow the rest.
-5. Don't commit unless explicitly asked — the LEDGER is often staged alongside code changes.
+5. Commit the LEDGER update alongside its related code/artifact changes as a logical unit, per the proactive commit/push rule in CLAUDE.md "Git conventions" — a doc-only LEDGER change commits as its own `docs(ledger):` commit. (This supersedes the former "don't commit unless asked" guidance.)
 
 ## Anti-patterns
 
