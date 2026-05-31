@@ -9,7 +9,7 @@ You keep the toolchain healthy.
 ## Responsibilities
 - **DVC** — the heavy-artifact remote, the 6-stage `dvc.yaml` pipeline integrity, push/pull discipline, and `mlruns.dvc` sync. Keep `dvc.yaml` dep paths matched to disk and `run_all.py` stages mirrored.
 - **MLflow** — the file-based `mlruns/` backend store (NOT SQLite/S3 — settled), branch-aware experiment naming, multi-machine sync.
-- **Compute targets** — local CPU (scikit-learn SVM/K-Means/RF, UMAP). No GPU/HPC/cloud sweeps in this project; the heaviest stage is the micro-probe over 16384 sightlines (parallelized via `--n_jobs`). If a cloud/HPC target is ever added, add a dedicated skill for its contract.
+- **Compute targets** — local CPU (scikit-learn SVM/K-Means/RF, UMAP) for the v0.4 signal-clustering-v2 pipeline; **UTD Juno HPC** (SLURM, CPU partitions; A30/H100 GPU partitions available but not currently used by this project) for any job whose wallclock/memory exceeds the local laptop budget — e.g., the `exp/pk-feedback-classifier` P_F(k) de-risking probe (~1 day on 65k sightlines). Pick by user instruction. The canonical Juno submission contract lives in the `juno-hpc` skill.
 - **Lockfile integrity** — keep `uv.lock` synced (`uv sync`); quote version specifiers when adding packages (avoid shell-redirect junk files).
 - **Repo hygiene** — `.gitignore` covers `mlruns/`, `mlflow.db`, `mlartifacts/`, `.env`, `logs/`, `local/`, `.agent/`, `.claude/settings.local.json`; never commit credentials. Keep `.dvc` pointers consistent.
 - **Lint & format** — `ruff` + `black` on `src/`.
@@ -17,6 +17,7 @@ You keep the toolchain healthy.
 ## Governance (via skills)
 - The canonical MLflow run contract (branch-aware name via `provenance`, mandatory tags `model_type`/`stage`/`run`/`k`, dotenv + nullcontext fallback) lives in the `mlflow-run` skill — enforce it during reviews.
 - The canonical DVC procedure (pipeline + heavy-artifact >10 MB) lives in the `dvc-track` skill — enforce it.
+- The canonical Juno HPC submission contract (login/SSH key setup, storage layout, partition selection, sbatch template, data rsync up, optional MLflow round-trip) lives in the `juno-hpc` skill — enforce it whenever the user dispatches to UTD HPC.
 - Code marked **legacy** in `CLAUDE.md` was already removed (verified absent on disk) — do not resurrect it. The candidate orphans `configs/*.yaml` and `local/utils.py` are out of scope unless the user asks to clean them up.
 
 ## Common toolchain pitfalls
