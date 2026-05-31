@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from typing import Tuple, List, Optional, Dict, Any
+from typing import Tuple, List, Optional, Dict, Any, Literal
 from dataclasses import dataclass
 from sklearn.preprocessing import StandardScaler
 
@@ -257,6 +257,197 @@ class SignalClusteringData:
         ])
 
         return results
+
+
+def group_indices_within_class(
+    n_sightlines: int,
+    M: int,
+    *,
+    seed: int = 42,
+) -> List[np.ndarray]:
+    """Random disjoint within-class grouping of sightline indices into groups of size M.
+
+    Returns a list of integer-index arrays (each shape ``(M,)``) covering a random
+    permutation of ``range(n_sightlines)``. Any tail of size < M (sightlines that do
+    not fit into a complete group) is dropped — this is documented behaviour. With
+    the canonical Sherwood shape ``N=16384`` and ``M ∈ {1, 4, 16, 64, 256}``, every
+    one of those M divides N exactly, so the tail is empty in practice; the drop
+    is defensive against off-spec callers.
+
+    The caller is responsible for looping over classes — this helper operates on a
+    single class at a time. It is the SNR-correct counterpart to
+    :func:`stack_flux_within_class` for P(k) stacking: compute P(k) per-sightline,
+    then average per group using these index arrays (so the noise floor falls
+    ~1/M for independent sightlines).
+
+    Args:
+        n_sightlines: Number of sightlines available in the class (axis-0 size).
+        M: Group size (stack depth). Must be >= 1.
+        seed: RNG seed for reproducible disjoint grouping.
+
+    Returns:
+        List of length ``n_sightlines // M``, each entry a ``(M,)`` int64 index array.
+        The union of all entries is a subset of ``range(n_sightlines)`` with no
+        duplicates; entries are pairwise disjoint.
+
+    Raises:
+        ValueError: if ``M < 1`` or ``n_sightlines < 1``.
+    """
+    if M < 1:
+        raise ValueError(f"M must be >= 1, got {M}")
+    if n_sightlines < 1:
+        raise ValueError(f"n_sightlines must be >= 1, got {n_sightlines}")
+
+    rng = np.random.default_rng(seed)
+    perm = rng.permutation(n_sightlines)
+    n_groups = n_sightlines // M
+    # Drop the tail (perm[n_groups * M :]) so every group is exactly size M.
+    perm = perm[: n_groups * M]
+    # shape: (n_groups, M)
+    groups = perm.reshape(n_groups, M)
+    return [groups[g] for g in range(n_groups)]
+
+
+def stack_flux_within_class(
+    flux: np.ndarray,
+    M: int,
+    *,
+    seed: int = 42,
+    mode: Literal["flux", "pk_passthrough"] = "flux",
+) -> np.ndarray:
+    """Average flux within random disjoint groups of size M (one class at a time).
+
+    Caller loops over classes; this operates on a single ``(N, 2048)`` per-class
+    flux block. Returns the per-group MEAN flux — i.e. the "stack the spectra,
+    then compute P(k) downstream" path.
+
+    Tail handling: any sightlines that do not fit into a complete group of M are
+    DROPPED. With Sherwood ``N=16384`` and ``M ∈ {1, 4, 16, 64, 256}`` the tail
+    is always empty; the drop is defensive against off-spec callers.
+
+    For the SNR-correct stacking pattern (compute P(k) per-sightline, then average
+    per group), use :func:`group_indices_within_class` instead — that returns the
+    index arrays so the caller can run ``FluxPowerSpectrum`` per-sightline and
+    average within groups. This helper deliberately implements ONLY the
+    flux-averaging path; the ``pk_passthrough`` mode is intentionally NOT
+    supported here (it would require the helper to know about P(k), violating
+    separation of concerns) — pass ``mode="pk_passthrough"`` and you get a
+    ``NotImplementedError`` pointing you at the sibling helper.
+
+    Args:
+        flux: Per-class flux array, shape ``(N_sightlines, 2048)``.
+        M: Stack depth (group size). Must be >= 1.
+        seed: RNG seed for reproducible disjoint grouping.
+        mode: ``"flux"`` (default) averages flux per group and returns the
+            ``(N//M, 2048)`` block. ``"pk_passthrough"`` is reserved and
+            raises ``NotImplementedError`` — use :func:`group_indices_within_class`.
+
+    Returns:
+        Stacked flux array, shape ``(N_sightlines // M, 2048)``, dtype ``float64``.
+
+    Raises:
+        ValueError: if ``flux`` is not 2D or ``M < 1``.
+        NotImplementedError: if ``mode == "pk_passthrough"``.
+    """
+    if mode == "pk_passthrough":
+        raise NotImplementedError(
+            "mode='pk_passthrough' is not implemented in stack_flux_within_class "
+            "(would require P(k) knowledge here). Use group_indices_within_class() "
+            "to get the grouping, compute P(k) per-sightline, then average per group."
+        )
+    if mode != "flux":
+        raise ValueError(f"mode must be 'flux' or 'pk_passthrough', got {mode!r}")
+    if flux.ndim != 2:
+        raise ValueError(f"flux must be 2D (N_sightlines, 2048), got shape {flux.shape}")
+    if M < 1:
+        raise ValueError(f"M must be >= 1, got {M}")
+
+    n_sightlines = flux.shape[0]
+    index_groups = group_indices_within_class(n_sightlines, M, seed=seed)
+    n_groups = len(index_groups)
+
+    # shape: (n_groups, 2048)
+    out = np.empty((n_groups, flux.shape[1]), dtype=np.float64)
+    for g, idx in enumerate(index_groups):
+        out[g] = flux[idx].mean(axis=0)
+    return out
+
+
+def load_velocity_axis(
+    class_id: int,
+    flux_base: str = SignalClusteringData.FLUX_BASE,
+) -> np.ndarray:
+    """Load the per-pixel velocity axis ``vel.npy`` for one Sherwood class.
+
+    Args:
+        class_id: Physics class id ∈ {1, 2, 3, 4} (1=NoFeedback, 2=StellarWind,
+            3=WindAGN, 4=WindStrongAGN).
+        flux_base: Base directory under which ``{class_id}/vel.npy`` lives.
+            Defaults to :attr:`SignalClusteringData.FLUX_BASE`.
+
+    Returns:
+        ``(2048,) float64`` velocity-axis array in km/s.
+
+    Raises:
+        FileNotFoundError: if ``vel.npy`` is absent for the requested class.
+        ValueError: if the loaded axis is not 1D length 2048, or contains NaN/Inf.
+    """
+    if class_id not in (1, 2, 3, 4):
+        raise ValueError(f"class_id must be in {{1,2,3,4}}, got {class_id}")
+    path = os.path.join(flux_base, str(class_id), "vel.npy")
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"vel.npy not found at {path}")
+    vel = np.load(path).astype(np.float64, copy=False)
+    if vel.ndim != 1 or vel.shape[0] != 2048:
+        raise ValueError(
+            f"vel.npy for class {class_id} has shape {vel.shape}, expected (2048,)"
+        )
+    if not np.all(np.isfinite(vel)):
+        raise ValueError(f"vel.npy for class {class_id} contains non-finite values")
+    return vel
+
+
+def assert_velocity_axes_uniform(
+    tol: float = 1e-9,
+    flux_base: str = SignalClusteringData.FLUX_BASE,
+) -> float:
+    """Assert all 4 classes share an identical, uniformly-spaced velocity axis.
+
+    Loads ``vel.npy`` for classes 1–4, asserts they are pairwise identical within
+    ``tol`` (max-abs-difference) AND that the per-pixel spacing is uniform within
+    ``tol`` (max - min of ``diff(vel)`` <= tol). On success, returns the scalar
+    Δv (km/s/pixel) derived from class 1.
+
+    The probe script in ``experiments/pk-feedback-classifier/`` calls this once
+    on startup so the physical k-axis (``k = 2π · rfftfreq(2048, d=Δv)``) is
+    derived from disk rather than hardcoded ([D-04]).
+
+    Args:
+        tol: Absolute tolerance for both the inter-class identity check and the
+            intra-axis uniform-spacing check. Default ``1e-9`` km/s.
+        flux_base: Base directory; passed through to :func:`load_velocity_axis`.
+
+    Returns:
+        Δv (km/s/pixel) — the uniform per-pixel velocity step. Expected ≈ 2.6365.
+
+    Raises:
+        AssertionError: if any two class velocity axes differ by > tol, or if
+            the spacing is non-uniform beyond tol.
+    """
+    axes = [load_velocity_axis(c, flux_base=flux_base) for c in (1, 2, 3, 4)]
+    ref = axes[0]
+    for c, ax in zip((2, 3, 4), axes[1:]):
+        diff = float(np.max(np.abs(ax - ref)))
+        assert diff <= tol, (
+            f"vel.npy for class {c} differs from class 1 by max-abs={diff:.3e} > tol={tol:.3e}"
+        )
+    spacing = np.diff(ref)
+    spread = float(spacing.max() - spacing.min())
+    assert spread <= tol, (
+        f"vel.npy spacing is non-uniform: max-min(diff)={spread:.3e} > tol={tol:.3e}"
+    )
+    delta_v = float(spacing.mean())
+    return delta_v
 
 
 class DatasetFactory:

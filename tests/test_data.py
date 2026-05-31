@@ -4,7 +4,15 @@ import numpy as np
 import os
 import pytest
 import tempfile
-from src.core.data import DataIngestor, SignalClusteringData, DataSummary
+from src.core.data import (
+    DataIngestor,
+    SignalClusteringData,
+    DataSummary,
+    stack_flux_within_class,
+    group_indices_within_class,
+    load_velocity_axis,
+    assert_velocity_axes_uniform,
+)
 
 
 @pytest.fixture
@@ -81,6 +89,124 @@ class TestSignalClusteringData:
         X = rng.standard_normal((50, 2048))
         result = SignalClusteringData.normalize_wavelet_per_level(X)
         assert not np.any(np.isnan(result))
+
+
+class TestStackFluxWithinClass:
+    def test_stack_flux_within_class_shape_and_seed(self):
+        rng = np.random.default_rng(0)
+        flux = rng.standard_normal((1024, 2048)).astype(np.float64)
+
+        out1 = stack_flux_within_class(flux, M=16, seed=42)
+        assert out1.shape == (64, 2048)
+        assert out1.dtype == np.float64
+
+        # Determinism on fixed seed.
+        out2 = stack_flux_within_class(flux, M=16, seed=42)
+        np.testing.assert_array_equal(out1, out2)
+
+        # Different seed → different grouping → different (with overwhelming probability) output.
+        out3 = stack_flux_within_class(flux, M=16, seed=43)
+        assert not np.array_equal(out1, out3)
+
+    def test_stack_flux_within_class_averaging_is_correct(self):
+        # If all sightlines in a group are identical, the mean should equal that row.
+        flux = np.tile(np.arange(2048, dtype=np.float64), (32, 1))
+        out = stack_flux_within_class(flux, M=4, seed=7)
+        assert out.shape == (8, 2048)
+        for row in out:
+            np.testing.assert_array_equal(row, np.arange(2048, dtype=np.float64))
+
+    def test_stack_flux_within_class_drops_tail(self):
+        rng = np.random.default_rng(0)
+        flux = rng.standard_normal((10, 2048)).astype(np.float64)  # 10 // 4 = 2, drops 2
+        out = stack_flux_within_class(flux, M=4, seed=42)
+        assert out.shape == (2, 2048)
+
+    def test_stack_flux_within_class_rejects_bad_inputs(self):
+        rng = np.random.default_rng(0)
+        flux = rng.standard_normal((32, 2048)).astype(np.float64)
+        with pytest.raises(ValueError):
+            stack_flux_within_class(flux, M=0)
+        with pytest.raises(ValueError):
+            stack_flux_within_class(flux.ravel(), M=4)  # not 2D
+        with pytest.raises(NotImplementedError):
+            stack_flux_within_class(flux, M=4, mode="pk_passthrough")
+        with pytest.raises(ValueError):
+            stack_flux_within_class(flux, M=4, mode="bogus")  # type: ignore[arg-type]
+
+
+class TestGroupIndicesWithinClass:
+    def test_group_indices_within_class_disjoint(self):
+        groups = group_indices_within_class(1024, M=16, seed=42)
+        assert len(groups) == 64
+        for g in groups:
+            assert g.shape == (16,)
+        flat = np.concatenate(groups)
+        # No duplicates, complete partition of range(1024) (M divides N exactly here).
+        assert flat.shape == (1024,)
+        assert len(np.unique(flat)) == 1024
+        assert set(flat.tolist()) == set(range(1024))
+
+    def test_group_indices_within_class_determinism(self):
+        a = group_indices_within_class(256, M=8, seed=123)
+        b = group_indices_within_class(256, M=8, seed=123)
+        for ga, gb in zip(a, b):
+            np.testing.assert_array_equal(ga, gb)
+
+    def test_group_indices_within_class_drops_tail(self):
+        groups = group_indices_within_class(10, M=4, seed=42)
+        assert len(groups) == 2  # 10 // 4 = 2
+        flat = np.concatenate(groups)
+        assert flat.shape == (8,)
+        assert len(np.unique(flat)) == 8
+
+
+class TestVelocityAxis:
+    def test_assert_velocity_axes_uniform_synthetic(self, tmp_path):
+        """Synthetic-only sanity check on assert_velocity_axes_uniform — no real-data dep."""
+        dv = 2.6365
+        vel = np.arange(2048, dtype=np.float64) * dv
+        for c in (1, 2, 3, 4):
+            cdir = tmp_path / str(c)
+            cdir.mkdir()
+            np.save(cdir / "vel.npy", vel)
+        out_dv = assert_velocity_axes_uniform(tol=1e-9, flux_base=str(tmp_path))
+        assert abs(out_dv - dv) < 1e-9
+
+    def test_assert_velocity_axes_uniform_detects_mismatch(self, tmp_path):
+        dv = 2.6365
+        vel = np.arange(2048, dtype=np.float64) * dv
+        for c in (1, 2, 3, 4):
+            cdir = tmp_path / str(c)
+            cdir.mkdir()
+            np.save(cdir / "vel.npy", vel.copy())
+        # Perturb class 3's axis.
+        bad = vel.copy()
+        bad[100] += 1.0
+        np.save(tmp_path / "3" / "vel.npy", bad)
+        with pytest.raises(AssertionError):
+            assert_velocity_axes_uniform(tol=1e-9, flux_base=str(tmp_path))
+
+    def test_assert_velocity_axes_uniform_detects_nonuniform_spacing(self, tmp_path):
+        dv = 2.6365
+        vel = np.arange(2048, dtype=np.float64) * dv
+        vel[1000] += 0.5  # break uniform spacing while keeping all 4 identical
+        for c in (1, 2, 3, 4):
+            cdir = tmp_path / str(c)
+            cdir.mkdir()
+            np.save(cdir / "vel.npy", vel.copy())
+        with pytest.raises(AssertionError):
+            assert_velocity_axes_uniform(tol=1e-9, flux_base=str(tmp_path))
+
+    def test_load_velocity_axis_rejects_bad_class(self):
+        with pytest.raises(ValueError):
+            load_velocity_axis(5)
+
+    @pytest.mark.slow
+    def test_assert_velocity_axes_uniform_real_data(self):
+        """Real on-disk vel.npy — Δv ≈ 2.6365 km/s, uniform across all 4 classes ([D-04])."""
+        dv = assert_velocity_axes_uniform(tol=1e-6)
+        assert abs(dv - 2.6365) < 1e-3, f"Δv = {dv:.6f}, expected ≈ 2.6365 km/s"
 
 
 class TestDataSummary:
