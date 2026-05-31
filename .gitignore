@@ -23,3 +23,6 @@ local/
 # DVC-tracked directories (pointer files *.dvc are in git)
 /mlruns
 mlflow.db
+
+# Juno HPC scratch pull-back staging area (results/ is the curated copy)
+cloud_runs/
