@@ -1,11 +1,90 @@
 import numpy as np
 import mlflow
 import mlflow.sklearn
+from typing import Dict, List, Any
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV, RepeatedStratifiedKFold, train_test_split
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+
+def train_rf_global(
+    X: np.ndarray,
+    y: np.ndarray,
+    *,
+    seed: int = 42,
+    n_estimators: int = 300,
+    return_importances: bool = True,
+) -> Dict[str, Any]:
+    """
+    Train a single global Random Forest 4-class classifier on (X, y) with a
+    stratified 80/20 hold-out split. NO GridSearchCV. NO MLflow. Thin sibling
+    to `train_rf_for_cluster`, used by the pk-feedback-classifier de-risking
+    probe (experiments/pk-feedback-classifier).
+
+    Parameters
+    ----------
+    X : np.ndarray, shape (n_samples, n_features), float64
+    y : np.ndarray, shape (n_samples,), integer class labels (any contiguous
+        encoding; this routine uses sklearn's ordering).
+    seed : int, default 42. Controls both the RF and the split.
+    n_estimators : int, default 300.
+    return_importances : bool, default True. If False, the 'feature_importances'
+        dict entry is an empty np.ndarray (skips the attribute read).
+
+    Returns
+    -------
+    dict with keys:
+        balanced_acc_test : float — sklearn.metrics.balanced_accuracy_score on
+            the 20% hold-out.
+        confusion_test : np.ndarray, shape (n_classes, n_classes),
+            row-normalized (true-class rows sum to 1).
+        feature_importances : np.ndarray, shape (n_features,) or empty.
+        n_train : int
+        n_test : int
+        class_labels : list — sklearn class ordering used for the confusion rows/cols.
+    """
+    X = np.asarray(X)
+    y = np.asarray(y)
+    if X.ndim != 2:
+        raise ValueError(f"X must be 2-D, got shape {X.shape}.")
+    if y.shape[0] != X.shape[0]:
+        raise ValueError(
+            f"X and y first-dim mismatch: X={X.shape[0]}, y={y.shape[0]}."
+        )
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, stratify=y, random_state=seed
+    )
+
+    rf = RandomForestClassifier(
+        n_estimators=n_estimators, random_state=seed, n_jobs=-1
+    )
+    rf.fit(X_train, y_train)
+
+    y_pred = rf.predict(X_test)
+    bal_acc = float(balanced_accuracy_score(y_test, y_pred))
+
+    class_labels: List[Any] = rf.classes_.tolist()
+    cm = confusion_matrix(y_test, y_pred, labels=rf.classes_).astype(np.float64)
+    row_sums = cm.sum(axis=1, keepdims=True)
+    row_sums = np.where(row_sums > 0, row_sums, 1.0)
+    cm_norm = cm / row_sums
+
+    if return_importances:
+        importances = np.asarray(rf.feature_importances_, dtype=np.float64)
+    else:
+        importances = np.empty(0, dtype=np.float64)
+
+    return {
+        "balanced_acc_test": bal_acc,
+        "confusion_test": cm_norm,
+        "feature_importances": importances,
+        "n_train": int(X_train.shape[0]),
+        "n_test": int(X_test.shape[0]),
+        "class_labels": class_labels,
+    }
 
 def prep_cluster_data(X_list, cluster_indices):
     """
