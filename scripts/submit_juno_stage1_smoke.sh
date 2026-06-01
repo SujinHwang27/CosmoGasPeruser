@@ -78,7 +78,7 @@ echo "CPUs available: $(nproc); SLURM allocated: ${SLURM_CPUS_PER_TASK:-?}"
 
 # --- 3. Compute (smoke — 1 fold, 1 seed, M∈{4,64} only) ---
 START_TS=$(date +%s)
-PYTHONPATH=. python -u experiments/pk-feedback-classifier/run_stage1.py --run-tag "${RUN_TAG}" --smoke 2>&1 | tee run_stage1_smoke.log
+PYTHONPATH=. python -u experiments/pk-feedback-classifier/run_stage1.py --smoke 2>&1 | tee run_stage1_smoke.log
 END_TS=$(date +%s)
 SMOKE_WALLCLOCK_SEC=$((END_TS - START_TS))
 

@@ -99,7 +99,7 @@ free -g | head -2
 df -h "${RUN_DIR}" "${JUNO_SCRATCH}" 2>/dev/null || true
 
 # --- 3. Compute ---
-PYTHONPATH=. python -u experiments/pk-feedback-classifier/run_stage1.py --run-tag "${RUN_TAG}" 2>&1 | tee run_stage1.log
+PYTHONPATH=. python -u experiments/pk-feedback-classifier/run_stage1.py 2>&1 | tee run_stage1.log
 
 # --- 4. Producer-Consumer Verification (PCV) — [D-23] C5/C6, infrastructure-manager.md §28–§40 ---
 # Hard-asserts the full G1–G6 artifact set produced by run_stage1.py.
