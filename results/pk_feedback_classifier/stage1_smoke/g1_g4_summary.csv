@@ -1,0 +1,6 @@
+gate,regime,M,metric,value,pass
+G1,per_sightline,4,balanced_acc_p16,0.37429016647309327,False
+G2,per_sightline,64,obs_median_3class_vs_null_p99,,False
+G2_null_p99,,,null_p99,,
+G3,all,all,mid_k_frac_median,0.1950760262993897,False
+G4,all,all,bal_acc_c2_vs_c3_median,0.1971916971916972,False

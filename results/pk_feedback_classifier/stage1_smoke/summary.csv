@@ -1,0 +1,2 @@
+regime,M,n_rows,balanced_acc_median,balanced_acc_p16,balanced_acc_p84,bal_acc_3class_median,bal_acc_c2_vs_c3_median,mid_k_frac_median
+per_sightline,4,5,0.3778071860388933,0.37429016647309327,0.3831656690193275,0.2393162393162393,0.1971916971916972,0.1950760262993897

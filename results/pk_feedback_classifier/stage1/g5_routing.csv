@@ -1,0 +1,5 @@
+class,median_abs_r,gate_pass,c4_only_violator
+1,0.16439164041360266,True,False
+2,0.08269738682586836,True,False
+3,0.07576133772638005,True,False
+4,0.21525148690866724,True,False
