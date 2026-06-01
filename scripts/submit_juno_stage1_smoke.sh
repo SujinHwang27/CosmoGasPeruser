@@ -61,9 +61,8 @@ ln -s "${JUNO_SCRATCH}/data/preprocessed/Sherwood_z0.3_inf" data/preprocessed/Sh
   exit 1
 }
 
-# --- 2. Environment (conda donates Py3.12; uv resolves deps; uv run honours lockfile) ---
-source ~/miniconda3/etc/profile.d/conda.sh
-conda activate /work/sxh240010/envs/cosmogasperuser
+# --- 2. Environment (uv-created .venv at repo root — matches Stage 0 proven pattern) ---
+source "${JUNO_WORK}/.venv/bin/activate"
 
 export PYTHONPATH=.
 export PYTHONUNBUFFERED=1
@@ -79,7 +78,7 @@ echo "CPUs available: $(nproc); SLURM allocated: ${SLURM_CPUS_PER_TASK:-?}"
 
 # --- 3. Compute (smoke — 1 fold, 1 seed, M∈{4,64} only) ---
 START_TS=$(date +%s)
-PYTHONPATH=. uv run python experiments/pk-feedback-classifier/run_stage1.py --run-tag "${RUN_TAG}" --smoke 2>&1 | tee run_stage1_smoke.log
+PYTHONPATH=. python -u experiments/pk-feedback-classifier/run_stage1.py --run-tag "${RUN_TAG}" --smoke 2>&1 | tee run_stage1_smoke.log
 END_TS=$(date +%s)
 SMOKE_WALLCLOCK_SEC=$((END_TS - START_TS))
 

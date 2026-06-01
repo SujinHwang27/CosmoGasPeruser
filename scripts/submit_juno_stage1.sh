@@ -76,13 +76,10 @@ ln -s "${JUNO_SCRATCH}/data/preprocessed/Sherwood_z0.3_inf" data/preprocessed/Sh
   exit 1
 }
 
-# --- 2. Environment ---
-# Stage 1 brief mandates conda + `uv run python` (divergence from Stage 0,
-# which used a bare `.venv/bin/activate`). Per brief: the conda env donates
-# Python 3.12; uv resolves project deps; `uv run` ensures the .venv lock is
-# honoured even though conda is active.
-source ~/miniconda3/etc/profile.d/conda.sh
-conda activate /work/sxh240010/envs/cosmogasperuser
+# --- 2. Environment (uv-created .venv at repo root — matches Stage 0 proven pattern) ---
+# Original dispatch brief specified conda activation, but Juno has no conda
+# installation at the assumed path; Stage 0's proven pattern is the uv .venv.
+source "${JUNO_WORK}/.venv/bin/activate"
 
 export PYTHONPATH=.
 export PYTHONUNBUFFERED=1
@@ -102,7 +99,7 @@ free -g | head -2
 df -h "${RUN_DIR}" "${JUNO_SCRATCH}" 2>/dev/null || true
 
 # --- 3. Compute ---
-PYTHONPATH=. uv run python experiments/pk-feedback-classifier/run_stage1.py --run-tag "${RUN_TAG}" 2>&1 | tee run_stage1.log
+PYTHONPATH=. python -u experiments/pk-feedback-classifier/run_stage1.py --run-tag "${RUN_TAG}" 2>&1 | tee run_stage1.log
 
 # --- 4. Producer-Consumer Verification (PCV) — [D-23] C5/C6, infrastructure-manager.md §28–§40 ---
 # Hard-asserts the full G1–G6 artifact set produced by run_stage1.py.
