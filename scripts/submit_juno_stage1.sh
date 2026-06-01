@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
-#SBATCH --time=6:00:00
+#SBATCH --time=24:00:00
 #SBATCH --output=cloud_runs/pkstage1-%j.out
 #SBATCH --error=cloud_runs/pkstage1-%j.err
 # --partition deliberately NOT pinned here — the submit wrapper passes
