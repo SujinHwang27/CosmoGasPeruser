@@ -1,0 +1,4 @@
+metric,phase2_value,phase1_baseline,drop,W_pass_threshold,pass
+binary_c4_vs_rest_median_at_M64,0.9742332830568126,0.9711,-0.003133283056812597,0.05,True
+binary_c4_vs_rest_p16_at_M64,0.9603670186023127,0.9603,-6.701860231261847e-05,0.05,True
+verdict_overall,PASS,,,0.05,True

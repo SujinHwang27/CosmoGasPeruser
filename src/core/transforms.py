@@ -132,6 +132,16 @@ class FluxPowerSpectrum(BaseTransformer):
             normalization preserves the inter-sightline mean-flux variance
             as a DC channel which is exactly the leakage we want to expose
             via the importance map, not via a flat zero column.
+          - 'per_sightline_mean_removed' (Phase 2 Reframe 9 control per
+            reframe-suite SCOPING §2 R9): delta_F = F - <F>_los, an
+            ADDITIVE per-sightline mean subtraction in flux space prior to
+            FT. This is the stronger <F>-removal control on top of
+            [D-06]'s k=0 + lowest-log-bin drop: a per-sightline subtraction
+            (rather than the per_sightline regime's per-sightline divide)
+            removes the DC channel exactly and is the load-bearing
+            shape-vs-<F> disentanglement variant. Output retains all
+            n_kbins columns (the k=0 bin is now identically zero up to
+            windowing leakage and carries no <F> info).
     3.  Apply Hann window then numpy rfft along axis=1; |.|^2 gives the raw
         positive-frequency power.
     4.  Power-spectrum normalization: P(k) = |rfft|^2 * (delta_v / N) where
@@ -148,7 +158,7 @@ class FluxPowerSpectrum(BaseTransformer):
 
     Parameters
     ----------
-    norm : {'per_sightline', 'global'}, default 'per_sightline'
+    norm : {'per_sightline', 'global', 'per_sightline_mean_removed'}, default 'per_sightline'
     n_kbins : int, default 20
         Number of log-spaced k-bins. The first bin always contains k=0 in
         'per_sightline' mode; for 'global' mode the k=0 bin is dropped and
@@ -176,8 +186,11 @@ class FluxPowerSpectrum(BaseTransformer):
         vel_path: Optional[str] = None,
         delta_v: Optional[float] = None,
     ):
-        if norm not in ("per_sightline", "global"):
-            raise ValueError(f"norm must be 'per_sightline' or 'global', got {norm!r}")
+        if norm not in ("per_sightline", "global", "per_sightline_mean_removed"):
+            raise ValueError(
+                f"norm must be 'per_sightline', 'global', or "
+                f"'per_sightline_mean_removed', got {norm!r}"
+            )
         self.norm = norm
         self.n_kbins = int(n_kbins)
         self.vel_path = vel_path
@@ -237,11 +250,28 @@ class FluxPowerSpectrum(BaseTransformer):
             # Guard zero-mean rows (would be a fully-saturated sightline).
             mean_F = np.where(mean_F > 0.0, mean_F, 1.0)
             delta_F = F / mean_F - 1.0
+        elif self.norm == "per_sightline_mean_removed":
+            # Phase 2 Reframe 9 control: additive per-sightline <F> subtraction
+            # in flux space (delta_F = F - <F>_los), the stronger <F>-removal
+            # variant of [D-06]'s k=0 + lowest-log-bin drop. No guard needed
+            # (subtraction is well-defined even for zero-mean rows).
+            mean_F = F.mean(axis=1, keepdims=True)  # shape: (n_samples, 1)
+            delta_F = F - mean_F
         else:  # 'global'
             mean_F_global = F.mean()
             if mean_F_global <= 0.0:
                 mean_F_global = 1.0
             delta_F = F / mean_F_global - 1.0
+
+        # Phase 2 R9 sanity check: explicit shape + finiteness contract.
+        assert delta_F.shape == F.shape, (
+            f"delta_F shape {delta_F.shape} != F shape {F.shape}"
+        )
+        if not np.all(np.isfinite(delta_F)):
+            raise ValueError(
+                f"non-finite delta_F under norm={self.norm!r}; "
+                f"check input flux for NaN/Inf or pathological zero-mean rows."
+            )
 
         # Hann window + rfft + |.|^2.
         window = np.hanning(n_pixels)  # shape: (n_pixels,)
