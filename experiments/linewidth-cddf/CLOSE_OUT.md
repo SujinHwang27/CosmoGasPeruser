@@ -211,3 +211,16 @@ After this CLOSE_OUT landed, the PI authored a cumulative orientation report (th
 **Re-open conditions** (for future sessions): re-opening this project requires the user explicitly invoking one of (β / γ) catalogue items from §5, **and** a fresh rule-2-clean published prior identified at scoping that justifies the investment over α. Absent that, future Claude sessions should NOT dispatch agents to "continue" the project — the parked state is the rule-7-correct end state. The PI orientation pass that landed here is what future sessions should reproduce *before* any agent dispatch is authorized.
 
 **Paper-author status:** NOT dispatched. The freshly-sharpened paper-trigger rule (project-architect agent spec, commit `734fdcb`) binds: paper-author is user-triggered-only IFF solid/successful results. Honest-cascade-close is rule-7-clean but NOT solid/successful by the user's standing reasoning. If the user separately triggers paper authoring on the cumulative cascade-close as a rule-14(iii) adjacent-finding contribution, that is a downstream user-owned decision; it is not authorized by this Path-α acceptance.
+
+---
+
+## §8 — Un-park record (2026-06-02, re-open via reframe-suite SCOPING)
+
+**Un-park date:** 2026-06-02.
+**User trigger:** "Approve. Run more experiments under new reframes if necessary." (this session)
+**Re-open path invoked:** NOT one of §5's catalogue items (CAMELS-LH / metal lines / transverse correlations / mock survey statistics — all of those required wholesale-different-suite or wholesale-different-observable investments and **remain parked**; the original §7 Path-α park guidance still binds on any future re-open under those §5 paths).
+**Re-open path actually taken:** *no-new-compute and minor-new-compute reframes of existing artifacts* — four reframes (binary C4 detection re-aggregation; 6-pair distinguishability lattice; signal-clustering-v2 K=5 cluster physical-axis interpretation; mean-flux-removed P_F(k) variant). Phase 1 = no new compute; Phase 2 (Reframe 9) = minor new compute gated on Phase-1 Reframe-1 PASS.
+**Scoping document:** `experiments/reframe-suite/SCOPING.md` (this session). Rule-2 compliance argued as binding interpretation: re-aggregations of an already-closed classifier's outputs and re-interpretations of a closed clustering track's labels are not "new candidate priors" under rule 2; Reframe 9 is the only reframe touching new compute and is gated on the Reframe-1 honesty hurdle in a way that prevents it being a rule-2-anti-pattern third P_F(k) band.
+**Cascade ledger:** unchanged. No new candidate priors enter the cascade by this un-park. The six entries in §4 still bind verb ceilings on all reframe-suite headlines.
+**Paper-author status:** NOT dispatched. The reframe-suite SCOPING explicitly does not recommend paper-author dispatch under any outcome of the reframes; the qualification gates (SCOPING §4) define what the user reads against to decide whether to trigger paper authoring downstream.
+**Park guidance on §5 catalogue items:** still binding. A future un-park under CAMELS-LH / metal lines / transverse correlations / mock survey statistics still requires (a) explicit user invocation of that specific §5 item AND (b) a fresh rule-2-clean published prior identified at scoping that justifies the investment over Path α. This reframe-suite un-park does NOT relax that gate.
