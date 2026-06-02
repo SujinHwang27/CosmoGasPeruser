@@ -199,3 +199,15 @@ The track tested whether line-by-line statistics escape the cascade observed on 
 **Branch:** `exp/pk-feedback-classifier` (track-internal docs only).
 **Commit message:** `docs(stage3-scoping): linewidth-cddf SCOPING short-cycle CLOSE per §5(a) — Q-C1 signal-limited + Q-C3 qualitative-only; cascade ledger updated`
 **Downstream dispatch:** NONE. No paper-author. No core-implementer. No data-engineer. No infrastructure-manager. No defense-panel.
+
+---
+
+## §7 — Project parked at honest cascade-close (Path α accepted 2026-06-02)
+
+After this CLOSE_OUT landed, the PI authored a cumulative orientation report (this session) presenting three real next-step paths: α (accept the cascade-close as project conclusion), β (wholesale-different-suite CAMELS-LH scoping), γ (wholesale-different-observable on Sherwood). PI recommended Path α with rule-7 justification (the discipline produced the outcome the discipline is designed to produce; three sequentially-falsified mechanism priors on the C2/C3 axis; outcome-shape null but decision-quality sound). Rule 2 binds against β and γ at this moment: neither has a specific identified published prior in this project's literature trail that justifies the investment over Path α.
+
+**User accepted Path α (2026-06-02).** The project is parked at honest cascade-close. No new track is opened. The four LEDGERs (`eda-sherwood`, `signal-clustering-v2`, `pk-feedback-classifier`) + two SCOPING / CLOSE_OUT docs (`fps-sbi/SCOPING.md`, `linewidth-cddf/SCOPING.md` + `linewidth-cddf/CLOSE_OUT.md` = this doc) are the documentation pillar.
+
+**Re-open conditions** (for future sessions): re-opening this project requires the user explicitly invoking one of (β / γ) catalogue items from §5, **and** a fresh rule-2-clean published prior identified at scoping that justifies the investment over α. Absent that, future Claude sessions should NOT dispatch agents to "continue" the project — the parked state is the rule-7-correct end state. The PI orientation pass that landed here is what future sessions should reproduce *before* any agent dispatch is authorized.
+
+**Paper-author status:** NOT dispatched. The freshly-sharpened paper-trigger rule (project-architect agent spec, commit `734fdcb`) binds: paper-author is user-triggered-only IFF solid/successful results. Honest-cascade-close is rule-7-clean but NOT solid/successful by the user's standing reasoning. If the user separately triggers paper authoring on the cumulative cascade-close as a rule-14(iii) adjacent-finding contribution, that is a downstream user-owned decision; it is not authorized by this Path-α acceptance.
