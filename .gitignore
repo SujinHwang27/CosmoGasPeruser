@@ -20,6 +20,11 @@ local/
 # Claude Code user-specific settings (permissions, etc.)
 .claude/settings.local.json
 
+# Claude Code per-project auto-memory dir — local-only, never commit
+# (memory content travels with the project folder via the autoMemoryDirectory
+#  setting in .claude/settings.local.json)
+.claude-memory/
+
 # DVC-tracked directories (pointer files *.dvc are in git)
 /mlruns
 mlflow.db
