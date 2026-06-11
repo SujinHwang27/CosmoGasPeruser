@@ -164,6 +164,11 @@ exposure surfaces:
 2. Reframe 5's C2-vs-C3 null at chance (~0.55) — still bounds what
    "feedback discrimination" can mean; binary C4 detection is the
    load-bearing channel, recipe-vs-recipe is largely null.
+   *(2026-06-11 amendment per HARDENING_SPEC §6 E6: re-verbed —
+   C2-vs-C3 is consistent with chance at M ≤ 64 and rises with
+   stacking depth to median 0.678 / p16 0.599 at M=256; an
+   M-conditional exclusion bound, not an intrinsic null. Dedicated
+   binary re-measurement pending per HARDENING_SPEC item i.)*
 3. The full cumulative cascade of six prior null entries (CLOSE_OUT
    §4); this is a sharpening, not a reset.
 

@@ -6,6 +6,8 @@
 
 **Source data.** All figures draw from artifacts already on disk: `results/pk_feedback_classifier/stage1/*.csv` (Phase 1 source), `results/reframe_suite/{phase1,phase2}/*.csv` (reframe-suite outputs), `results/signal_clustering_v2/figs/*.{png,html,mp4,gif}` (existing v0.4 figures), `data/preprocessed/Sherwood_z0.3_inf/{1..4}/{flux,tau,vel}.npy` (raw inputs).
 
+**Novelty/citation flags (2026-06-11, HARDENING_SPEC §6 E8).** (1) **Pirecki, Tillman, Burkhart, Tonnesen, Bird — arXiv:2509.18260** ("Exploring the impact of AGN feedback model variations on the Lyman-α Forest Flux Power Spectrum", accepted ApJ; CAMELS-Simba parameter variations, z = 0.1–2.0 incl. low-z): **must-cite + novelty-delta check required before any paper trigger.** It preempts the bare statement "AGN feedback measurably alters the low-z Lyα P1D"; what it does NOT contain: a pairwise recipe-vs-recipe distinguishability lattice, M-scaling of distinguishability, or matched-IC discrete recipes — that delta is our surviving contribution shape. (2) **Sinigaglia+2026 (arXiv:2603.13011)** covers z = 2.0–3.5 only — no low-z overlap; cite as adjacent SBI prior. (3) **F1 (lattice heatmap) and F2 (accuracy-vs-M) must be drafted from the HARDENING item-(i) dedicated-binary numbers, not the superseded sub-block estimates** — do not draft before HARDENING H1/H2 verdicts land.
+
 ---
 
 ## §1 — Headline figures (3 figures, the "if you only read the abstract" set)

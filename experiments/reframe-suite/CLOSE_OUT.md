@@ -31,11 +31,11 @@ SCOPING §4 R5 required ≥ 3 of 5 non-(C2-C3) pairs at p16 ≥ 0.75 AND structu
 | C1-C2 (NoFB vs StellarWind) | **0.842** | ✓ |
 | C1-C3 (NoFB vs WindAGN) | 0.741 | ✗ (just under) |
 | C1-C4 (NoFB vs WindStrongAGN) | **0.978** | ✓ |
-| C2-C3 (StellarWind vs WindAGN) | 0.501 ≈ chance | (excluded — cascade-anchored null) |
+| C2-C3 (StellarWind vs WindAGN) | 0.501 *(2026-06-11 amendment: p16 at M=64; climbs monotonically with M to p16 0.599 / median 0.678 at M=256 — `results/reframe_suite/phase1/reframe5_lattice.csv`; M-conditional exclusion bound, dedicated-binary re-measurement pending per HARDENING_SPEC item i)* | (excluded — cascade-anchored null) |
 | C2-C4 (StellarWind vs WindStrongAGN) | **0.980** | ✓ |
 | C3-C4 (WindAGN vs WindStrongAGN) | **0.926** | ✓ |
 
-**4 of 5 non-(C2-C3) pairs cleared.** Structural informativeness check: at least one of {C1-C2, C1-C3} cleared (C1-C2 ✓) AND at least one of {C2-C4, C3-C4} cleared (BOTH ✓). The lattice is non-trivially structured — feedback-recipe-vs-feedback-recipe is distinguishable for the C4-involving pairs, even though the C2-C3 pair alone is null.
+**4 of 5 non-(C2-C3) pairs cleared.** Structural informativeness check: at least one of {C1-C2, C1-C3} cleared (C1-C2 ✓) AND at least one of {C2-C4, C3-C4} cleared (BOTH ✓). The lattice is non-trivially structured — feedback-recipe-vs-feedback-recipe is distinguishable for the C4-involving pairs, even though the C2-C3 pair alone is null *(2026-06-11 amendment: "null" re-verbed — C2-C3 is consistent with chance at M ≤ 64 and rises with stacking depth; see HARDENING_SPEC §6 E1)*.
 
 **Substantively new finding (beyond cascade-close [D-26]):** the cascade-close framing was "feedback-vs-feedback is null." The reframe-5 lattice sharpens this to **"feedback-vs-feedback is null *only at the recipe-similarity scale of C2 vs C3*; recipe distinguishability against C4 holds at p16 ≥ 0.93."**
 
@@ -61,6 +61,8 @@ The cumulative read across the four prior tracks + reframe-suite, recorded for f
 
 Six cascade-ledger entries; rule-8 path (b) cascade-strengthening: three specific interventions across two observable families produced congruent C2/C3-null signatures, externally anchored by Nasir+2017 on the same Sherwood suite. **The C2-C3 distinguishability claim is closed.**
 
+*(2026-06-11 amendment per HARDENING_SPEC §6 E3 — replication re-count: the honest count is two correlated empirical nulls on the same Sherwood τ/flux realization plus one scoping close that produced no measurement, externally anchored by Nasir+2017 — replication count: 2 (correlated) empirical + 1 literature anchor. The closure claim is re-verbed: closed at the tested protocols and stacking depths; see HARDENING_SPEC H2 for the M-conditional bound.)*
+
 ### What the reframe-suite adds (NEW)
 
 1. **Quantified binary {C4 vs rest} detection at p16 0.960, robust to ⟨F⟩-removal control.** Strong-AGN feedback (WindStrongAGN) is identifiable from stacked low-z Lyα forest P_F(k) — and the signal is not solely ⟨F⟩-encoded.
@@ -69,9 +71,13 @@ Six cascade-ledger entries; rule-8 path (b) cascade-strengthening: three specifi
 
 ### Combined narrative (what survives honest framing)
 
-> "Quantified feedback-recipe distinguishability lattice on the low-z Lyα forest of Sherwood at z ≈ 0.3, with structural pattern: NoFB-vs-feedback detectable at p16 ≥ 0.74; strong-AGN-vs-others detectable at p16 ≥ 0.93; stellar-wind-vs-wind+AGN null at chance. The binary strong-AGN detection signal is robust to explicit per-sightline ⟨F⟩-removal in flux space (subject to higher-moment ⟨F⟩-correlated structure caveat). The cumulative finding is published-direction-consistent with Khaire+2024 / Tillman+2024 / Tillman+2023 / Sinigaglia+2026 / Nasir+2017 (with cross-suite + cross-z hedges binding on each)."
+> "Quantified feedback-recipe distinguishability lattice on the low-z Lyα forest of Sherwood at z ≈ 0.3, with structural pattern: NoFB-vs-feedback detectable at p16 ≥ 0.74; strong-AGN-vs-others detectable at p16 ≥ 0.93; stellar-wind-vs-wind+AGN consistent with chance at M ≤ 64, rising toward 0.60–0.68 by M=256 (M-conditional exclusion bound, not an intrinsic floor; 2026-06-11 amendment per HARDENING_SPEC §6 E2). The binary strong-AGN detection signal is robust to explicit per-sightline ⟨F⟩-removal in flux space (subject to higher-moment ⟨F⟩-correlated structure caveat). The cumulative finding is published-direction-consistent with Khaire+2024 / Tillman+2024 / Tillman+2023 / Sinigaglia+2026 / Nasir+2017 (with cross-suite + cross-z hedges binding on each)."
 
 Verb ceiling per SCOPING §1: NEVER "we recover feedback parameters" or "Lyα detects feedback" without the lattice qualifier.
+
+*(2026-06-11 amendment per HARDENING_SPEC §6 E7 — binding non-claim addition: All lattice/detection numbers are conditional on fixed cosmology, UVB, and thermal history within one Sherwood realization; no nuisance marginalization was performed.)*
+
+*(2026-06-11 annotation per HARDENING_SPEC §7 — shared-ICs pin: Bolton et al. 2017 (MNRAS 464, 897) §2.1 states "The same seed was used for simulations with the same box size ... so that the same large scale structures are present"; the 80 h⁻¹ cMpc feedback variants (80-512 / 80-512-ps13 / 80-512-ps13+agn = classes 1–3) therefore SHARE initial conditions. **Class 4 (WindStrongAGN) caveat:** neither Bolton+2017 nor Nasir+2017 documents a fourth strong-AGN variant; its IC provenance is UNRESOLVED from these papers alone — treated as shared (conservative for replication counting), flag open pending the documenting source. Consequence per HARDENING_SPEC §7(a): the two empirical nulls are same-realization-correlated (E3 count stands); per-position cross-class pairing justified for classes 1–3.)*
 
 ---
 
@@ -108,7 +114,7 @@ The reframe-suite executed cleanly under the same discipline that governed the p
 
 - **Rule 2 (cascade discipline):** the un-park was authored under a rule-2-compliant binding interpretation (SCOPING §1) that distinguished re-aggregation/re-interpretation from new-candidate-prior; Reframe 9 was gated to prevent it being a fourth P_F(k) attempt.
 - **Rule 3 (anti-degeneracy audit):** each reframe's honesty hurdle was named in advance (SCOPING §2(c)); the R1+R9 ⟨F⟩-vs-shape disentanglement was the load-bearing audit and was operationalized correctly.
-- **Rule 5 (symmetric disclosure):** every reframe had a pre-committed PASS condition + FAIL routing; R7 returning a clean FAIL (η²=0.125 < 0.20) was reported plainly, NOT spun.
+- **Rule 5 (symmetric disclosure):** every reframe had a pre-committed PASS condition + FAIL routing; R7 returning a clean FAIL (η²=0.125 < 0.20) was reported plainly, NOT spun. *(2026-06-11 amendment per HARDENING_SPEC §6 E5: "pre-committed" here means post-hoc qualification thresholds — authored after the Stage-1 confusion matrices were on disk; pre-committed only relative to the Phase-1 re-aggregation run, commit `e090b52`.)*
 - **Rule 7 (decision-quality):** the outcome is a mixed shape (R1+R5+R9 qualifying, R7 adjacent) honestly framed in [D-37]-discipline terms; the qualification is operationally defined and verifiable; the trigger is left to the user as the binding rule requires.
 - **Rule 14 (self-anchored-bar fragility):** X/Y/Z/W gates were project-internal by construction; rule-14(ii) rescue (no-headline-on-FAIL routing) was pre-committed in SCOPING §2(b); rule-14(iii) demotion-to-adjacent-finding is the default headline-shape any user paper-trigger inherits.
 - **[D-37] honest reporting:** the multiplicative-vs-additive ⟨F⟩-removal degeneracy was surfaced by the implementer and recorded in §1 R9 as the load-bearing caveat; the R7 partial-mean-flux-tracking finding was reported as second-independent confirmation of [D-13], not spun.

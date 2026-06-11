@@ -88,7 +88,7 @@ Bolton+2022 (MNRAS 513, 864), audit §2 Crit-2, on the same Sherwood pipeline:
 
 > "The observed Doppler parameter distribution peaks in the bin at b = 27.5±2.5 km/s whereas the simulated distributions all peak at b = **22.5±2.5 km/s**"
 
-Net: the same-suite published Δb between AGN and stellar-only feedback (1.8 km/s) is *below* the sim-b-peak bin width (2.5 km/s) — even *if* Q-C1 had returned clean broad-tail recovery, the published Δ on the cascade-relevant C2-vs-C3-axis sits below the same-suite noise floor.
+Net: the same-suite published Δb between AGN and stellar-only feedback (1.8 km/s) is *below* the sim-b-peak bin width (2.5 km/s) — even *if* Q-C1 had returned clean broad-tail recovery, the published Δ on the cascade-relevant C2-vs-C3-axis sits below the same-suite noise floor. *(2026-06-11 amendment per HARDENING_SPEC §6 E4: this bin-width comparison is directional, not a statistical-power argument — a median shift's standard error scales as ~1.25σ/√N and distribution-level tests resolve shifts below the bin width; no detectability forecast at our sample size was computed.)*
 
 **(ii) CDDF AGN-vs-stellar is qualitative-only — direct literature support for the SCOPING §1 cascade-inherit prediction.**
 
@@ -144,6 +144,8 @@ Per project-architect rule 8 path (b), three specific interventions on the falsi
 
 The cascade-close claim on **"Lyα forest at z ≈ 0.3 on Sherwood as a 4-recipe feedback discriminator"** sharpens — per rule 8 path (b) — from "moderate evidence" to "strong evidence with three independent interventions producing three congruent-on-the-C2/C3-axis, mutually-reinforcing degeneracy signatures." This is NOT a rule-8 path-(a) formal-axis-coverage claim (no decomposition criterion is asserted; we have not exhausted all observable-family axes by construction); it is the rule-8 path-(b) "N specific interventions produced N distinct degeneracy signatures" formal-support shape.
 
+*(2026-06-11 amendment per HARDENING_SPEC §6 E3 — replication re-count: Intervention 3 closed at scoping and produced no C2/C3 measurement; Interventions 1 and 2 ran on the same Sherwood τ/flux realization (shared ICs for classes 1–3 per Bolton+2017 §2.1; class-4 IC provenance unresolved) and are statistically correlated, not independent. Honest count: two correlated empirical nulls + one literature anchor (Nasir+2017) + one pre-empted test. "Strong evidence with three independent interventions" is re-verbed accordingly; the closure holds at the tested protocols and stacking depths — see HARDENING_SPEC H2 for the M-conditional bound on C2-C3.)*
+
 ---
 
 ## §5 — Re-open path catalogue (NOT a recommendation, NOT a dispatch)
@@ -173,7 +175,7 @@ This is a **valid decision-quality end state per project-architect rule 7.** The
 ### Three structural learnings
 
 1. **The cascade-inherit reading of SCOPING §1 was correct.** The C2/C3 null *did* re-manifest at the linewidth-cddf observable family — this time as a *same-Sherwood-suite literature finding* (Nasir+2017 AGN-vs-stellar CDDF qualitative-only, with no specific numeric to anchor against), independently of any Q-C1 pipeline outcome. The cascade-inheritance verb ceiling anticipated the outcome shape three weeks before the audits returned.
-2. **The author-curated-typology trap (rule 8) was avoided.** SCOPING §1 explicitly refused to claim "different observable family escapes the cascade" at face value. The track tested *both* feasibility (Q-C1) AND external-anchor existence (Q-C3) before spec authoring; *both* returned weakening; the close-at-scoping is rule-8 path-(b) honest — three specific interventions, three distinct degeneracy signatures — not a rule-8 path-(a) typology-coverage claim.
+2. **The author-curated-typology trap (rule 8) was avoided.** SCOPING §1 explicitly refused to claim "different observable family escapes the cascade" at face value. The track tested *both* feasibility (Q-C1) AND external-anchor existence (Q-C3) before spec authoring; *both* returned weakening; the close-at-scoping is rule-8 path-(b) honest — three specific interventions, three distinct degeneracy signatures — not a rule-8 path-(a) typology-coverage claim. *(2026-06-11: replication count re-verbed per HARDENING_SPEC §6 E3 — see §4 amendment.)*
 3. **The freshly-sharpened paper-trigger rule (project-architect agent spec, commit `734fdcb`) holds.** No paper-author dispatch even at this cascade-strengthening close. The user's standing reasoning binds: paper-author is needed iff solid/successful results, and a never-opened-track-closed-at-scoping does NOT clear that gate regardless of how interesting the cascade-foreclosure framing is. The CLOSE_OUT.md authored here, and the cumulative LEDGERs across signal-clustering-v2 + pk-feedback-classifier, are the documentation pillar.
 
 ### Sprint-close shape
