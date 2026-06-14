@@ -1,0 +1,95 @@
+% 3_methods.tex
+\section{Methods}
+\label{sec:methods}
+
+\subsection{Flux power spectrum}
+\label{sec:methods:pk}
+
+For each sightline we clip float-underflow negatives, normalize the flux, apply a
+Hann window, take the real FFT along the velocity axis, and square the modulus.
+Under the primary per-sightline normalization the flux contrast is
+\begin{equation}
+  \delta_F = \frac{F}{\langle F\rangle_\mathrm{los}} - 1,
+  \label{eq:deltaf}
+\end{equation}
+where $\langle F\rangle_\mathrm{los}$ is the mean transmitted flux of that
+sightline. Dividing by $\langle F\rangle_\mathrm{los}$ removes the per-sightline
+mean and forces the classifier onto the \emph{shape} of $P_F(k)$ rather than the
+mean-flux offset. The raw positive-frequency power is averaged into
+$\nkbins$ log-spaced $k$-bins spanning $k_\mathrm{min}\approx\kmin$ to
+$k_\mathrm{Nyq}\approx\knyq~\mathrm{s/km}$, giving a $\nkbins$-dimensional feature
+per sightline. We do not apply the $1/\sum w^2$ window correction: the constant
+cancels across sightlines and is irrelevant for classification. Per-class
+normalization is rejected as label-leaky.
+
+\subsection{Stacking}
+\label{sec:methods:stack}
+
+Within each class we average $P_F(k)$ over $M$ disjoint randomly drawn sightlines
+to form one stacked spectrum, repeating over the $\Nsightlines/M$ groups. For
+independent sightlines the variance of the stacked $P_F(k)$ falls as $1/M$, so
+stacking is the signal-to-noise operation appropriate to a power spectrum. We
+sweep $M\in\Msweep$. Stacking changes the unit of inference from a single
+sightline to a within-class population of $M$-sightline groups; the per-sightline
+regime is recovered as the $M=1$ column. This move makes a weak per-sightline
+signal detectable as a population statistic, and we frame all stacked results as
+population statistics, not single-sightline classification.
+
+\subsection{Dedicated binary classifier}
+\label{sec:methods:clf}
+
+For each recipe pair we train a dedicated binary random forest
+\citep{Breiman2001} on the stacked $P_F(k)$ features, with $\rfTrees$ trees. We
+use $\nfolds$-fold stratified cross-validation, splitting at the post-stacking
+group level so that no source sightline appears in both the train and test sets
+of a fold. We repeat over $\nseeds$ seeds, where each seed fixes a distinct
+stack-membership partition and a distinct fold assignment, giving
+$\nseedfold$ balanced-accuracy values per cell. The reported number per cell is
+the $16$th percentile (p16) of those $\nseedfold$ values, a conservative
+lower-edge summary rather than the mean. Using one dedicated binary classifier
+per pair, rather than reading pairwise accuracy off a multiclass confusion
+sub-block, gives one estimator and one number per cell, fixed before the run.
+
+The distinguishability lattice is the $4\times4$ table of these p16 values over
+the six recipe pairs, plus a strong-AGN-versus-rest detection cell in which
+class~4 is classified against classes~1--3 pooled. We adopt a balanced-accuracy
+floor of $\latQualBar$ for a pair to count as separable and $\detQualBar$ for the
+detection cell, both fixed in advance; these are project-internal operational
+gates, not externally calibrated benchmarks.
+
+\subsection{Controls}
+\label{sec:methods:controls}
+
+Three controls license the interpretation of a weak signal.
+
+\textbf{Within-class self-pair null.} We split one class into two disjoint halves
+of source sightlines, stack each independently, and ask the same classifier to
+separate the two halves. The two halves share physics and differ only by
+sampling, so any accuracy above chance is a stacking-variance artifact. This
+control isolates the contribution of finite-$M$ variance from the recipe signal.
+
+\textbf{Mean-flux-only baseline.} We replace the $\nkbins$-dimensional $P_F(k)$
+feature with the single scalar per-class mean flux (and its variance), run the
+identical estimator, cross-validation, and stacking, and compare its p16 to the
+$P_F(k)$ p16 cell by cell. The headroom $\Delta=p16_{P_F(k)}-p16_{\langle
+F\rangle}$ measures how much separability $P_F(k)$ shape carries beyond what mean
+flux alone provides.
+
+\textbf{Injection-recovery sensitivity.} We calibrate the smallest $P_F(k)$-shape
+perturbation the pipeline can detect at a given $M$. We build a template
+$\Delta P(k)=\overline{P}_{C4}(k)-\overline{P}_{C2}(k)$ from the strong-AGN minus
+stellar-wind mean spectra, inject $\alpha\,\Delta P(k)$ into per-sightline
+stellar-wind spectra before stacking, and classify injected against control
+sightlines drawn from disjoint source halves. The minimum detectable amplitude is
+\begin{equation}
+  \delta_\mathrm{min}(M) = \min\{\alpha : \mathrm{p16}(\alpha) \geq \hfourThresh\},
+  \label{eq:deltamin}
+\end{equation}
+and the $\alpha=0$ arm must center at chance for the instrument to be valid. The
+injection is in $P_F(k)$ space, so the resulting sensitivity is strictly a
+statement about $P_F(k)$-shape perturbations of amplitude $\alpha\,\Delta P(k)$,
+not about feedback physics of strength $\alpha$. We also project the real
+stellar-wind/wind${+}$AGN spectral difference onto the injection template,
+$\beta=\langle\Delta P_{C3-C2},\Delta P_{C4-C2}\rangle/\lVert\Delta
+P_{C4-C2}\rVert^2$, to test whether that difference lies along the
+calibrated direction.

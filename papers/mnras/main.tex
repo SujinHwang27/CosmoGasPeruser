@@ -1,0 +1,55 @@
+% papers/mnras/main.tex — MNRAS venue manifest
+% =============================================================================
+% Master-source architecture: this manifest \input's the shared atoms under
+% papers/shared/sec/ and sets venue-specific preamble. The canonical content
+% lives in papers/shared/; edit there, not here.
+%
+% CLASS SWITCH: MNRAS requires mnras.cls, which is NOT bundled in this repo.
+% Until it is added, this manifest compiles under the standard `article` class.
+% To switch to MNRAS once the .cls is present, comment the `article` block and
+% uncomment the `mnras` block below. The section atoms compile under either.
+% =============================================================================
+
+% ---- article fallback (default; no mnras.cls on disk) ----
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{natbib}
+\bibliographystyle{plainnat}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\graphicspath{{../shared/figures/}}
+\usepackage{hyperref}
+
+% ---- MNRAS block (uncomment when mnras.cls is available; comment the block above) ----
+% \documentclass[fleqn,usenatbib]{mnras}
+% \usepackage{amsmath}
+% \usepackage{graphicx}
+% \graphicspath{{../shared/figures/}}
+% \usepackage{hyperref}
+
+% ---- numbers-of-record macros (shared) ----
+\input{../shared/numbers.tex}
+
+\title{A quantified feedback-recipe distinguishability framework for the
+low-redshift Lyman-$\alpha$ forest flux power spectrum}
+
+\author{%
+  % TODO(authors): author block + affiliations to be set at venue-authoring time.
+  CosmoGasPeruser collaboration%
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\input{../shared/sec/0_abstract.tex}
+\input{../shared/sec/1_intro.tex}
+\input{../shared/sec/2_data.tex}
+\input{../shared/sec/3_methods.tex}
+\input{../shared/sec/4_results.tex}
+\input{../shared/sec/5_discussion.tex}
+\input{../shared/sec/6_conclusions.tex}
+
+\bibliography{../shared/main}
+
+\end{document}

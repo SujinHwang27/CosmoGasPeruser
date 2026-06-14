@@ -1,0 +1,69 @@
+% 5_discussion.tex
+\section{Discussion}
+\label{sec:discussion}
+
+\textbf{Relation to prior work.} That AGN feedback alters the low-$z$ $P_F(k)$ is
+established \citep{Pirecki2025,TillmanApJ2024}. Our contribution is the
+distinguishability structure on discrete matched-IC recipes, not the existence of
+a feedback imprint. The lattice sharpens the same-suite finding that feedback has
+only a small effect on low-$z$ forest statistics \citep{Nasir2017}: the effect is
+small but, on $P_F(k)$ shape with stacking, the strong-AGN recipe is cleanly
+separable and even the milder stellar-wind/wind${+}$AGN distinction is weakly
+recoverable. The strong-AGN detection is consistent with the published direction
+of an AGN-feedback imprint on $P_F(k)$ at low and intermediate redshift
+\citep{Khaire2024,TillmanApJ2024}.
+
+\textbf{Why a distinguishability framing.} A parameter-response curve measures how
+$P_F(k)$ moves under a continuous knob; it does not directly answer whether two
+discrete physical models are separable at a given data volume. The lattice answers
+that, and its $M$-scaling converts each pair into a stacking-depth requirement,
+which is the operationally useful quantity for designing a survey-scale test. The
+controls methodology is the part that lets a weak signal be reported honestly: the
+self-pair null excludes stacking variance, the mean-flux baseline excludes the
+mean-flux shortcut, and the injection instrument quantifies the sensitivity floor
+rather than asserting an uncalibrated one.
+
+\textbf{The stellar-wind/wind${+}$AGN case.} This pair was read as a null in
+single-sightline and shallow-stacking analyses. The dedicated-binary measurement
+with the controls revises that to a weak, gate-marginal $P_F(k)$-shape signal that
+emerges only at $M\geq\hbcMmin$. The signal is nearly orthogonal to the strong-AGN
+template, so it is a distinct spectral signature rather than a faint copy of the
+strong-AGN effect. We deliberately do not promote this to a clean detection: the
+p16 hugs the gate by $\hbcGateMargin$, the bootstrap clearance probability is
+$\hbcBootP$, and the confidence interval straddles the gate. The honest verb is
+``a weak feedback signal emerging with stacking depth,'' not a threshold pass.
+
+\textbf{Limitations.}
+\begin{itemize}
+  \item \textbf{Fixed nuisances.} All results are conditional on fixed cosmology,
+        ultraviolet background, and thermal history within one realization. The
+        ultraviolet background in particular is degenerate with feedback in
+        column-density-distribution analyses \citep{Christiansen2020,TillmanAJ2024},
+        and we perform no nuisance marginalization, so the lattice numbers are
+        upper bounds on real-data distinguishability, not forecasts.
+  \item \textbf{Single realization.} The four recipes share one density field. The
+        lattice measures the separability of feedback imprints on a fixed
+        realization, not the cosmic-variance-marginalized separability a survey
+        would face.
+  \item \textbf{Stacking changes the problem.} The detectable signals are
+        population statistics over $M$-sightline groups, not per-sightline
+        classifications. The data-volume requirement is expressed in stacking
+        depth; mapping it to a real survey requires accounting for sightline
+        density, noise, and continuum estimation that this idealized mock omits.
+  \item \textbf{Internal bars.} The $\latQualBar$ and $\detQualBar$ floors are
+        project-internal operational gates, not externally calibrated benchmarks;
+        no published like-for-like discrete-recipe classification accuracy exists
+        to anchor them against. We report them as gates and disclose their
+        provenance to avoid the forking-paths failure mode
+        \citep{Simmons2011,GelmanLoken2014}.
+  \item \textbf{Redshift scope.} The measurement is at $z\approx\zsnap$, a
+        transparent-IGM regime; it does not generalize to the canonical
+        $z=2$--$5$ forest without a separate test.
+\end{itemize}
+
+\textbf{Outlook.} The natural extensions are nuisance marginalization (varying the
+ultraviolet background and thermal history so the lattice becomes a forecast
+rather than an upper bound), multiple realizations for cosmic-variance-aware
+separability, and a richer-than-$P_F(k)$ basis for the stellar-wind/wind${+}$AGN
+pair, whose signature is orthogonal to the strong-AGN template and may be carried
+by phase or higher-order structure that $P_F(k)$ discards.

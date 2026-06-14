@@ -1,0 +1,69 @@
+% 2_data.tex
+\section{Data and simulations}
+\label{sec:data}
+
+We use four sets of mock Lyman-$\alpha$ forest sightlines from a hydrodynamical
+simulation of the Sherwood family \citep{Bolton2017, Nasir2017}, one per
+feedback recipe: class~1 no feedback, class~2 stellar wind, class~3
+wind${+}$AGN, and class~4 wind${+}$strong-AGN (following the
+\citealt{PuchweinSpringel2013} wind model and \citealt{Sijacki2007} AGN
+feedback as implemented in the Sherwood project). Each set contains
+$\Nsightlines$ sightlines of $\Npixels$ flux pixels, extracted from a single
+snapshot at $z\approx\zsnap$. The adopted cosmology
+($\Omega_m=\Omegam$, $\Omega_b=\Omegab$, $h=\hubble$) matches the Planck-2014
+$\Lambda$CDM parameters used throughout the Sherwood project
+\citep{Planck2014} to every digit recorded in the line-of-sight headers.
+
+\textbf{Matched initial conditions.} The four recipes are the packaged
+\texttt{Physics1--4} feedback-variant comparison set. We read the native
+line-of-sight headers directly from disk for all four classes and confirm that
+they share box size, cosmology, redshift, sampling, and initial-condition
+geometry: every class has $z=0.300$, $\Omega_m=\Omegam$, $\Omega_b=\Omegab$,
+$h=\hubble$, box ${=}\,\boxsize~\mathrm{cMpc}/h$, $\Npixels$ pixels, and
+$\Nsightlines$ sightlines, byte-identical including class~4. The per-pixel
+velocity arrays and the sightline geometry are bit-identical across classes, and
+a single class-independent line-spread kernel is applied. The four sets are
+therefore the same density realization with only the feedback recipe varied,
+which is the property that lets a cross-class difference be attributed to
+feedback rather than to a difference in initial conditions, box, or resolution.
+
+% TODO(box-citation) -- LOAD-BEARING, MUST resolve with the data provider
+% (James Bolton, Nottingham) before submission. Web literature reconciliation
+% (2026-06-13) found: (1) the 60 cMpc/h box is NOT in Bolton+2017's tabulated
+% boxes {10,20,40,80,160}; (2) the published Sherwood feedback comparison
+% (Bolton+2017, Nasir+2017) has only THREE variants (QUICKLYA / ps13 /
+% ps13+agn = no-FB / wind / wind+AGN) -- there is NO published fourth
+% "strong-AGN" variant. The cosmology is an exact Sherwood/Planck-2014 match.
+% So the data is Sherwood-FAMILY by cosmology, but this specific 60 cMpc/h
+% 4-variant run is unattested in the literature. Do NOT assert a published run.
+\begin{quote}\small
+\textit{[Open provenance item, load-bearing, to be resolved with the data
+provider before submission. The on-disk box size ($\boxsize~\mathrm{cMpc}/h$) is
+non-canonical for the $\{10,20,40,80,160\}~\mathrm{cMpc}/h$ Sherwood boxes of
+\citet{Bolton2017}, and the published Sherwood feedback comparison
+\citep{Bolton2017, Nasir2017} tabulates only three feedback prescriptions
+(no-feedback, stellar wind, wind${+}$AGN); the fourth wind${+}$strong-AGN
+recipe analysed here (class~4) is not among them. The cosmology, however,
+matches the Sherwood/Planck-2014 values exactly, identifying the data as
+Sherwood-family. We therefore describe the dataset as a Sherwood-family run and
+flag that its exact designation -- the $60~\mathrm{cMpc}/h$ box and the
+strong-AGN variant -- should be confirmed with the data provider before
+submission. The matched-IC, matched-cosmology, matched-geometry properties that
+this work's controls rely on are confirmed directly from the line-of-sight
+headers and do not depend on that reconciliation.]}
+\end{quote}
+
+\textbf{Velocity scale.} The velocity sampling is uniform at $\dv~\mathrm{km/s}$
+per pixel, read from the co-located velocity array rather than assumed, giving a
+total span of $\veospan~\mathrm{km/s}$ and a snapshot range $z=0.30$--$0.32$.
+This fixes the physical $k$-axis: $k=2\pi\,\mathrm{rfftfreq}(\Npixels, \dv)$,
+with a Nyquist wavenumber $k\approx\knyq~\mathrm{s/km}$ and a minimum
+$k\approx\kmin~\mathrm{s/km}$. We report $P_F(k)$ in $\mathrm{s/km}$, the
+conventional Lyman-$\alpha$ basis, with no comoving conversion.
+
+\textbf{Mean flux.} The per-class mean transmitted flux differs across recipes at
+the $\sim\fbarspread\%$ level. This is a small, label-correlated quantity: the
+strong-AGN recipe is the most transmitting. We treat it explicitly in the
+normalization (Section~\ref{sec:methods}) and again as a dedicated control
+(Section~\ref{sec:results}), because a classifier given mean-flux information can
+read it as a shortcut.

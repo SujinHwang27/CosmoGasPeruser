@@ -1,0 +1,28 @@
+% 0_abstract.tex
+\begin{abstract}
+The low-redshift Lyman-$\alpha$ forest flux power spectrum $P_F(k)$ responds to
+galactic and AGN feedback, but the question of \emph{which} feedback recipes a
+given observable can tell apart, and at \emph{what} data volume, has not been
+quantified. We measure pairwise distinguishability across the four matched
+initial-condition feedback recipes of the Sherwood simulation suite at
+$z\approx\zsnap$ --- no feedback, stellar wind, wind${+}$AGN, and
+wind${+}$strong-AGN --- using $P_F(k)$ of stacked sightlines and a dedicated
+binary random-forest classifier per recipe pair. We report three results. First,
+a pairwise distinguishability lattice: at a stacking depth of $M=64$ sightlines,
+\latClearedTotal{} of the \latClearedTotal{} recipe pairs not involving the
+stellar-wind/wind${+}$AGN comparison separate above a balanced-accuracy floor of
+$\latQualBar$ on the $16$th-percentile edge, and the strong-AGN recipe is
+detectable against the other three pooled at $\latCdRest$. Second, an
+$M$-scaling result: distinguishability rises monotonically with stacking depth,
+giving a concrete data-volume requirement for each pair. Third, a controls
+methodology --- a within-class self-pair null, a mean-flux-only baseline, and an
+injection-recovery sensitivity calibration --- that lets a weak signal be claimed
+honestly. With these controls we revise a result previously read as a null: the
+stellar-wind versus wind${+}$AGN pair, indistinguishable per sightline, becomes a
+weak but real $P_F(k)$-shape signal that emerges only with stacking
+($M\geq\hbcMmin$), reaching $\hbcMtwofivesix$ median balanced accuracy at $M=256$
+(p16 $\hbcMtwofivesixPsixteen$; gate-marginal). All results are conditional on
+fixed cosmology, ultraviolet background, and thermal history within a single
+Sherwood realization; no nuisance marginalization is performed. We do not claim
+per-sightline feedback identification at $z\approx\zsnap$ from $P_F(k)$ alone.
+\end{abstract}

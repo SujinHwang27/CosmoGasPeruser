@@ -1,0 +1,61 @@
+% 1_intro.tex
+\section{Introduction}
+\label{sec:intro}
+
+The Lyman-$\alpha$ forest traces the diffuse intergalactic medium (IGM) along
+quasar sightlines, and its one-dimensional flux power spectrum $P_F(k)$ is the
+conventional sufficient statistic for the thermal and pressure-smoothing
+structure of that gas \citep{McDonald2000,Walther2018,Walther2019}. Galactic and
+AGN feedback heat and redistribute gas in and around galaxies, and this leaves an
+imprint on $P_F(k)$. At high redshift the imprint is small: same-suite work on
+Sherwood finds that feedback has only a small effect on low-$z$ forest statistics
+\citep{Nasir2017}, and AGN feedback changes the $z>2$ $P_F(k)$ at the few-percent
+level \citep{TillmanApJ2024}. At low redshift the effect is larger and has been
+mapped as a function of continuous feedback parameters in the CAMELS-SIMBA suite
+\citep{Pirecki2025}, which already establishes that AGN feedback measurably
+alters the low-$z$ $P_F(k)$.
+
+\textbf{Motivation.} What is not established is the \emph{distinguishability}
+structure: given two specific feedback recipes that share initial conditions,
+cosmology, and ultraviolet background, can $P_F(k)$ tell them apart, and how much
+data does it take? This is a different question from a parameter-response curve.
+A parameter sweep measures how a statistic moves; a distinguishability lattice
+measures whether two discrete physical models are separable in practice, which is
+what a classification framing answers directly. The community has framed feedback
+inference as parameter regression, emulation, or simulation-based inference
+\citep{Pirecki2025,TillmanApJ2024,Sinigaglia2026}, not as discrete recipe
+classification, so the lattice and its data-volume scaling are unmeasured.
+
+\textbf{Contribution.} We quantify recipe-vs-recipe distinguishability of the
+low-$z$ $P_F(k)$ on the four matched-initial-condition Sherwood feedback recipes
+(no feedback, stellar wind, wind${+}$AGN, wind${+}$strong-AGN). The increment
+over prior work is fourfold:
+\begin{itemize}
+  \item a pairwise distinguishability lattice over the four discrete recipes,
+        with one balanced-accuracy number per pair and per stacking depth;
+  \item an $M$-scaling result that turns each pair's distinguishability into a
+        concrete stacking-depth (data-volume) requirement;
+  \item a controls methodology --- a within-class self-pair null, a
+        mean-flux-only baseline, and an injection-recovery sensitivity floor ---
+        that allows a weak signal to be claimed without overstatement; and
+  \item the case-study finding that the stellar-wind versus wind${+}$AGN pair,
+        indistinguishable per sightline and previously read as a null, is a weak
+        but real $P_F(k)$-shape feedback signal that emerges with stacking depth.
+\end{itemize}
+
+\textbf{Scope.} The measurement is conditional on one Sherwood realization with
+fixed cosmology, ultraviolet background, and thermal history; no nuisance
+parameter is marginalized. The stacking operation that makes the weak signals
+detectable changes the problem from single-sightline inference to within-class
+population statistics, and we frame the results accordingly. We do not claim
+per-sightline feedback identification at $z\approx\zsnap$ from $P_F(k)$ alone.
+The internal accuracy floors are operational gates, not externally calibrated
+classification benchmarks.
+
+Section~\ref{sec:data} describes the simulation suite and the data provenance.
+Section~\ref{sec:methods} sets out the $P_F(k)$ estimator, the stacking
+operation, the dedicated binary classifier, and the three controls.
+Section~\ref{sec:results} reports the lattice, the $M$-scaling, the strong-AGN
+detection, the stellar-wind/wind${+}$AGN weak signal, and the control outcomes.
+Section~\ref{sec:discussion} places the result against prior work and states the
+limitations. Section~\ref{sec:conclusions} concludes.

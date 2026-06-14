@@ -1,0 +1,114 @@
+% numbers.tex — canonical numerical macros (numbers of record)
+% =============================================================================
+% Every result-claim number in the paper cites a macro from this file.
+% Each macro names its source CSV / LEDGER entry in a trailing comment.
+% Source-of-truth: experiments/reframe-suite/HARDENING_OUTCOME.md (2026-06-12),
+% which supersedes the older reframe-suite/CLOSE_OUT.md numbers and the
+% 4-class sub-block lattice estimates. All lattice / detection / M-scaling
+% numbers are the dedicated-binary hardening numbers, per_sightline regime,
+% p16 = 16th percentile of the 50 (10-seed x 5-fold) balanced-accuracy values.
+% Source CSVs under results/reframe_suite/hardening/.
+% =============================================================================
+
+% ---- Data / simulation pins (LEDGER section 2, CONFIRMED FROM DISK 2026-06-13) ----
+\newcommand{\Nclasses}{4}                 % feedback recipes (Physics1-4)
+\newcommand{\Nsightlines}{16384}          % sightlines per class (LOS header numlos)
+\newcommand{\Npixels}{2048}               % pixels per sightline (LOS header nbins)
+\newcommand{\zsnap}{0.3}                  % redshift (LOS header z=0.300)
+\newcommand{\boxsize}{60}                 % box in cMpc/h (LOS header; see % TODO(box-citation))
+\newcommand{\Omegam}{0.308}               % LOS header Omega_m=0.3080
+\newcommand{\Omegab}{0.0482}              % LOS header Omega_b=0.0482
+\newcommand{\hubble}{0.678}               % LOS header h=0.6780
+\newcommand{\dv}{2.6365}                  % km/s per pixel (vel.npy, uniform; LEDGER [D-04])
+\newcommand{\veospan}{5396.92}            % total velocity span km/s (LEDGER [D-04])
+\newcommand{\knyq}{1.19}                  % Nyquist k in s/km (LEDGER section 2)
+\newcommand{\kmin}{1.16\times10^{-3}}     % k_min in s/km (LEDGER section 2)
+\newcommand{\nkbins}{20}                  % log-spaced k-bins (FluxPowerSpectrum, n_kbins)
+\newcommand{\fbarspread}{0.9}             % per-class <F> spread in percent (LEDGER [D-02])
+
+% ---- H1 lattice: dedicated-binary balanced accuracy, per_sightline, M=64, p16 ----
+% Source: results/reframe_suite/hardening/pair_binary_summary.csv (per_sightline, M=64)
+\newcommand{\latCaCb}{0.854}              % C1-C2 p16  (StellarWind vs NoFB)
+\newcommand{\latCaCc}{0.814}              % C1-C3 p16  (WindAGN vs NoFB) -- newly clears 0.75
+\newcommand{\latCaCd}{0.971}              % C1-C4 p16  (WindStrongAGN vs NoFB)
+\newcommand{\latCbCc}{0.520}             % C2-C3 p16  (StellarWind vs WindAGN) -- see H2
+\newcommand{\latCbCd}{0.961}              % C2-C4 p16
+\newcommand{\latCcCd}{0.951}              % C3-C4 p16
+\newcommand{\latCdRest}{0.954}            % C4-vs-rest p16 (R1 detection)
+\newcommand{\latClearedPairs}{5}          % of 5 non-(C2-C3) pairs clearing 0.75
+\newcommand{\latClearedTotal}{5}
+\newcommand{\latQualBar}{0.75}            % R5 qualification bar (SCOPING section 4, Y)
+\newcommand{\detQualBar}{0.90}            % R1 detection bar (SCOPING section 4, X)
+
+% ---- H1 lattice median values at M=64 (for completeness; same CSV) ----
+\newcommand{\latCdRestMed}{0.971}         % C4-vs-rest median 0.9706, per_sightline M=64
+
+% ---- H2 C2-C3 M-curve (StellarWind vs WindAGN), per_sightline, median[p16] ----
+% Source: results/reframe_suite/hardening/pair_binary_summary.csv (per_sightline, C2-C3)
+\newcommand{\hbcMone}{0.36}               % M=1 median (per_sightline)
+\newcommand{\hbcMsixfour}{0.566}          % M=64 median
+\newcommand{\hbcMonetwoeight}{0.609}      % M=128 median
+\newcommand{\hbcMtwofivesix}{0.686}       % M=256 median
+\newcommand{\hbcMtwofivesixPsixteen}{0.603} % M=256 p16  (gate read; gate = 0.60)
+\newcommand{\hbcGate}{0.60}               % H2 routing gate (HARDENING_SPEC section 5 H2)
+\newcommand{\hbcGateMargin}{0.003}        % p16 hug above 0.60
+\newcommand{\hbcBootP}{0.739}             % bootstrap P(p16 >= 0.60)
+\newcommand{\hbcCIlo}{0.577}              % 95% CI lower on p16@M256
+\newcommand{\hbcCIhi}{0.637}              % 95% CI upper on p16@M256
+\newcommand{\hbcMfivetwelve}{0.77}        % M=512 median (EXPLORATORY, few-groups)
+\newcommand{\hbcMtenfourtwentyfour}{0.83} % M=1024 median (EXPLORATORY, few-groups)
+\newcommand{\hbcMmin}{128}                % M needed to clearly exceed chance
+
+% ---- H2 controls ----
+% Within-class C2-vs-C2 self-pair (injection alpha=0 arm), HARDENING_OUTCOME H2 control 1
+\newcommand{\selfpairMsixfour}{0.509}     % self-pair M=64
+\newcommand{\selfpairMtwofivesix}{0.500}  % self-pair M=256
+\newcommand{\selfpairCrit}{0.55}          % round-1 panel variance-artifact criterion (NOT met)
+% <F>-only baseline for C2-C3, HARDENING_OUTCOME H2 control 2
+% Source: results/reframe_suite/hardening/fbar_baseline_summary.csv (C2-C3, fbar)
+\newcommand{\fbarCbCcMax}{0.512}          % <F>-only C2-C3 stays <= this at every M
+
+% ---- H3 mean-flux baseline headroom: dedicated P_F(k) p16 minus <F>-only p16 ----
+% Source: pair_binary_summary.csv vs fbar_baseline_summary.csv (matched cells)
+\newcommand{\hthreeBar}{0.05}             % +0.05 HARDENS headroom bar (HARDENING_SPEC H3)
+\newcommand{\hthreeSpearman}{0.94}        % Spearman(lattice ordering, per-class <F>)
+% Saturated M=64 headroom (thinner)
+\newcommand{\hthreeCdRestSat}{0.062}      % C4-rest headroom at M=64
+\newcommand{\hthreeCbCdSat}{0.049}        % C2-C4 headroom at M=64
+\newcommand{\hthreeCcCdSat}{0.048}        % C3-C4 headroom at M=64
+% Non-saturated M=16 headroom (clean, large)
+\newcommand{\hthreeCdRestSixteen}{0.121}  % C4-rest headroom at M=16
+\newcommand{\hthreeCbCdSixteen}{0.114}    % C2-C4 headroom at M=16
+\newcommand{\hthreeCcCdSixteen}{0.078}    % C3-C4 headroom at M=16
+\newcommand{\hthreeNoFBlo}{0.12}          % C1-Cx headroom range low (everywhere)
+\newcommand{\hthreeNoFBhi}{0.20}          % C1-Cx headroom range high
+
+% ---- H4 injection-recovery sensitivity ----
+% Source: results/reframe_suite/hardening/injection_recovery_summary.csv
+%         + results/reframe_suite/hardening/injection_templates.csv
+\newcommand{\hfourAlphaZeroMsixfour}{0.509}   % alpha=0 calibration median, M=64 (centered at chance)
+\newcommand{\hfourAlphaZeroMtwofivesix}{0.500}% alpha=0 calibration median, M=256
+\newcommand{\hfourDeltaMin}{0.02}             % delta_min(M=64): smallest alpha with p16 >= 0.60
+\newcommand{\hfourDeltaMinPct}{2}             % 2% of the C4-C2 template
+\newcommand{\hfourBeta}{0.539}                % beta = projection of C3-C2 onto C4-C2 template
+\newcommand{\hfourAlphaEquiv}{0.004}          % effective alpha of the real C3-C2 difference (off-template)
+\newcommand{\hfourThresh}{0.60}               % delta_min threshold (p16 >= 0.60)
+
+% ---- Mid-k band (Stage 1 mechanism, falsified per [D-26]) ----
+\newcommand{\midklo}{0.04}                % s/km, mid-k band lower edge (G3 band)
+\newcommand{\midkhi}{0.15}                % s/km, mid-k band upper edge (G3 band)
+\newcommand{\midkpeaklo}{0.06}            % s/km, observed Stage-0 importance peak low
+\newcommand{\midkpeakhi}{0.13}            % s/km, observed Stage-0 importance peak high
+
+% ---- Stage 1 4-class context (LEDGER [D-26]) ----
+% Source: results/pk_feedback_classifier/stage1/ summary (4-class, per_sightline, lower-CI)
+\newcommand{\fourclassMsixfour}{0.657}    % 4-class per_sightline M=64 lower-CI
+\newcommand{\fourclassMtwofivesix}{0.788} % 4-class per_sightline M=256 lower-CI
+\newcommand{\fourclassMone}{0.29}         % 4-class M=1 (~chance 0.25)
+
+% ---- Protocol constants (hardening scripts) ----
+\newcommand{\rfTrees}{300}                % RandomForest n_estimators
+\newcommand{\nseeds}{10}                  % bootstrap seeds
+\newcommand{\nfolds}{5}                   % StratifiedKFold splits
+\newcommand{\nseedfold}{50}               % 10 x 5 seed-fold values per cell
+\newcommand{\Msweep}{\{1,4,16,32,64,128,256\}}  % main M-sweep
