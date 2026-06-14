@@ -30,6 +30,8 @@ graph TD
 
 ## 1. The Pulse (Progress & Roadmap)
 
+> **CURRENT STATE (2026-06-12) — READ THIS FIRST:** the most recent authoritative state is the reframe-suite **defense-panel hardening sprint**, COMPLETE on Juno (job 213282) and recorded at **`experiments/reframe-suite/HARDENING_OUTCOME.md`**. It supersedes the [D-26] "C2/C3 null" reading below: under dedicated binary classifiers (10-seed), **the C2/C3-null verb is RETIRED** → a weak, controls-confirmed P(k)-shape signal that emerges with stacking (median 0.69 / p16 0.603 at M=256; gate-marginal). The distinguishability lattice (R5) and strong-AGN detection (R1) **HARDEN**. Project is **defensible to park-and-write**; paper-trigger remains user-owned. One cheap recommended pre-pub item: `dvc pull data/raw` to confirm the 512³ resolution match (box size + IC geometry already on-disk-confirmed matched). The Stage 0/1 rows below are valid history but predate this hardening.
+
 | Stage | Focus Area | Status | Pass Condition | Outputs |
 |:---|:---|:---|:---|:---|
 | **Stage 0 — de-risking probe** | per-sightline + stacked M∈{4,16,64} P_F(k) → global 4-class RF, both norm regimes | ✅ **DONE — Ambiguous / SNR-limited band ([D-07])** | **PASS** = balanced test acc ≥ 0.55 per-sightline OR ≥ 0.70 stacked (M=64), **AND** k-bin importance concentrates at high-k. Achieved: per-sightline M=64 = 0.6993 (on-the-bar within n_test=205 noise), global M=64 = 0.7042 — but high_k_frac = 0.43 < 0.50 in both regimes → anti-degeneracy gate FAILS; signal peaks at mid-k (~0.06–0.13 s/km), not the [D-01]-predicted high-k cutoff. | `results/pk_feedback_classifier/` + `cloud_runs/pkprobe-20260530-224254-a2ca9a/` (Juno job 205725, 1m 4s) |
