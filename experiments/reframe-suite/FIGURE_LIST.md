@@ -154,3 +154,17 @@ For supplementary (online-only): F7 (cluster-vs-mean-flux violins), the pre-exis
 
 **Authored:** 2026-06-02, this session.
 **For paper-author dispatch IF the user triggers.** No dispatch authorized by this list. This list is the visual-inventory prep recorded in the LEDGER trail for future-decision surface.
+
+---
+
+## §6 — Rendered assets (Visualization & Artifacts log)
+
+**2026-06-13 — F1/F2/F-inj headline figures rendered from HARDENING dedicated-binary numbers** (commit `acc73a6`). Per the §0 novelty-flag instruction "F1/F2 must be drafted from the HARDENING item-(i) dedicated-binary numbers, not the superseded sub-block estimates," these supersede the phase1-CSV sourcing noted in §1 above. Renderer (reproducible, matplotlib-only): `experiments/reframe-suite/scripts/make_paper_figures.py`. Source CSVs: `results/reframe_suite/hardening/{pair_binary_summary,injection_recovery_summary}.csv` (per_sightline regime, 10-seed p16/median/p84). Output (pdf+png, 300 dpi, Okabe-Ito palette) under `papers/shared/figures/`:
+
+| Asset | Path (pdf+png) | Scientific takeaway |
+|---|---|---|
+| F1 lattice | `papers/shared/figures/fig_lattice_M64` | 4×4 p16 heatmap at (per_sightline, M=64). C2–C3 reads near-chance (0.520); all C4-involving and NoFB pairs dark (≥0.81). The load-bearing "one specific null" result. |
+| F2 acc-vs-M | `papers/shared/figures/fig_acc_vs_M` | Balanced-acc vs stacking depth (log M). C2–C3 is the slow riser (median 0.36→0.69, still climbing at M=256, exploratory M=512/1024 hollow); C4-rest and NoFB pairs saturate near unity by M=256. |
+| F-inj | `papers/shared/figures/fig_injection_sensitivity` | Balanced-acc vs injection amplitude α. α=0 control at chance (median 0.51, M=64) → instrument calibrated; δ_min(M=64)=0.02 (first α where M=64 p16 ≥ 0.60). |
+
+Wired into `papers/shared/sec/4_results.tex` as live `\includegraphics{figures/<name>.pdf}` (graphicspath `../shared/figures/`), replacing the three `% TODO(figure)` placeholders; captions self-sufficient, no numbers/prose altered. Sanity-checks against numbers-of-record passed: C2–C3 median 0.3607→0.6859, C4-rest p16@M64 = 0.9543, δ_min = 0.02. All assets <0.4 MB (no DVC tracking required).
