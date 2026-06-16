@@ -55,6 +55,11 @@ Source of truth for cluster state: <https://hpc.utdallas.edu/systems-resources/j
   Verify: `ssh juno "hostname; whoami"` should succeed silently with no prompt.
 
 - **Open OnDemand** (web UI for file browse / VS Code / Jupyter): <https://juno-ood.hpcre.utdallas.edu/>.
+- **VS Code via Remote-SSH (dedicated host — experimental, Juno-only, announced 2026-06)**: VS Code is **blocked on the regular login nodes** (`juno-l-0X`) because the Remote-SSH server spawns excessive zombie processes that destabilize them. To use your local VS Code (with extensions / Git / AI integrations) against Juno, point the **Remote-SSH** extension at the dedicated gateway **`juno-vscode.utdallas.edu`** — never at `juno.utdallas.edu` for VS Code.
+
+  - Remote-SSH config: Server `juno-vscode.utdallas.edu`, Username `<netid>`, Remote SSH command `ssh <netid>@juno-vscode.utdallas.edu`. Password is the NetID password; for passwordless login reuse the SSH-key setup above (UTD key-auth docs: <https://utdallas-hpc-juno-ug.readthedocs-hosted.com/en/latest/getting-started/ssh-keys/>). Optionally add a `juno-vscode` Host alias mirroring the `juno` block but with `HostName juno-vscode.utdallas.edu`.
+  - **Editing surface ONLY — not a compute or login node.** Do **not** run any programs (no `python run_*.py`, no `sbatch`, no rsync loops) on `juno-vscode`; it enforces per-user memory and process-count `ulimit`s (check with `ulimit -a`). All compute still goes through `sbatch` on the compute nodes, and all automation (rsync UP/DOWN, `sbatch` dispatch, `squeue`) still uses the `ssh juno` → `juno.utdallas.edu` path documented below. Use `juno-vscode` purely to browse/edit the `~/work/CosmoGasPeruser` clone from your laptop's IDE.
+  - **Testing phase — expect instability.** Admins periodically run zombie-process reapers, so the Remote-SSH session may hang or disconnect and then restart its remote processes; this is expected, not a job failure. The dedicated-host solution is **Juno-only** — it does **not** cover Ganymede 2 (G2).
 - **Support**: `circ-assist@utdallas.edu` (general HPC) or `hpc@utdallas.edu` (Juno-specific).
 
 ## Storage layout — pick the right filesystem
@@ -180,6 +185,7 @@ After the run is pulled back and the PI has read the outputs against `experiment
 - **Forgetting to mirror data first** → the sbatch's symlink target won't exist; the probe fails fast at the first np.load.
 - **No explicit `--mem`** → defaults to 64 GB on most partitions, often fine but document intent.
 - **Submitting from login node without `sbatch`** (i.e. running `python run_probe.py` directly on `juno-l-0X`) → login-node CPU/RAM caps and shared-CPU policy will OOM or get the process killed.
+- **Running anything on `juno-vscode.utdallas.edu`** (the VS Code Remote-SSH gateway) → it is an editing surface only, with per-user memory/process `ulimit`s; run compute via `sbatch` and automation via `ssh juno`, never on the VS Code host.
 - **Leaving data in `~/scratch` between batches** without a `touch` refresh → 45-day purge wipes it mid-sweep.
 - **Skipping the copy-out step** → results die with the scratch purge.
 - **Silencing the PCV checks with `2>/dev/null || true`** → see the `infrastructure-manager` agent's Producer-Consumer Verification section; this is the failure mode that lost ~30 GPU-hr in the upstream repo and the reason this skill enforces explicit `exit N` on missing artifacts.
