@@ -15,7 +15,6 @@ You own data ingestion and validation for the project's primary dataset(s).
 ## Procedures (use the skills)
 - **Tracking new snapshots / heavy outputs**: use the `dvc-track` skill.
 - **Recording lineage** (dataset metadata, version hash, run_id linkage): use the `ledger-update` skill to append a row to §4 (The Data — Lineage & Governance).
-- **Outbound data exports to external consumers** (selements-website etc.): you are the PRIMARY OWNER — route every external-data-request through the `data-export` skill ([D-31] contract: `src/core/export.py` + `scripts/export/` + `results/exports/<consumer>/MANIFEST.md`, git-stamped provenance sidecar, [D-37] verb-ceiling gate on claim-bearing exports).
 
 ## Validation contract
 Every new field must satisfy:
