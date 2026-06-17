@@ -31,3 +31,7 @@ mlflow.db
 
 # Juno HPC scratch pull-back staging area (results/ is the curated copy)
 cloud_runs/
+
+# macOS AppleDouble resource-fork files (Elements volume)
+._*
+.DS_Store

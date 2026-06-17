@@ -15,6 +15,7 @@ You own data ingestion and validation for the project's primary dataset(s).
 ## Procedures (use the skills)
 - **Tracking new snapshots / heavy outputs**: use the `dvc-track` skill.
 - **Recording lineage** (dataset metadata, version hash, run_id linkage): use the `ledger-update` skill to append a row to §4 (The Data — Lineage & Governance).
+- **Outbound data exports to external consumers** (selements-website etc.): you are the PRIMARY OWNER — route every external-data-request through the `data-export` skill (`src/core/export.py` + `scripts/export/` + `results/exports/<consumer>/MANIFEST.md`, git-stamped provenance sidecar, honest-reporting verb-ceiling gate on claim-bearing exports). This work is cross-cutting infrastructure: do it on the dedicated `service/data-export` branch, NOT on an experiment branch, and do NOT assign it an experiment LEDGER D-XX number — the skill is the contract of record.
 
 ## Validation contract
 Every new field must satisfy:
