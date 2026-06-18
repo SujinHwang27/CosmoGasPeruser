@@ -1,0 +1,40 @@
+{
+  "export_request_slug": "exploration-pk-mean-per-class",
+  "consumer": "selements-website",
+  "producing_function": "src.core.export.export_exploration_pk_mean_per_class",
+  "consumer_facing_filename": "pk-mean-per-class.csv",
+  "export_timestamp": "2026-06-17T19:39:27",
+  "git": {
+    "commit": "6171316",
+    "branch": "service/data-export",
+    "dirty": "True",
+    "timestamp": "2026-06-17T19:39:27"
+  },
+  "source_data_paths": {
+    "NoFeedback": "data/preprocessed/Sherwood_z0.3_inf/1/flux.npy",
+    "StellarWind": "data/preprocessed/Sherwood_z0.3_inf/2/flux.npy",
+    "WindAGN": "data/preprocessed/Sherwood_z0.3_inf/3/flux.npy",
+    "WindStrongAGN": "data/preprocessed/Sherwood_z0.3_inf/4/flux.npy"
+  },
+  "canonical_transform": "src.core.transforms.FluxPowerSpectrum",
+  "n_classes": 4,
+  "n_kbins": 20,
+  "n_sightlines_per_class": 16384,
+  "delta_v_kms_per_px": 2.636502840371587,
+  "k_units": "s/km (velocity-space, conventional Lya basis)",
+  "pk_units": "(delta_F)^2 * (km/s)",
+  "delta_F_definition": "delta_F = F / <F>_los - 1 (per-sightline mean-flux)",
+  "fft_convention": "Hann window applied, then one-sided numpy rfft; P(k) = |rfft(Hann . delta_F)|^2 * (delta_v / N), N=2048. No 1/sum(w^2) Hann-power correction (fixed multiplicative offset on absolute amplitude; cancels in class comparison and the ratio panel).",
+  "k_binning": "20 log-spaced bins, geometric centers, edges from k_raw[1]..k_raw[-1]; identical k-grid across classes.",
+  "pk_sem_definition": "std(P_F(k)) / sqrt(N) across the N sightlines",
+  "empty_bin_convention": "Where n_modes_in_bin == 0 the log-bin caught no raw FFT modes; pk_mean and pk_sem are 0.0 by convention (UNDEFINED, not a physical zero). Drop these rows on a log axis. With n_kbins=20 over 1025 raw modes this affects one or more of the lowest-k bins.",
+  "source_lineage": "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h box; one realization, fixed cosmology / UVB / thermal history",
+  "verb_ceiling": "The per-class P_F(k) differences (and the ratio-to-NoFeedback panel computed from this table) are a WEAK, gate-marginal feedback signal in the 1D flux power spectrum \u2014 NOT a per-sightline detection and NOT a feedback classifier. Do not caption as 'feedback detected' / 'feedback classifier' / 'we recover feedback'.",
+  "provenance_note": "The four classes are the same density realization with only the feedback recipe varied: box size (60 cMpc/h), cosmology, redshift, sampling, and initial-condition skewer geometry are byte-identical across all four classes (confirmed from the native Sherwood LOS headers, 2026-06-13), so cross-class differences on this field are pure feedback. One open item is external only: 60 cMpc/h is non-canonical for Bolton+2017's 40/80/160 boxes, so the exact run within the Sherwood suite is not yet pinned to a published table entry \u2014 this does not affect the feedback signal.",
+  "strength_and_scope_caveats": [
+    "The C2(StellarWind)-C3(WindAGN) pair is the weakest \u2014 gate-marginal (p16 = 0.603 at deep stacking, bootstrap CI straddles the 0.60 line) and emerges only with within-class stacking. The other feedback-recipe pairs separate more clearly (p16 >= 0.75). Read the C2-C3 ratio difference as 'consistent with a weak signal,' never as a clean separation.",
+    "Mean flux and P(k) shape are partially entangled. The per-class lattice ordering correlates with per-class mean transmitted flux (Spearman ~0.94); P_F(k) shape carries a genuine residual on top, but the ratio-to-NoFeedback differences for the C1/C4-involving pairs blend a real mean-flux offset with a P(k)-shape difference. (For the C2-C3 pair specifically the difference is carried entirely by shape; its mean-flux-only baseline stays at chance.)",
+    "Single z=0.3 snapshot, single realization, fixed cosmology and UV background; no nuisance-parameter marginalization was performed.",
+    "The lowest-k bin can carry residual mean-flux-normalization / windowing leakage (per reframe-suite [D-06]) and may be de-emphasized."
+  ]
+}

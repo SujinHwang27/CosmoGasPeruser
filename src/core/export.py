@@ -24,8 +24,13 @@ from typing import Dict, List
 
 import numpy as np
 
-from src.core.data import SignalClusteringData, load_velocity_axis
+from src.core.data import (
+    SignalClusteringData,
+    assert_velocity_axes_uniform,
+    load_velocity_axis,
+)
 from src.core.provenance import get_git_info
+from src.core.transforms import FluxPowerSpectrum
 
 # Canonical landing root for selements-website exports. All website-bound
 # artifacts live under here so the consumer has one stable mount point.
@@ -42,6 +47,10 @@ _CLASS_LABELS: Dict[int, str] = {
 
 # Canonical sightline length for the Sherwood z=0.3 snapshot.
 _N_PIXELS = 2048
+
+# Canonical number of log-spaced k-bins for P_F(k), matching the project's
+# pk-feedback-classifier convention (run_probe.py / run_stage1.py: N_KBINS=20).
+_N_KBINS = 20
 
 
 def _validate_spectrum(flux: np.ndarray, name: str = "flux") -> None:
@@ -261,6 +270,248 @@ def export_primer_synthetic_spectrum(
         ),
     }
     provenance_path = out_dir / "synthetic-spectrum.example.provenance.json"
+    with open(provenance_path, "w") as fh:
+        json.dump(provenance, fh, indent=2)
+
+    return csv_path
+
+
+def _write_pk_tidy_csv(csv_path: Path, rows: List[Dict[str, object]]) -> Path:
+    """Write the tidy long-form P_F(k) table (header + data only, no comments).
+
+    The website parser is comment-unaware, so units are carried in the column
+    names (``k_center_s_per_km``) and the full convention block lives in the
+    provenance sidecar rather than in a fragile ``#`` header line. Floats are
+    written via ``repr`` for full float64 precision.
+
+    Columns: ``feedback_class,class_name,k_bin_idx,k_center_s_per_km,pk_mean,
+    pk_sem,n_modes_in_bin,n_sightlines``. ``n_modes_in_bin`` is the number of raw
+    FFT modes that fell in that log-bin; where it is 0 the bin is EMPTY and
+    ``pk_mean``/``pk_sem`` are 0.0 by convention (undefined, not a physical zero)
+    — the consumer should drop those rows on a log axis.
+
+    Args:
+        csv_path: Destination CSV path (parent dirs created if absent).
+        rows: One dict per (class, k-bin) cell, carrying the column keys above.
+
+    Returns:
+        The ``csv_path`` written.
+    """
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    header: List[str] = [
+        "feedback_class",
+        "class_name",
+        "k_bin_idx",
+        "k_center_s_per_km",
+        "pk_mean",
+        "pk_sem",
+        "n_modes_in_bin",
+        "n_sightlines",
+    ]
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([
+                int(r["feedback_class"]),
+                str(r["class_name"]),
+                int(r["k_bin_idx"]),
+                repr(float(r["k_center_s_per_km"])),
+                repr(float(r["pk_mean"])),
+                repr(float(r["pk_sem"])),
+                int(r["n_modes_in_bin"]),
+                int(r["n_sightlines"]),
+            ])
+    return csv_path
+
+
+def export_exploration_pk_mean_per_class(
+    out_dir: Path,
+    n_kbins: int = _N_KBINS,
+) -> Path:
+    """Export the class-mean flux power spectrum P_F(k) for all 4 classes.
+
+    Single-sources the physics from the project's canonical transform
+    :class:`src.core.transforms.FluxPowerSpectrum` with ``norm="per_sightline"``
+    (delta_F = F / <F>_los - 1, the same regime the pk-feedback-classifier and
+    reframe-suite use). For each class it computes per-sightline P_F(k), then
+    stacks to the class mean and the standard error on the mean
+    (std / sqrt(N)) across all N=16,384 sightlines, and writes one tidy
+    long-form CSV plus a git-stamped provenance sidecar that records the full
+    P(k) convention (window, normalization, k-binning, units) and the honest
+    verb-ceiling caveat for the ratio-to-NoFeedback signal.
+
+    Convention (inherited verbatim from FluxPowerSpectrum, documented in the
+    sidecar so the consumer's axis labels are exact):
+      - delta_F = F / <F>_los - 1 (per-sightline mean-flux normalization).
+      - Hann window applied before a one-sided numpy rfft.
+      - P(k) = |rfft(Hann . delta_F)|^2 * (delta_v / N); units (delta_F)^2 . (km/s).
+        No 1/sum(w^2) Hann-power correction (a fixed multiplicative offset on the
+        absolute amplitude; irrelevant to class comparison / the ratio panel).
+      - k = 2*pi*rfftfreq(N, d=delta_v), units s/km; delta_v derived from vel.npy.
+      - log-binned to ``n_kbins`` geometric-center bins.
+
+    Determinism: re-running against the same source data produces byte-identical
+    CSV content (the provenance JSON differs only in timestamp/git state).
+
+    Args:
+        out_dir: Landing directory for the two output files (created if absent).
+        n_kbins: Number of log-spaced k-bins. Default 20 (project canonical).
+
+    Returns:
+        Path to the written CSV (``pk-mean-per-class.csv``).
+
+    Raises:
+        ValueError: if any class produces a non-finite P_F(k) stack.
+    """
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Canonical, uniform-across-classes velocity spacing (asserts identity of
+    # all 4 vel.npy axes; derived from disk, never hardcoded).
+    delta_v = float(assert_velocity_axes_uniform())
+
+    # --- load all 4 class flux blocks via the canonical loader ---
+    loader = SignalClusteringData()
+    flux_per_class, _ = loader.load_flux_per_class()  # list of 4 x (N, 2048)
+
+    rows: List[Dict[str, object]] = []
+    k_centers: np.ndarray = np.empty(0, dtype=np.float64)
+    for class_id in (1, 2, 3, 4):
+        flux = np.asarray(flux_per_class[class_id - 1], dtype=np.float64)
+        transform = FluxPowerSpectrum(
+            norm="per_sightline", n_kbins=n_kbins, delta_v=delta_v
+        )
+        pk = transform.fit_transform(flux)  # shape: (N, n_kbins)
+        if not np.all(np.isfinite(pk)):
+            raise ValueError(
+                f"non-finite P_F(k) for class {class_id}; check source flux."
+            )
+        k_centers = np.asarray(transform.k_bin_centers_, dtype=np.float64)
+        n_sightlines = int(pk.shape[0])
+        pk_mean = pk.mean(axis=0)  # shape: (n_kbins,) class mean over N sightlines
+        pk_sem = pk.std(axis=0, ddof=1) / np.sqrt(n_sightlines)  # SEM on the mean
+        # Count raw FFT modes per log-bin (same digitize+clip convention as the
+        # transform) so empty bins (pk_mean==0) are self-documenting. The k-grid
+        # is identical across classes, so this is the same vector each iteration.
+        k_raw = np.asarray(transform.k_raw_, dtype=np.float64)
+        edges = np.asarray(transform.k_bin_edges_, dtype=np.float64)
+        bin_of_mode = np.clip(
+            np.digitize(k_raw, edges, right=False), 0, n_kbins
+        )
+        n_modes = np.array(
+            [int(np.sum(bin_of_mode == b)) for b in range(1, n_kbins + 1)],
+            dtype=np.int64,
+        )  # shape: (n_kbins,)
+        for j in range(k_centers.shape[0]):
+            rows.append({
+                "feedback_class": class_id,
+                "class_name": _CLASS_LABELS[class_id],
+                "k_bin_idx": j,
+                "k_center_s_per_km": float(k_centers[j]),
+                "pk_mean": float(pk_mean[j]),
+                "pk_sem": float(pk_sem[j]),
+                "n_modes_in_bin": int(n_modes[j]),
+                "n_sightlines": n_sightlines,
+            })
+
+    # --- write tidy CSV ---
+    csv_path = out_dir / "pk-mean-per-class.csv"
+    _write_pk_tidy_csv(csv_path, rows)
+
+    # --- write provenance sidecar ---
+    git_info = get_git_info()
+    source_paths = {
+        _CLASS_LABELS[c]: str(
+            Path(SignalClusteringData.FLUX_BASE) / str(c) / "flux.npy"
+        )
+        for c in (1, 2, 3, 4)
+    }
+    provenance = {
+        "export_request_slug": "exploration-pk-mean-per-class",
+        "consumer": "selements-website",
+        "producing_function": (
+            "src.core.export.export_exploration_pk_mean_per_class"
+        ),
+        "consumer_facing_filename": csv_path.name,
+        "export_timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git": git_info,
+        "source_data_paths": source_paths,
+        "canonical_transform": "src.core.transforms.FluxPowerSpectrum",
+        "n_classes": 4,
+        "n_kbins": int(n_kbins),
+        "n_sightlines_per_class": 16384,
+        "delta_v_kms_per_px": delta_v,
+        "k_units": "s/km (velocity-space, conventional Lya basis)",
+        "pk_units": "(delta_F)^2 * (km/s)",
+        "delta_F_definition": "delta_F = F / <F>_los - 1 (per-sightline mean-flux)",
+        "fft_convention": (
+            "Hann window applied, then one-sided numpy rfft; "
+            "P(k) = |rfft(Hann . delta_F)|^2 * (delta_v / N), N=2048. "
+            "No 1/sum(w^2) Hann-power correction (fixed multiplicative offset "
+            "on absolute amplitude; cancels in class comparison and the ratio "
+            "panel)."
+        ),
+        "k_binning": (
+            f"{n_kbins} log-spaced bins, geometric centers, "
+            "edges from k_raw[1]..k_raw[-1]; identical k-grid across classes."
+        ),
+        "pk_sem_definition": "std(P_F(k)) / sqrt(N) across the N sightlines",
+        "empty_bin_convention": (
+            "Where n_modes_in_bin == 0 the log-bin caught no raw FFT modes; "
+            "pk_mean and pk_sem are 0.0 by convention (UNDEFINED, not a physical "
+            "zero). Drop these rows on a log axis. With n_kbins=20 over 1025 raw "
+            "modes this affects one or more of the lowest-k bins."
+        ),
+        "source_lineage": (
+            "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, "
+            "60 cMpc/h box; one realization, fixed cosmology / UVB / thermal "
+            "history"
+        ),
+        # Honest-reporting verb-ceiling, PI-framing-checked against
+        # reframe-suite HARDENING_OUTCOME §H1/H2/H3 + CLOSE_OUT §1 R9 / §2
+        # (2026-06-13 box-from-disk resolution promoted the verb to "weak
+        # feedback signal"). Do not weaken or strengthen without a fresh check.
+        "verb_ceiling": (
+            "The per-class P_F(k) differences (and the ratio-to-NoFeedback "
+            "panel computed from this table) are a WEAK, gate-marginal feedback "
+            "signal in the 1D flux power spectrum — NOT a per-sightline "
+            "detection and NOT a feedback classifier. Do not caption as "
+            "'feedback detected' / 'feedback classifier' / 'we recover feedback'."
+        ),
+        "provenance_note": (
+            "The four classes are the same density realization with only the "
+            "feedback recipe varied: box size (60 cMpc/h), cosmology, redshift, "
+            "sampling, and initial-condition skewer geometry are byte-identical "
+            "across all four classes (confirmed from the native Sherwood LOS "
+            "headers, 2026-06-13), so cross-class differences on this field are "
+            "pure feedback. One open item is external only: 60 cMpc/h is "
+            "non-canonical for Bolton+2017's 40/80/160 boxes, so the exact run "
+            "within the Sherwood suite is not yet pinned to a published table "
+            "entry — this does not affect the feedback signal."
+        ),
+        "strength_and_scope_caveats": [
+            "The C2(StellarWind)-C3(WindAGN) pair is the weakest — gate-marginal "
+            "(p16 = 0.603 at deep stacking, bootstrap CI straddles the 0.60 "
+            "line) and emerges only with within-class stacking. The other "
+            "feedback-recipe pairs separate more clearly (p16 >= 0.75). Read the "
+            "C2-C3 ratio difference as 'consistent with a weak signal,' never as "
+            "a clean separation.",
+            "Mean flux and P(k) shape are partially entangled. The per-class "
+            "lattice ordering correlates with per-class mean transmitted flux "
+            "(Spearman ~0.94); P_F(k) shape carries a genuine residual on top, "
+            "but the ratio-to-NoFeedback differences for the C1/C4-involving "
+            "pairs blend a real mean-flux offset with a P(k)-shape difference. "
+            "(For the C2-C3 pair specifically the difference is carried entirely "
+            "by shape; its mean-flux-only baseline stays at chance.)",
+            "Single z=0.3 snapshot, single realization, fixed cosmology and UV "
+            "background; no nuisance-parameter marginalization was performed.",
+            "The lowest-k bin can carry residual mean-flux-normalization / "
+            "windowing leakage (per reframe-suite [D-06]) and may be "
+            "de-emphasized.",
+        ],
+    }
+    provenance_path = out_dir / "pk-mean-per-class.provenance.json"
     with open(provenance_path, "w") as fh:
         json.dump(provenance, fh, indent=2)
 

@@ -12,8 +12,11 @@ import numpy as np
 import pytest
 
 from src.core.export import (
+    _N_KBINS,
     _N_PIXELS,
     _validate_spectrum,
+    _write_pk_tidy_csv,
+    export_exploration_pk_mean_per_class,
     export_primer_synthetic_spectrum,
     write_spectrum_csv,
 )
@@ -92,6 +95,88 @@ def test_write_spectrum_csv_rejects_axis_length_mismatch(tmp_path: Path):
     short_vel = velocity[:-1]
     with pytest.raises(ValueError):
         write_spectrum_csv(tmp_path / "bad.csv", pixel, wavelength, short_vel, flux)
+
+
+def _pk_rows(n_classes: int = 4, n_kbins: int = _N_KBINS):
+    """Synthetic tidy P_F(k) rows for the writer test (no real data)."""
+    labels = {1: "NoFeedback", 2: "StellarWind", 3: "WindAGN", 4: "WindStrongAGN"}
+    rng = np.random.default_rng(11)
+    rows = []
+    for c in range(1, n_classes + 1):
+        for j in range(n_kbins):
+            empty = j == 1  # mimic an empty low-k bin
+            rows.append({
+                "feedback_class": c,
+                "class_name": labels[c],
+                "k_bin_idx": j,
+                "k_center_s_per_km": float(10 ** (-3 + j * 0.1)),
+                "pk_mean": 0.0 if empty else float(rng.uniform(0.05, 0.4)),
+                "pk_sem": 0.0 if empty else float(rng.uniform(1e-3, 1e-2)),
+                "n_modes_in_bin": 0 if empty else int(rng.integers(1, 80)),
+                "n_sightlines": 16384,
+            })
+    return rows
+
+
+def test_write_pk_tidy_csv_columns_and_rows(tmp_path: Path):
+    rows = _pk_rows()
+    out = tmp_path / "pk-mean-per-class.csv"
+    written = _write_pk_tidy_csv(out, rows)
+    assert written == out
+    with open(out, newline="") as fh:
+        parsed = list(csv.reader(fh))
+    assert parsed[0] == [
+        "feedback_class", "class_name", "k_bin_idx", "k_center_s_per_km",
+        "pk_mean", "pk_sem", "n_modes_in_bin", "n_sightlines",
+    ]
+    assert len(parsed) == 4 * _N_KBINS + 1  # header + 4 classes x kbins
+    # No comment lines: every row parses to exactly 8 fields.
+    assert all(len(r) == 8 for r in parsed)
+
+
+def test_write_pk_tidy_csv_full_precision_roundtrip(tmp_path: Path):
+    rows = _pk_rows()
+    out = tmp_path / "pk.csv"
+    _write_pk_tidy_csv(out, rows)
+    arr = np.genfromtxt(out, delimiter=",", names=True)
+    expected = np.array([r["pk_mean"] for r in rows])
+    np.testing.assert_array_equal(arr["pk_mean"], expected)
+
+
+def test_pk_empty_bins_have_zero_and_flagged(tmp_path: Path):
+    rows = _pk_rows()
+    out = tmp_path / "pk.csv"
+    _write_pk_tidy_csv(out, rows)
+    parsed = list(csv.DictReader(open(out)))
+    for r in parsed:
+        if int(r["n_modes_in_bin"]) == 0:
+            assert float(r["pk_mean"]) == 0.0
+            assert float(r["pk_sem"]) == 0.0
+
+
+@pytest.mark.slow
+def test_export_exploration_pk_mean_per_class_real_data(tmp_path: Path):
+    csv_path = export_exploration_pk_mean_per_class(tmp_path)
+    assert csv_path.exists()
+    prov_path = csv_path.with_name("pk-mean-per-class.provenance.json")
+    assert prov_path.exists()
+
+    parsed = list(csv.DictReader(open(csv_path)))
+    assert len(parsed) == 4 * _N_KBINS  # 4 classes x 20 k-bins
+    # k-grid identical across classes; non-empty bins strictly positive.
+    for r in parsed:
+        if int(r["n_modes_in_bin"]) > 0:
+            assert float(r["pk_mean"]) > 0.0
+        else:
+            assert float(r["pk_mean"]) == 0.0
+
+    with open(prov_path) as fh:
+        prov = json.load(fh)
+    assert prov["git"]["commit"] != "unknown"
+    assert prov["canonical_transform"] == "src.core.transforms.FluxPowerSpectrum"
+    # Verb-ceiling must be present and must NOT over-claim.
+    vc = prov["verb_ceiling"].lower()
+    assert "weak" in vc and "not a feedback classifier" in vc
 
 
 @pytest.mark.slow
