@@ -19,6 +19,7 @@ from src.core.export import (
     export_exploration_line_density_per_class,
     export_exploration_local_ew_dist_per_class,
     export_exploration_pk_mean_per_class,
+    export_exploration_relationships_2d,
     export_primer_synthetic_spectrum,
     write_spectrum_csv,
 )
@@ -237,6 +238,34 @@ def test_export_exploration_line_density_real_data(tmp_path: Path):
         sums[r["class_name"]] = sums.get(r["class_name"], 0.0) + float(r["density"])
     for v in sums.values():
         assert v == pytest.approx(1.0, abs=1e-4)
+
+
+@pytest.mark.slow
+def test_export_exploration_relationships_2d_real_data(tmp_path: Path):
+    out_dir = export_exploration_relationships_2d(tmp_path)
+    figs = ["ew-vs-density", "gap-vs-density", "ew-vs-depth", "activity-vs-density"]
+    for f in figs:
+        assert (out_dir / f"{f}-2d.csv").exists()
+        assert (out_dir / f"{f}-trend.csv").exists()
+        rows = list(csv.DictReader(open(out_dir / f"{f}-2d.csv")))
+        # per-class density sums to ~1
+        sums = {}
+        for r in rows:
+            sums[r["class_name"]] = sums.get(r["class_name"], 0.0) + float(r["density"])
+        assert len(sums) == 4
+        for v in sums.values():
+            assert v == pytest.approx(1.0, abs=1e-4)
+
+    with open(out_dir / "relationships-2d.provenance.json") as fh:
+        prov = json.load(fh)
+    # Every figure ships a PI-approved caption.
+    for f in figs:
+        assert prov["figures"][f]["caption"]
+    # FIG1: C4 log-log correlation is sign-flipped negative (not positive).
+    assert prov["figures"]["ew-vs-density"]["per_class"]["WindStrongAGN"]["loglog_pearson_r"] < 0
+    # FIG4 overturned: mean activity decreases from k=1 to k=3 (non-monotone).
+    a = prov["figures"]["activity-vs-density"]["per_class"]["NoFeedback"]["mean_activity_by_linecount"]
+    assert a["1"] > a["2"] > a["3"]
 
 
 @pytest.mark.slow

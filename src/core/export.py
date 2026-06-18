@@ -20,7 +20,7 @@ import csv
 import datetime
 import json
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 
@@ -62,6 +62,54 @@ _EW_EPS = 1e-12
 # Per-sightline line-density distribution grid: linear (line density ~0-3
 # lines/Angstrom), 40 edges -> 39 bins, data-driven bounds across all classes.
 _LD_N_EDGES = 40
+
+# PI-framing-checked, caption-binding strings for the four relationship figures.
+# Two of the four requested premises did NOT survive full-data computation; these
+# captions are the honest, PI-approved framings. Do not weaken/strengthen without
+# a fresh framing-check. (Guardrail: never imply C4 has weaker PER-LINE
+# absorption — that is a retired overstatement; C4's lower TOTAL EW is driven by
+# fewer lines, not shallower lines.)
+_FIG_CAPTIONS: Dict[str, str] = {
+    "ew-vs-density": (
+        "Total equivalent width vs. line density (log-log), 16,384 sightlines "
+        "per class. The positive EW-density trend is weak and class-dependent: "
+        "Pearson r = +0.13 (C1), +0.16 (C2), +0.11 (C3), and -0.03 (C4) — the "
+        "trend reverses sign for WindStrongAGN, it does not merely weaken. The "
+        "robust separation is that C4 occupies the lower-left (median density "
+        "1.29 vs ~1.78 lines/A; median total EW 0.36 vs ~0.55 A); C1-C3 overlap. "
+        "Line density counts every local flux minimum (find_peaks(-flux), no "
+        "prominence threshold), so it includes shallow continuum-noise dips, not "
+        "only physical absorbers."
+    ),
+    "gap-vs-density": (
+        "Mean gap vs. line density (log-log). Slopes -0.99 to -1.01 (r ~ -0.99, "
+        "all classes). This is a near-exact algebraic identity — mean gap = "
+        "wavelength span / (n_lines - 1) — not an empirical finding; it serves as "
+        "a consistency check on the line-detection and density computation. Any "
+        "physical clustering-vs-Poisson signal lives in the gap-distribution "
+        "shape (see the gap-distribution figure), not in this mean relation, "
+        "which is definitionally fixed."
+    ),
+    "ew-vs-depth": (
+        "Per-line local EW (log) vs. depth 1-F (linear). Depth is saturation-"
+        "bounded in [0,1] while local EW spans ~2 orders of magnitude (max ~2.9 / "
+        "10.6 / 18.4 / 10.4 A for C1-C4) — wide feature-width dynamic range at "
+        "capped depth. Descriptive; one z=0.3 snapshot."
+    ),
+    "activity-vs-density": (
+        "Per-bin absorption activity (integrated 1-F) vs. per-bin line count, "
+        "linear axes, 50 wavelength bins x 16,384 sightlines. The intuitive 'more "
+        "lines -> more activity' relation does not hold: Pearson r is near zero "
+        "(-0.06, +0.15, +0.08, +0.14 for C1-C4) and mean activity is non-"
+        "monotonic, peaking at ~1 line/bin then decreasing (k=1: ~0.013-0.017; "
+        "k=2: ~0.008-0.011; k=3: ~0.005-0.007, all classes). Because line "
+        "detection uses find_peaks(-flux) with no prominence threshold, bins with "
+        "more detected 'lines' contain proportionally more shallow noise dips, "
+        "which lowers mean per-line activity — the decrease is consistent with a "
+        "detection-threshold effect, not a physical anti-correlation. Reported as "
+        "a descriptive null relative to the naive expectation."
+    ),
+}
 
 
 def _validate_spectrum(flux: np.ndarray, name: str = "flux") -> None:
@@ -1056,3 +1104,372 @@ def export_exploration_line_density_per_class(
         json.dump(provenance, fh, indent=2)
 
     return csv_path
+
+
+def _edges_1d(pooled: np.ndarray, n_edges: int, log: bool) -> np.ndarray:
+    """Shared bin edges over a pooled value array (log10 or linear)."""
+    vals = pooled[np.isfinite(pooled)]
+    lo, hi = float(vals.min()), float(vals.max())
+    if log:
+        return np.logspace(np.log10(lo), np.log10(hi), n_edges)
+    return np.linspace(lo, hi, n_edges)
+
+
+def _centers_1d(edges: np.ndarray, log: bool) -> np.ndarray:
+    """Bin centres: geometric for log edges, midpoint for linear."""
+    if log:
+        return np.sqrt(edges[:-1] * edges[1:])
+    return 0.5 * (edges[:-1] + edges[1:])
+
+
+def _bin2d_rows(
+    xv: np.ndarray,
+    yv: np.ndarray,
+    x_edges: np.ndarray,
+    y_edges: np.ndarray,
+    x_log: bool,
+    y_log: bool,
+    class_id: int,
+) -> List[Dict[str, object]]:
+    """2-D histogram one class onto the shared grid; emit NON-EMPTY bins only.
+
+    ``density`` is per-class normalized (counts / class total) so it sums to 1
+    across the grid and shapes compare regardless of N.
+    """
+    counts, _, _ = np.histogram2d(xv, yv, bins=[x_edges, y_edges])
+    total = float(counts.sum())
+    xc = _centers_1d(x_edges, x_log)
+    yc = _centers_1d(y_edges, y_log)
+    rows: List[Dict[str, object]] = []
+    nz = np.argwhere(counts > 0)
+    for ix, iy in nz:
+        rows.append({
+            "feedback_class": class_id,
+            "class_name": _CLASS_LABELS[class_id],
+            "x": float(xc[ix]),
+            "y": float(yc[iy]),
+            "count": int(counts[ix, iy]),
+            "density": float(counts[ix, iy] / total),
+        })
+    return rows
+
+
+def _trend_rows(
+    xv: np.ndarray,
+    yv: np.ndarray,
+    x_edges: np.ndarray,
+    x_log: bool,
+    class_id: int,
+    min_count: int = 20,
+) -> List[Dict[str, object]]:
+    """Per-x-bin y median / p25 / p75 for one class (bins with >= min_count)."""
+    xc = _centers_1d(x_edges, x_log)
+    idx = np.digitize(xv, x_edges) - 1  # 0..len(xc)-1 for in-range
+    rows: List[Dict[str, object]] = []
+    for ix in range(xc.shape[0]):
+        m = idx == ix
+        if int(m.sum()) >= min_count:
+            q25, q50, q75 = (float(v) for v in np.quantile(yv[m], [0.25, 0.5, 0.75]))
+            rows.append({
+                "feedback_class": class_id,
+                "class_name": _CLASS_LABELS[class_id],
+                "x": float(xc[ix]),
+                "y_median": q50,
+                "y_p25": q25,
+                "y_p75": q75,
+            })
+    return rows
+
+
+def _write_2d_csv(
+    csv_path: Path, rows: List[Dict[str, object]], x_col: str, y_col: str
+) -> Path:
+    """Write a tidy 2-D density CSV: class, <x_col>, <y_col>, count, density."""
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    header = ["feedback_class", "class_name", x_col, y_col, "count", "density"]
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([
+                int(r["feedback_class"]),
+                str(r["class_name"]),
+                repr(float(r["x"])),
+                repr(float(r["y"])),
+                int(r["count"]),
+                repr(float(r["density"])),
+            ])
+    return csv_path
+
+
+def _write_trend_csv(
+    csv_path: Path, rows: List[Dict[str, object]], x_col: str
+) -> Path:
+    """Write a tidy per-x-bin trend CSV: class, <x_col>, y_median, y_p25, y_p75."""
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    header = ["feedback_class", "class_name", x_col, "y_median", "y_p25", "y_p75"]
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([
+                int(r["feedback_class"]),
+                str(r["class_name"]),
+                repr(float(r["x"])),
+                repr(float(r["y_median"])),
+                repr(float(r["y_p25"])),
+                repr(float(r["y_p75"])),
+            ])
+    return csv_path
+
+
+def _loglog_corr(xv: np.ndarray, yv: np.ndarray) -> Tuple[float, float]:
+    """Pearson r and slope of log10(y) vs log10(x) (for the honesty stats)."""
+    lx, ly = np.log10(xv), np.log10(yv)
+    r = float(np.corrcoef(lx, ly)[0, 1])
+    slope = float(np.polyfit(lx, ly, 1)[0])
+    return r, slope
+
+
+def export_exploration_relationships_2d(
+    out_dir: Path,
+    n_edges: int = 40,
+) -> Path:
+    """Export four Tier-1 EDA relationship figures as 2-D binned-density CSVs.
+
+    Single-sources every metric from the canonical EDA code in
+    ``scripts/eda_sherwood.py`` (``total_equivalent_width``, ``line_density``,
+    ``gap_statistics``, ``absorption_depths``, ``local_equivalent_widths``,
+    ``absorption_activity_profile``). One pass over all 16,384 sightlines x 4
+    classes produces, per figure, a shared-grid 2-D density CSV (+ a companion
+    per-x-bin trend CSV) and a combined provenance sidecar.
+
+    Figures (file stems):
+      - ``ew-vs-density``    : per-sightline total EW vs line density (log-log)
+      - ``gap-vs-density``   : per-sightline mean gap vs line density (log-log)
+      - ``ew-vs-depth``      : per-line local EW (log) vs depth 1-F (linear)
+      - ``activity-vs-density``: per-bin activity vs per-bin line density (linear)
+
+    ``density`` is per-class normalized (sums to 1 across the grid). Only
+    non-empty bins are emitted. The provenance carries per-class correlation
+    statistics so the honesty caveats are grounded in numbers (two of the four
+    requested findings do NOT hold as stated — see the caveat).
+
+    Determinism: re-running against the same source data is byte-identical
+    (provenance JSON differs only in timestamp/git state).
+
+    Args:
+        out_dir: Landing directory for the output files (created if absent).
+        n_edges: Number of bin edges per axis (default 40 -> 39 bins).
+
+    Returns:
+        Path to the landing directory.
+    """
+    from scripts.eda_sherwood import (
+        absorption_activity_profile,
+        absorption_depths,
+        detect_local_minima,
+        gap_statistics,
+        line_density,
+        local_equivalent_widths,
+        total_equivalent_width,
+    )
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    wave = _load_wavelength_axis(1)  # (2048,) Angstrom; identical across classes
+    binedges = np.linspace(wave.min(), wave.max(), 51)  # canonical 50-bin grid
+    bin_width = float(np.diff(binedges).mean())
+    loader = SignalClusteringData()
+    flux_per_class, _ = loader.load_flux_per_class()
+
+    # data[fig][class_id] = (x_array, y_array)
+    figs = ["ew-vs-density", "gap-vs-density", "ew-vs-depth", "activity-vs-density"]
+    data: Dict[str, Dict[int, Tuple[np.ndarray, np.ndarray]]] = {f: {} for f in figs}
+
+    for class_id in (1, 2, 3, 4):
+        block = np.asarray(flux_per_class[class_id - 1], dtype=np.float64)
+        n = block.shape[0]
+        dens = np.empty(n, dtype=np.float64)
+        tew = np.empty(n, dtype=np.float64)
+        gap = np.empty(n, dtype=np.float64)
+        depth_chunks: List[np.ndarray] = []
+        ew_chunks: List[np.ndarray] = []
+        act_chunks: List[np.ndarray] = []
+        bden_chunks: List[np.ndarray] = []
+        for i in range(n):
+            f = block[i]
+            mi = detect_local_minima(f)
+            dens[i] = float(line_density(mi, wave))
+            tew[i] = float(total_equivalent_width(wave, f))
+            gap[i] = float(gap_statistics(wave, mi)["gap_mean"])
+            depth_chunks.append(absorption_depths(f, mi))
+            ew_chunks.append(local_equivalent_widths(wave, f, mi))
+            act, bden = absorption_activity_profile(wave, f, binedges)
+            act_chunks.append(np.asarray(act, dtype=np.float64))
+            bden_chunks.append(np.asarray(bden, dtype=np.float64))
+        depth = np.concatenate(depth_chunks)
+        ew = np.concatenate(ew_chunks)
+        act = np.concatenate(act_chunks)
+        bden = np.concatenate(bden_chunks)
+        data["ew-vs-density"][class_id] = (dens, tew)
+        data["gap-vs-density"][class_id] = (dens, gap)
+        data["ew-vs-depth"][class_id] = (depth, ew)
+        data["activity-vs-density"][class_id] = (bden, act)
+
+    # Per-figure: scales, column names, filter, shared edges, bin, write, stats.
+    fig_cfg = {
+        "ew-vs-density": dict(
+            xcol="line_density_lines_per_angstrom", ycol="total_ew_angstrom",
+            xlog=True, ylog=True,
+        ),
+        "gap-vs-density": dict(
+            xcol="line_density_lines_per_angstrom", ycol="mean_gap_angstrom",
+            xlog=True, ylog=True,
+        ),
+        "ew-vs-depth": dict(
+            xcol="depth_1_minus_f", ycol="local_ew_angstrom",
+            xlog=False, ylog=True,
+        ),
+        "activity-vs-density": dict(
+            xcol="bin_line_density_lines_per_angstrom",
+            ycol="bin_activity_ew_angstrom", xlog=False, ylog=False,
+        ),
+    }
+
+    def _filter(fig: str, xv: np.ndarray, yv: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        cfg = fig_cfg[fig]
+        mask = np.isfinite(xv) & np.isfinite(yv)
+        if cfg["xlog"]:
+            mask &= xv > 0.0
+        elif fig == "ew-vs-depth":
+            mask &= xv >= 0.0  # depth linear axis; drop rare F>1 negatives
+        else:  # activity-vs-density: keep non-empty (density>0) bins
+            mask &= xv > 0.0
+        if cfg["ylog"]:
+            mask &= yv > 0.0
+        return xv[mask], yv[mask]
+
+    fig_stats: Dict[str, Dict[str, object]] = {}
+    for fig in figs:
+        cfg = fig_cfg[fig]
+        filt = {c: _filter(fig, *data[fig][c]) for c in (1, 2, 3, 4)}
+        px = np.concatenate([filt[c][0] for c in (1, 2, 3, 4)])
+        py = np.concatenate([filt[c][1] for c in (1, 2, 3, 4)])
+        x_edges = _edges_1d(px, n_edges, cfg["xlog"])
+        y_edges = _edges_1d(py, n_edges, cfg["ylog"])
+
+        dist_rows: List[Dict[str, object]] = []
+        trend_rows: List[Dict[str, object]] = []
+        per_class_stat: Dict[str, object] = {}
+        for c in (1, 2, 3, 4):
+            xv, yv = filt[c]
+            dist_rows += _bin2d_rows(
+                xv, yv, x_edges, y_edges, cfg["xlog"], cfg["ylog"], c
+            )
+            trend_rows += _trend_rows(xv, yv, x_edges, cfg["xlog"], c)
+            # honesty statistic per class
+            if cfg["xlog"] and cfg["ylog"]:
+                r, slope = _loglog_corr(xv, yv)
+                per_class_stat[_CLASS_LABELS[c]] = {
+                    "loglog_pearson_r": round(r, 4), "loglog_slope": round(slope, 4)
+                }
+            elif fig == "ew-vs-depth":
+                per_class_stat[_CLASS_LABELS[c]] = {
+                    "depth_min": round(float(xv.min()), 4),
+                    "depth_max": round(float(xv.max()), 4),
+                    "ew_max_angstrom": round(float(yv.max()), 4),
+                }
+            else:  # activity-vs-density: r + activity at integer line-count bins
+                r = float(np.corrcoef(xv, yv)[0, 1])
+                k = np.rint(xv * bin_width).astype(int)
+                act_by_k = {
+                    str(kk): round(float(yv[k == kk].mean()), 5)
+                    for kk in (1, 2, 3) if np.any(k == kk)
+                }
+                per_class_stat[_CLASS_LABELS[c]] = {
+                    "pearson_r": round(r, 4), "mean_activity_by_linecount": act_by_k
+                }
+
+        _write_2d_csv(out_dir / f"{fig}-2d.csv", dist_rows, cfg["xcol"], cfg["ycol"])
+        _write_trend_csv(out_dir / f"{fig}-trend.csv", trend_rows, cfg["xcol"])
+        fig_stats[fig] = {
+            "x_col": cfg["xcol"], "y_col": cfg["ycol"],
+            "x_scale": "log10" if cfg["xlog"] else "linear",
+            "y_scale": "log10" if cfg["ylog"] else "linear",
+            "n_bins_per_axis": n_edges - 1,
+            "per_class": per_class_stat,
+        }
+
+    # --- combined provenance sidecar ---
+    git_info = get_git_info()
+    source_paths = {
+        _CLASS_LABELS[c]: str(
+            Path(SignalClusteringData.FLUX_BASE) / str(c) / "flux.npy"
+        )
+        for c in (1, 2, 3, 4)
+    }
+    provenance = {
+        "export_request_slug": "exploration-relationships-2d",
+        "consumer": "selements-website",
+        "producing_function": (
+            "src.core.export.export_exploration_relationships_2d"
+        ),
+        "figures": {
+            f: {
+                "density_csv": f"{f}-2d.csv",
+                "trend_csv": f"{f}-trend.csv",
+                "caption": _FIG_CAPTIONS[f],
+                **fig_stats[f],
+            }
+            for f in figs
+        },
+        "export_timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git": git_info,
+        "source_data_paths": source_paths,
+        "canonical_metrics": "scripts/eda_sherwood.py",
+        "n_classes": 4,
+        "n_sightlines_per_class": 16384,
+        "activity_bin_grid": "50 linear wavelength bins (np.linspace(min,max,51))",
+        "density_definition": (
+            "count / class_total (fraction per 2-D bin; sums to 1 per class). "
+            "Bin centres: geometric for log axes, midpoint for linear. Only "
+            "non-empty bins are emitted."
+        ),
+        "axis_note": (
+            "x_center/y_center are in LINEAR physical units; apply the stated "
+            "x_scale/y_scale (log10 or linear) on the axis. EW/gap in Angstrom, "
+            "line density in lines/Angstrom, depth = 1-F (dimensionless), "
+            "activity = EW (Angstrom) integrated within a wavelength bin."
+        ),
+        "source_lineage": (
+            "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h "
+            "box; one realization, fixed cosmology / UVB / thermal history"
+        ),
+        # Honesty caveat — PI-framing-checked (ship all 4; FIG3 approved as-is,
+        # FIG1/2/4 approved-with-edits, FIG4 ships as a descriptive null). Use the
+        # per-figure 'caption' strings above; this is the cross-figure summary.
+        "honest_reporting_caveat": (
+            "Descriptive Tier-1 relationships, computed fresh over all 16,384x4 = "
+            "65,536 sightlines, one z=0.3 snapshot, NOT a classifier. Only ONE of "
+            "the four requested premises survives full-data computation: "
+            "ew-vs-depth (FIG3) holds; ew-vs-density (FIG1) is weak and SIGN-FLIPS "
+            "negative for C4; gap-vs-density (FIG2) is near-definitional (mean gap "
+            "= span/(n_lines-1)); activity-vs-density (FIG4) is OVERTURNED (no "
+            "monotone relation; activity peaks at ~1 line/bin then falls). "
+            "DISCLOSURE (binds FIG1/FIG2/FIG4): line detection is find_peaks(-flux) "
+            "with NO prominence threshold, so 'line density' counts shallow "
+            "continuum-noise dips, not only physical absorbers — this is also the "
+            "likely mechanism behind FIG4's decrease. GUARDRAIL: do NOT say or "
+            "imply Class 4 has weaker/shallower PER-LINE absorption (a retired "
+            "overstatement); C4's lower TOTAL EW is driven by fewer lines, not "
+            "shallower lines. Across all figures: Class 4 stands apart (sparser), "
+            "Classes 1-3 overlap heavily."
+        ),
+    }
+    provenance_path = out_dir / "relationships-2d.provenance.json"
+    with open(provenance_path, "w") as fh:
+        json.dump(provenance, fh, indent=2)
+
+    return out_dir
