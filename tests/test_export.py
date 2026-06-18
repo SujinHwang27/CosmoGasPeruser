@@ -16,6 +16,7 @@ from src.core.export import (
     _N_PIXELS,
     _validate_spectrum,
     _write_pk_tidy_csv,
+    export_exploration_line_density_per_class,
     export_exploration_local_ew_dist_per_class,
     export_exploration_pk_mean_per_class,
     export_primer_synthetic_spectrum,
@@ -212,6 +213,30 @@ def test_export_exploration_local_ew_dist_real_data(tmp_path: Path):
     assert "line density" in cav
     # All four TV-distances vs NoFeedback are small (distributions overlap).
     assert all(v <= 0.05 for v in prov["tv_distance_vs_nofeedback"].values())
+
+
+@pytest.mark.slow
+def test_export_exploration_line_density_real_data(tmp_path: Path):
+    csv_path = export_exploration_line_density_per_class(tmp_path)
+    assert csv_path.exists()
+    summary_path = csv_path.with_name("line-density-summary-per-class.csv")
+    assert summary_path.exists()
+
+    summ = {r["class_name"]: r for r in csv.DictReader(open(summary_path))}
+    assert len(summ) == 4
+    # The honest separation: C4 line density clearly below C1/C2 (~1.30 vs ~1.80).
+    c4 = float(summ["WindStrongAGN"]["mean_lines_per_angstrom"])
+    c1 = float(summ["NoFeedback"]["mean_lines_per_angstrom"])
+    assert c4 == pytest.approx(1.301, abs=0.02)
+    assert c1 == pytest.approx(1.80, abs=0.02)
+    assert c4 < 0.8 * c1
+
+    dist = list(csv.DictReader(open(csv_path)))
+    sums = {}
+    for r in dist:
+        sums[r["class_name"]] = sums.get(r["class_name"], 0.0) + float(r["density"])
+    for v in sums.values():
+        assert v == pytest.approx(1.0, abs=1e-4)
 
 
 @pytest.mark.slow

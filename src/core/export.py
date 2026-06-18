@@ -59,6 +59,10 @@ _N_KBINS = 20
 _EW_N_EDGES = 40
 _EW_EPS = 1e-12
 
+# Per-sightline line-density distribution grid: linear (line density ~0-3
+# lines/Angstrom), 40 edges -> 39 bins, data-driven bounds across all classes.
+_LD_N_EDGES = 40
+
 
 def _validate_spectrum(flux: np.ndarray, name: str = "flux") -> None:
     """Validate a single-sightline flux vector before export.
@@ -826,6 +830,228 @@ def export_exploration_local_ew_dist_per_class(
         ),
     }
     provenance_path = out_dir / "local-ew-dist-per-class.provenance.json"
+    with open(provenance_path, "w") as fh:
+        json.dump(provenance, fh, indent=2)
+
+    return csv_path
+
+
+def _write_line_density_dist_csv(
+    csv_path: Path, rows: List[Dict[str, object]]
+) -> Path:
+    """Write the tidy per-class line-density distribution CSV (header + data only).
+
+    Columns: ``feedback_class,class_name,line_density_center_lines_per_angstrom,
+    density,count``. ``density`` = fraction of the class's sightlines per bin
+    (sums to 1); ``count`` = raw sightline count. Floats via ``repr``.
+    """
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    header: List[str] = [
+        "feedback_class",
+        "class_name",
+        "line_density_center_lines_per_angstrom",
+        "density",
+        "count",
+    ]
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([
+                int(r["feedback_class"]),
+                str(r["class_name"]),
+                repr(float(r["line_density_center_lines_per_angstrom"])),
+                repr(float(r["density"])),
+                int(r["count"]),
+            ])
+    return csv_path
+
+
+def _write_line_density_summary_csv(
+    csv_path: Path, rows: List[Dict[str, object]]
+) -> Path:
+    """Write the companion per-class line-density summary CSV.
+
+    Columns: ``feedback_class,class_name,median_lines_per_angstrom,
+    p25_lines_per_angstrom,p75_lines_per_angstrom,mean_lines_per_angstrom,
+    n_sightlines``.
+    """
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    header: List[str] = [
+        "feedback_class",
+        "class_name",
+        "median_lines_per_angstrom",
+        "p25_lines_per_angstrom",
+        "p75_lines_per_angstrom",
+        "mean_lines_per_angstrom",
+        "n_sightlines",
+    ]
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([
+                int(r["feedback_class"]),
+                str(r["class_name"]),
+                repr(float(r["median_lines_per_angstrom"])),
+                repr(float(r["p25_lines_per_angstrom"])),
+                repr(float(r["p75_lines_per_angstrom"])),
+                repr(float(r["mean_lines_per_angstrom"])),
+                int(r["n_sightlines"]),
+            ])
+    return csv_path
+
+
+def export_exploration_line_density_per_class(
+    out_dir: Path,
+    n_edges: int = _LD_N_EDGES,
+) -> Path:
+    """Export the per-class absorption-line-density distribution for selements-website.
+
+    This is the quantity that ACTUALLY separates the feedback classes (the
+    per-line EW distribution does not — see
+    :func:`export_exploration_local_ew_dist_per_class`). Single-sourced from the
+    canonical ``scripts.eda_sherwood.line_density`` (lines per Angstrom =
+    n_local_minima / wavelength_span) with line centres from
+    ``detect_local_minima``.
+
+    For each class it computes the per-sightline line density over all 16,384
+    sightlines, bins to a SHARED linear grid (data-driven bounds), and writes a
+    tidy distribution CSV + a summary CSV (median / IQR / mean / n_sightlines) +
+    a git-stamped provenance sidecar. ``density`` is the fraction of the class's
+    sightlines per bin (sums to 1), so the four ridgelines overlay regardless of
+    count.
+
+    Determinism: re-running against the same source data is byte-identical
+    (provenance JSON differs only in timestamp/git state).
+
+    Args:
+        out_dir: Landing directory for the output files (created if absent).
+        n_edges: Number of linear bin EDGES (default 40 -> 39 bins).
+
+    Returns:
+        Path to the written distribution CSV (``line-density-dist-per-class.csv``).
+
+    Raises:
+        ValueError: if a class yields no sightlines.
+    """
+    from scripts.eda_sherwood import detect_local_minima, line_density
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    wave = _load_wavelength_axis(1)  # (2048,) Angstrom; identical across classes
+    loader = SignalClusteringData()
+    flux_per_class, _ = loader.load_flux_per_class()  # list of 4 x (N, 2048)
+
+    # --- per-sightline line density per class ---
+    ld_by_class: Dict[int, np.ndarray] = {}
+    for class_id in (1, 2, 3, 4):
+        block = np.asarray(flux_per_class[class_id - 1], dtype=np.float64)
+        vals = np.empty(block.shape[0], dtype=np.float64)  # shape: (N,)
+        for i in range(block.shape[0]):
+            minima_idx = detect_local_minima(block[i])
+            vals[i] = float(line_density(minima_idx, wave))  # lines / Angstrom
+        if vals.size == 0:
+            raise ValueError(f"class {class_id} produced no sightlines")
+        ld_by_class[class_id] = vals
+
+    # --- shared linear grid from the global range across all classes ---
+    global_min = min(float(ld_by_class[c].min()) for c in (1, 2, 3, 4))
+    global_max = max(float(ld_by_class[c].max()) for c in (1, 2, 3, 4))
+    edges = np.linspace(global_min, global_max, n_edges)  # shape: (n_edges,)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+
+    dist_rows: List[Dict[str, object]] = []
+    summary_rows: List[Dict[str, object]] = []
+    for class_id in (1, 2, 3, 4):
+        vals = ld_by_class[class_id]
+        n = int(vals.size)
+        counts, _ = np.histogram(vals, bins=edges)  # shape: (n_edges-1,)
+        density = counts.astype(np.float64) / float(n)  # fraction per bin
+        for j in range(centers.shape[0]):
+            dist_rows.append({
+                "feedback_class": class_id,
+                "class_name": _CLASS_LABELS[class_id],
+                "line_density_center_lines_per_angstrom": float(centers[j]),
+                "density": float(density[j]),
+                "count": int(counts[j]),
+            })
+        q25, q50, q75 = (float(v) for v in np.quantile(vals, [0.25, 0.5, 0.75]))
+        summary_rows.append({
+            "feedback_class": class_id,
+            "class_name": _CLASS_LABELS[class_id],
+            "median_lines_per_angstrom": q50,
+            "p25_lines_per_angstrom": q25,
+            "p75_lines_per_angstrom": q75,
+            "mean_lines_per_angstrom": float(vals.mean()),
+            "n_sightlines": n,
+        })
+
+    csv_path = out_dir / "line-density-dist-per-class.csv"
+    _write_line_density_dist_csv(csv_path, dist_rows)
+    summary_path = out_dir / "line-density-summary-per-class.csv"
+    _write_line_density_summary_csv(summary_path, summary_rows)
+
+    git_info = get_git_info()
+    source_paths = {
+        _CLASS_LABELS[c]: str(
+            Path(SignalClusteringData.FLUX_BASE) / str(c) / "flux.npy"
+        )
+        for c in (1, 2, 3, 4)
+    }
+    mean_ld = {
+        _CLASS_LABELS[c]: float(ld_by_class[c].mean()) for c in (1, 2, 3, 4)
+    }
+    provenance = {
+        "export_request_slug": "exploration-line-density",
+        "consumer": "selements-website",
+        "producing_function": (
+            "src.core.export.export_exploration_line_density_per_class"
+        ),
+        "consumer_facing_filenames": [csv_path.name, summary_path.name],
+        "export_timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git": git_info,
+        "source_data_paths": source_paths,
+        "canonical_extractor": (
+            "scripts.eda_sherwood.line_density + detect_local_minima"
+        ),
+        "n_classes": 4,
+        "n_sightlines_per_class": 16384,
+        "line_density_units": "lines per Angstrom (n_local_minima / wavelength_span)",
+        "line_density_definition": (
+            "per sightline: count of local minima of F (find_peaks(-flux)) divided "
+            "by the wavelength span (lambda[-1]-lambda[0] ~= 28.71 A), per "
+            "eda_sherwood.py:100-102."
+        ),
+        "grid": (
+            f"shared LINEAR grid, {n_edges} edges ({n_edges - 1} bins), midpoint "
+            "centres, data-driven bounds across all 4 classes."
+        ),
+        "density_definition": (
+            "count / n_sightlines (fraction of the class's sightlines per bin; "
+            "sums to 1)."
+        ),
+        "mean_lines_per_angstrom_per_class": mean_ld,
+        "source_lineage": (
+            "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h "
+            "box; one realization, fixed cosmology / UVB / thermal history"
+        ),
+        # This is the honest separator (per PI ruling + eda-sherwood LEDGER §5,
+        # which the PI re-verified as correct, unlike the §6 per-line-EW caption).
+        "honest_reporting_caveat": (
+            "Descriptive distribution. This is where the feedback classes DO "
+            "differ: WindStrongAGN (Class 4) has clearly lower line density "
+            "(~1.30 vs ~1.75-1.80 lines/A; ~28% fewer lines), consistent with a "
+            "sparse, void-like environment. Classes 1-2 are nearly identical, "
+            "Class 3 slightly lower. This is line ABUNDANCE, not line strength "
+            "(per-line EW distributions overlap across all 4 classes — see the "
+            "local-ew-dist export). Still descriptive, NOT a classifier: one "
+            "z=0.3 snapshot, one realization, fixed cosmology; the C1/C2/C3 "
+            "distributions overlap heavily, only C4 stands out."
+        ),
+    }
+    provenance_path = out_dir / "line-density-dist-per-class.provenance.json"
     with open(provenance_path, "w") as fh:
         json.dump(provenance, fh, indent=2)
 

@@ -1,0 +1,37 @@
+{
+  "export_request_slug": "exploration-line-density",
+  "consumer": "selements-website",
+  "producing_function": "src.core.export.export_exploration_line_density_per_class",
+  "consumer_facing_filenames": [
+    "line-density-dist-per-class.csv",
+    "line-density-summary-per-class.csv"
+  ],
+  "export_timestamp": "2026-06-17T20:21:44",
+  "git": {
+    "commit": "2e741f1",
+    "branch": "service/data-export",
+    "dirty": "True",
+    "timestamp": "2026-06-17T20:21:44"
+  },
+  "source_data_paths": {
+    "NoFeedback": "data/preprocessed/Sherwood_z0.3_inf/1/flux.npy",
+    "StellarWind": "data/preprocessed/Sherwood_z0.3_inf/2/flux.npy",
+    "WindAGN": "data/preprocessed/Sherwood_z0.3_inf/3/flux.npy",
+    "WindStrongAGN": "data/preprocessed/Sherwood_z0.3_inf/4/flux.npy"
+  },
+  "canonical_extractor": "scripts.eda_sherwood.line_density + detect_local_minima",
+  "n_classes": 4,
+  "n_sightlines_per_class": 16384,
+  "line_density_units": "lines per Angstrom (n_local_minima / wavelength_span)",
+  "line_density_definition": "per sightline: count of local minima of F (find_peaks(-flux)) divided by the wavelength span (lambda[-1]-lambda[0] ~= 28.71 A), per eda_sherwood.py:100-102.",
+  "grid": "shared LINEAR grid, 40 edges (39 bins), midpoint centres, data-driven bounds across all 4 classes.",
+  "density_definition": "count / n_sightlines (fraction of the class's sightlines per bin; sums to 1).",
+  "mean_lines_per_angstrom_per_class": {
+    "NoFeedback": 1.8005720783679282,
+    "StellarWind": 1.8005210578931625,
+    "WindAGN": 1.7497982025636198,
+    "WindStrongAGN": 1.3013303552264441
+  },
+  "source_lineage": "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h box; one realization, fixed cosmology / UVB / thermal history",
+  "honest_reporting_caveat": "Descriptive distribution. This is where the feedback classes DO differ: WindStrongAGN (Class 4) has clearly lower line density (~1.30 vs ~1.75-1.80 lines/A; ~28% fewer lines), consistent with a sparse, void-like environment. Classes 1-2 are nearly identical, Class 3 slightly lower. This is line ABUNDANCE, not line strength (per-line EW distributions overlap across all 4 classes \u2014 see the local-ew-dist export). Still descriptive, NOT a classifier: one z=0.3 snapshot, one realization, fixed cosmology; the C1/C2/C3 distributions overlap heavily, only C4 stands out."
+}

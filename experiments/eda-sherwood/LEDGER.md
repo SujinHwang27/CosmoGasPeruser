@@ -130,7 +130,7 @@ This track is exploratory/descriptive — it has no trained model and no gating 
 ### Qualitative findings (EDA report §13)
 - **Class hierarchy**: Class 2 ≈ Class 3 > Class 1 >> Class 4 in absorption strength and density.
 - Class 4 is a sparse/void-like environment (lowest EW, lowest line density, largest gap — ~40% larger than Classes 1–3).
-- Local feature distributions (EW, depth) overlap substantially among Classes 1–3, suggesting they are harder to separate with these features alone.
+- Local feature distributions (EW, depth) overlap substantially among **all four classes** — ⚠️ *corrected 2026-06-17 (PI re-verification, full 16,384×4 data): the original "among Classes 1–3" understated it; Class 4's per-line EW distribution also overlaps ≥97% (TV-distance ≤0.026 vs C1). The class separator is line density (Class 4 ~28% fewer lines), not per-line EW strength.*
 
 ### Diagnostic metrics (tracked but non-gating)
 - Depth dispersion vs line density (weak positive correlation); EW vs density (~linear in log₂); gap ∝ density⁻¹ power law.
@@ -153,8 +153,8 @@ All artifacts in `results/eda/` (file mtimes 2026-03-22 for figures, 2026-04-03 
 | `greyscale_class_3.png` | Fig (§3) | Dense coherent dark bands. |
 | `greyscale_class_4.png` | Fig (§3) | Lighter, scattered features → confirms sparse nature. |
 | `tier1_ew_vs_density_2x2.png` | Fig (§4) | Strong positive EW–density correlation; Class 4 lower-left; doubling density ≈ doubling EW. |
-| `tier1_local_ew_dist_2x2.png` | Fig (§5) | Right-skewed local-EW distributions; Class 4 narrowest/lowest; Classes 2–3 broader. |
-| `tier1_local_ew_kde_overlap.png` | Fig (§5) | Clear separation of Class 4 from 1–3; Class 2 shifted toward higher EW. |
+| `tier1_local_ew_dist_2x2.png` | Fig (§5) | Right-skewed local-EW distributions. ⚠️ *Corrected 2026-06-17 (PI re-verification, full 16,384×4 data): the original "Class 4 narrowest/lowest" is unsupported — all 4 distributions are nearly identical (modal EW ~8×10⁻⁴ Å; TV-distance ≤0.026 vs C1) and C4's per-line median is marginally the **highest**. The real separator is line density (§5 table: C4 37.36 vs ~51.7 lines), not per-line EW.* |
+| `tier1_local_ew_kde_overlap.png` | Fig (§5) | ⚠️ *The original "clear separation of Class 4" is a KDE/log-axis artifact (per-class PDF area-normalization erases the line-count difference; a residual ~4–10% median right-shift C1<C2<C3≈C4 renders as apparent separation). Corrected 2026-06-17: true per-line EW overlap ≥97% across all 4 classes; only the small median shift ("Class 2 shifted higher") is real, and it is small.* |
 | `tier1_depth_vs_ew_2x2.png` | Fig (§6) | Positive depth–EW correlation; depth bounded by saturation, EW spans ~2⁻⁶–2⁰ Å. |
 | `tier1_gap_dist_2x2.png` | Fig (§7) | Exponential-like gap decay; Class 4 flatter (more large gaps); median gap ~0.5–0.7 Å (with CDF overlay). |
 | `tier1_mean_gap_vs_density_2x2.png` | Fig (§8) | Strong negative correlation; power law gap ∝ density⁻¹; optimized ranges to avoid whitespace. |
