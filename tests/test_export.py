@@ -16,6 +16,7 @@ from src.core.export import (
     _N_PIXELS,
     _validate_spectrum,
     _write_pk_tidy_csv,
+    export_exploration_local_ew_dist_per_class,
     export_exploration_pk_mean_per_class,
     export_primer_synthetic_spectrum,
     write_spectrum_csv,
@@ -177,6 +178,40 @@ def test_export_exploration_pk_mean_per_class_real_data(tmp_path: Path):
     # Verb-ceiling must be present and must NOT over-claim.
     vc = prov["verb_ceiling"].lower()
     assert "weak" in vc and "not a feedback classifier" in vc
+
+
+@pytest.mark.slow
+def test_export_exploration_local_ew_dist_real_data(tmp_path: Path):
+    csv_path = export_exploration_local_ew_dist_per_class(tmp_path)
+    assert csv_path.exists()
+    summary_path = csv_path.with_name("local-ew-summary-per-class.csv")
+    prov_path = csv_path.with_name("local-ew-dist-per-class.provenance.json")
+    assert summary_path.exists() and prov_path.exists()
+
+    dist = list(csv.DictReader(open(csv_path)))
+    # 4 classes x 39 bins (40 log2 edges).
+    assert len(dist) == 4 * 39
+    # Per-class density sums to ~1 (fraction-per-bin).
+    sums = {}
+    for r in dist:
+        sums[r["class_name"]] = sums.get(r["class_name"], 0.0) + float(r["density"])
+    for v in sums.values():
+        assert v == pytest.approx(1.0, abs=1e-4)
+
+    summ = list(csv.DictReader(open(summary_path)))
+    assert len(summ) == 4
+    # Line-density separation is the real signal: C4 has clearly fewer lines.
+    n = {r["class_name"]: int(r["n_lines"]) for r in summ}
+    assert n["WindStrongAGN"] < 0.85 * n["NoFeedback"]
+
+    with open(prov_path) as fh:
+        prov = json.load(fh)
+    # The honesty caveat must NOT carry the overstated "Class 4 separates" framing.
+    cav = prov["honest_reporting_caveat"].lower()
+    assert "overlap almost completely" in cav
+    assert "line density" in cav
+    # All four TV-distances vs NoFeedback are small (distributions overlap).
+    assert all(v <= 0.05 for v in prov["tv_distance_vs_nofeedback"].values())
 
 
 @pytest.mark.slow

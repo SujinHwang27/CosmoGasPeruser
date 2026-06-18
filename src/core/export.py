@@ -52,6 +52,13 @@ _N_PIXELS = 2048
 # pk-feedback-classifier convention (run_probe.py / run_stage1.py: N_KBINS=20).
 _N_KBINS = 20
 
+# Local-EW distribution grid: 40 log2 edges (-> 39 bins), matching the published
+# EDA figure tier1_local_ew_dist_2x2.png (scripts/eda_sherwood.py:335). EPS is the
+# plot-axis lower floor from eda_sherwood.py:14 (a floor on the log grid, NOT a
+# physical EW threshold).
+_EW_N_EDGES = 40
+_EW_EPS = 1e-12
+
 
 def _validate_spectrum(flux: np.ndarray, name: str = "flux") -> None:
     """Validate a single-sightline flux vector before export.
@@ -512,6 +519,313 @@ def export_exploration_pk_mean_per_class(
         ],
     }
     provenance_path = out_dir / "pk-mean-per-class.provenance.json"
+    with open(provenance_path, "w") as fh:
+        json.dump(provenance, fh, indent=2)
+
+    return csv_path
+
+
+def _write_ew_dist_csv(csv_path: Path, rows: List[Dict[str, object]]) -> Path:
+    """Write the tidy per-class local-EW distribution CSV (header + data only).
+
+    Columns: ``feedback_class,class_name,ew_center_angstrom,density,count``.
+    ``density`` is the fraction of the class's (positive) lines in that bin
+    (sums to 1 across the shared grid); ``count`` is the raw line count, so the
+    consumer can grey out under-populated tails. Floats via ``repr`` for full
+    precision.
+
+    Args:
+        csv_path: Destination CSV path (parent dirs created if absent).
+        rows: One dict per (class, EW-bin) cell, carrying the column keys above.
+
+    Returns:
+        The ``csv_path`` written.
+    """
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    header: List[str] = [
+        "feedback_class",
+        "class_name",
+        "ew_center_angstrom",
+        "density",
+        "count",
+    ]
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([
+                int(r["feedback_class"]),
+                str(r["class_name"]),
+                repr(float(r["ew_center_angstrom"])),
+                repr(float(r["density"])),
+                int(r["count"]),
+            ])
+    return csv_path
+
+
+def _write_ew_summary_csv(csv_path: Path, rows: List[Dict[str, object]]) -> Path:
+    """Write the companion per-class local-EW summary CSV (median / IQR / n).
+
+    Columns: ``feedback_class,class_name,median_ew_angstrom,p25_ew_angstrom,
+    p75_ew_angstrom,n_lines``. Quantiles are over the positive EW values that
+    enter the distribution; ``n_lines`` is the total absorption lines extracted
+    for the class.
+
+    Args:
+        csv_path: Destination CSV path (parent dirs created if absent).
+        rows: One dict per class, carrying the column keys above.
+
+    Returns:
+        The ``csv_path`` written.
+    """
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    header: List[str] = [
+        "feedback_class",
+        "class_name",
+        "median_ew_angstrom",
+        "p25_ew_angstrom",
+        "p75_ew_angstrom",
+        "n_lines",
+    ]
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([
+                int(r["feedback_class"]),
+                str(r["class_name"]),
+                repr(float(r["median_ew_angstrom"])),
+                repr(float(r["p25_ew_angstrom"])),
+                repr(float(r["p75_ew_angstrom"])),
+                int(r["n_lines"]),
+            ])
+    return csv_path
+
+
+def export_exploration_local_ew_dist_per_class(
+    out_dir: Path,
+    n_edges: int = _EW_N_EDGES,
+) -> Path:
+    """Export the per-class local equivalent-width distribution for selements-website.
+
+    Single-sources the physics from the project's canonical EDA extractor
+    ``scripts.eda_sherwood.local_equivalent_widths`` (saddle-point-splitting
+    deblend: per-line EW = integral of (1 - F) dlambda between neighbouring
+    saddle points), with line centres from ``detect_local_minima`` (local minima
+    of F via ``find_peaks(-flux)``; no detection threshold, no integrand clamp).
+    The extractor lives in a script (the only canonical implementation), so it is
+    imported lazily here to keep the export library import light.
+
+    For each of the 4 classes it concatenates the per-line EW over all 16,384
+    sightlines, then bins to a SHARED log2 grid (data-driven bounds, matching the
+    published figure ``tier1_local_ew_dist_2x2.png``, eda_sherwood.py:335) and
+    writes:
+      - ``local-ew-dist-per-class.csv`` (tidy: class, ew_center, density, count),
+      - ``local-ew-summary-per-class.csv`` (median / IQR / n_lines per class),
+      - a git-stamped provenance sidecar with the full convention + honesty caveat.
+
+    ``density`` is the fraction of the class's positive lines per bin (sums to 1),
+    so the four shapes overlay regardless of how many lines each class has.
+
+    Conventions (documented in the sidecar so the consumer's axis labels are
+    exact):
+      - EW in Angstrom; integrand 1 - F (NO clamp; a saddle with F>1 can subtract
+        slightly), matching eda_sherwood.py:89.
+      - Lines = every local minimum of F (no prominence / smoothing / depth gate).
+      - Shared grid: 40 log2 edges (39 bins) over [max(global_min_pos, EPS),
+        global_max], geometric bin centres. EPS=1e-12 is a log-axis floor.
+      - Non-positive EW values (rare degenerate saddles) are dropped before the
+        log histogram and counted in the sidecar.
+
+    Determinism: re-running against the same source data produces byte-identical
+    CSV content (provenance JSON differs only in timestamp/git state).
+
+    Args:
+        out_dir: Landing directory for the output files (created if absent).
+        n_edges: Number of log2 bin EDGES (default 40 -> 39 bins; matches the
+            published figure).
+
+    Returns:
+        Path to the written distribution CSV (``local-ew-dist-per-class.csv``).
+
+    Raises:
+        ValueError: if a class yields no positive EW values (no lines extracted).
+    """
+    # Lazy import of the canonical extractor (script-level; pulls matplotlib +
+    # load_dotenv on import, so we defer it to call time rather than module load).
+    from scripts.eda_sherwood import detect_local_minima, local_equivalent_widths
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    wave = _load_wavelength_axis(1)  # (2048,) Angstrom; identical across classes
+    loader = SignalClusteringData()
+    flux_per_class, _ = loader.load_flux_per_class()  # list of 4 x (N, 2048)
+
+    # --- pass 1: extract all per-line EW per class ---
+    ew_by_class: Dict[int, np.ndarray] = {}
+    for class_id in (1, 2, 3, 4):
+        block = np.asarray(flux_per_class[class_id - 1], dtype=np.float64)
+        per_sightline: List[np.ndarray] = []
+        for i in range(block.shape[0]):
+            fl = block[i]  # shape: (2048,)
+            minima_idx = detect_local_minima(fl)
+            ews = local_equivalent_widths(wave, fl, minima_idx)  # per-line EW (A)
+            if ews.size:
+                per_sightline.append(ews)
+        ew_by_class[class_id] = (
+            np.concatenate(per_sightline) if per_sightline else np.array([])
+        )
+
+    # --- shared log2 grid from the global positive-EW range across all classes ---
+    pos = {
+        c: ew_by_class[c][ew_by_class[c] > 0.0] for c in (1, 2, 3, 4)
+    }
+    for c in (1, 2, 3, 4):
+        if pos[c].size == 0:
+            raise ValueError(f"class {c} produced no positive EW values")
+    global_min_pos = min(float(pos[c].min()) for c in (1, 2, 3, 4))
+    global_max = max(float(pos[c].max()) for c in (1, 2, 3, 4))
+    lo = max(global_min_pos, _EW_EPS)
+    edges = np.logspace(
+        np.log2(lo), np.log2(global_max), n_edges, base=2.0
+    )  # shape: (n_edges,) -> n_edges-1 bins
+    centers = np.sqrt(edges[:-1] * edges[1:])  # geometric bin centres
+
+    # --- per class: histogram on the shared grid + summary stats ---
+    dist_rows: List[Dict[str, object]] = []
+    summary_rows: List[Dict[str, object]] = []
+    n_nonpositive: Dict[str, int] = {}
+    density_by_class: Dict[int, np.ndarray] = {}
+    n_lines_by_label: Dict[str, int] = {}
+    modal_ew_by_label: Dict[str, float] = {}
+    for class_id in (1, 2, 3, 4):
+        all_ew = ew_by_class[class_id]
+        ew_pos = pos[class_id]
+        n_pos = int(ew_pos.size)
+        n_nonpositive[_CLASS_LABELS[class_id]] = int(all_ew.size - n_pos)
+        counts, _ = np.histogram(ew_pos, bins=edges)  # shape: (n_edges-1,)
+        density = counts.astype(np.float64) / float(n_pos)  # fraction per bin
+        density_by_class[class_id] = density
+        n_lines_by_label[_CLASS_LABELS[class_id]] = int(all_ew.size)
+        modal_ew_by_label[_CLASS_LABELS[class_id]] = float(centers[int(np.argmax(density))])
+        for j in range(centers.shape[0]):
+            dist_rows.append({
+                "feedback_class": class_id,
+                "class_name": _CLASS_LABELS[class_id],
+                "ew_center_angstrom": float(centers[j]),
+                "density": float(density[j]),
+                "count": int(counts[j]),
+            })
+        q25, q50, q75 = (float(v) for v in np.quantile(ew_pos, [0.25, 0.5, 0.75]))
+        summary_rows.append({
+            "feedback_class": class_id,
+            "class_name": _CLASS_LABELS[class_id],
+            "median_ew_angstrom": q50,
+            "p25_ew_angstrom": q25,
+            "p75_ew_angstrom": q75,
+            "n_lines": int(all_ew.size),
+        })
+
+    # --- distribution-overlap metric (grounds the honesty caveat in numbers) ---
+    # Total-variation distance of each class's normalized EW distribution vs
+    # NoFeedback: 0.5 * sum|p_c - p_1|. 0 = identical, 1 = disjoint.
+    ref = density_by_class[1]
+    tv_vs_nofeedback: Dict[str, float] = {
+        _CLASS_LABELS[c]: float(0.5 * np.sum(np.abs(density_by_class[c] - ref)))
+        for c in (1, 2, 3, 4)
+    }
+
+    # --- write the two CSVs ---
+    csv_path = out_dir / "local-ew-dist-per-class.csv"
+    _write_ew_dist_csv(csv_path, dist_rows)
+    summary_path = out_dir / "local-ew-summary-per-class.csv"
+    _write_ew_summary_csv(summary_path, summary_rows)
+
+    # --- provenance sidecar ---
+    git_info = get_git_info()
+    source_paths = {
+        _CLASS_LABELS[c]: str(
+            Path(SignalClusteringData.FLUX_BASE) / str(c) / "flux.npy"
+        )
+        for c in (1, 2, 3, 4)
+    }
+    provenance = {
+        "export_request_slug": "exploration-local-ew-dist",
+        "consumer": "selements-website",
+        "producing_function": (
+            "src.core.export.export_exploration_local_ew_dist_per_class"
+        ),
+        "consumer_facing_filenames": [csv_path.name, summary_path.name],
+        "export_timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git": git_info,
+        "source_data_paths": source_paths,
+        "canonical_extractor": (
+            "scripts.eda_sherwood.local_equivalent_widths + detect_local_minima"
+        ),
+        "n_classes": 4,
+        "n_sightlines_per_class": 16384,
+        "ew_units": "Angstrom",
+        "ew_definition": (
+            "EW_local = integral of (1 - F) dlambda between neighbouring saddle "
+            "points (Saddle-Point Splitting deblend); lines = local minima of F "
+            "(find_peaks(-flux), no prominence/smoothing/depth threshold)."
+        ),
+        "integrand_clamp": (
+            "none — integrand is 1 - F as-is (a saddle with F>1 can subtract "
+            "slightly), per eda_sherwood.py:89."
+        ),
+        "grid": (
+            f"shared log2 grid, {n_edges} edges ({n_edges - 1} bins), geometric "
+            "centres, data-driven bounds [max(global_min_positive, EPS), "
+            "global_max] across all 4 classes; matches tier1_local_ew_dist_2x2.png "
+            "(eda_sherwood.py:335). EPS=1e-12 is a log-axis floor, not a physical "
+            "EW threshold."
+        ),
+        "grid_bounds_angstrom": {"lo": lo, "hi": global_max},
+        "density_definition": (
+            "count / n_positive_lines (fraction of the class's positive lines per "
+            "bin; sums to 1 across the shared grid). Bins are uniform in log2(EW)."
+        ),
+        "n_nonpositive_ew_dropped": n_nonpositive,
+        "note_on_requested_range": (
+            "The request's '~2^-6..2^0 A' is loose LEDGER §6 prose; the actual "
+            "per-line EW median is ~2^-9.8 A, so that range would clip the bulk of "
+            "the distribution. This export uses the published figure's data-driven "
+            "range instead (much wider), so the curve is faithful."
+        ),
+        "source_lineage": (
+            "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h "
+            "box; one realization, fixed cosmology / UVB / thermal history"
+        ),
+        # Auditable evidence behind the honesty caveat.
+        "tv_distance_vs_nofeedback": tv_vs_nofeedback,
+        "modal_ew_angstrom_per_class": modal_ew_by_label,
+        "n_lines_per_class": n_lines_by_label,
+        # Honesty caveat — PI-adjudicated (DO-NOT-SHIP-as-drafted -> reframe).
+        # The originally requested framing ("Class 4 clearly separates,
+        # narrowest/lowest") is CONTRADICTED by this data and was an overstated
+        # LEDGER §6 caption (a KDE/log-axis artifact). See PI ruling.
+        "key_finding": (
+            "The per-line local-EW distributions are NEARLY IDENTICAL across all "
+            "four feedback classes: same modal EW (~8e-4 A), >=97% distributional "
+            "overlap (total-variation distance <= 0.026 vs NoFeedback). The real "
+            "class separator is LINE DENSITY, not per-line EW: WindStrongAGN "
+            "(Class 4) produces ~28% fewer absorption lines (612k vs 823-847k), "
+            "consistent with a sparse, void-like environment."
+        ),
+        "honest_reporting_caveat": (
+            "The per-line EW distributions overlap almost completely across all "
+            "four classes (total-variation distance <= 0.026 vs NoFeedback; "
+            "identical modal EW). Class 4 does NOT have the lowest per-line EW — "
+            "its median is marginally the highest. A small (~4-10%) progressive "
+            "median right-shift runs C1<C2<C3~=C4. The genuine class separator is "
+            "line density, not per-line EW: Class 4 carries ~28% fewer lines. Do "
+            "NOT caption as 'Class 4 separates' / 'narrowest/lowest EW' or imply a "
+            "classifier. Single z=0.3 snapshot, one realization, fixed cosmology."
+        ),
+    }
+    provenance_path = out_dir / "local-ew-dist-per-class.provenance.json"
     with open(provenance_path, "w") as fh:
         json.dump(provenance, fh, indent=2)
 

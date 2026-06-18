@@ -1,0 +1,62 @@
+{
+  "export_request_slug": "exploration-local-ew-dist",
+  "consumer": "selements-website",
+  "producing_function": "src.core.export.export_exploration_local_ew_dist_per_class",
+  "consumer_facing_filenames": [
+    "local-ew-dist-per-class.csv",
+    "local-ew-summary-per-class.csv"
+  ],
+  "export_timestamp": "2026-06-17T20:11:14",
+  "git": {
+    "commit": "84a7e67",
+    "branch": "service/data-export",
+    "dirty": "True",
+    "timestamp": "2026-06-17T20:11:14"
+  },
+  "source_data_paths": {
+    "NoFeedback": "data/preprocessed/Sherwood_z0.3_inf/1/flux.npy",
+    "StellarWind": "data/preprocessed/Sherwood_z0.3_inf/2/flux.npy",
+    "WindAGN": "data/preprocessed/Sherwood_z0.3_inf/3/flux.npy",
+    "WindStrongAGN": "data/preprocessed/Sherwood_z0.3_inf/4/flux.npy"
+  },
+  "canonical_extractor": "scripts.eda_sherwood.local_equivalent_widths + detect_local_minima",
+  "n_classes": 4,
+  "n_sightlines_per_class": 16384,
+  "ew_units": "Angstrom",
+  "ew_definition": "EW_local = integral of (1 - F) dlambda between neighbouring saddle points (Saddle-Point Splitting deblend); lines = local minima of F (find_peaks(-flux), no prominence/smoothing/depth threshold).",
+  "integrand_clamp": "none \u2014 integrand is 1 - F as-is (a saddle with F>1 can subtract slightly), per eda_sherwood.py:89.",
+  "grid": "shared log2 grid, 40 edges (39 bins), geometric centres, data-driven bounds [max(global_min_positive, EPS), global_max] across all 4 classes; matches tier1_local_ew_dist_2x2.png (eda_sherwood.py:335). EPS=1e-12 is a log-axis floor, not a physical EW threshold.",
+  "grid_bounds_angstrom": {
+    "lo": 2.142503811957864e-07,
+    "hi": 18.437121565033586
+  },
+  "density_definition": "count / n_positive_lines (fraction of the class's positive lines per bin; sums to 1 across the shared grid). Bins are uniform in log2(EW).",
+  "n_nonpositive_ew_dropped": {
+    "NoFeedback": 0,
+    "StellarWind": 0,
+    "WindAGN": 0,
+    "WindStrongAGN": 0
+  },
+  "note_on_requested_range": "The request's '~2^-6..2^0 A' is loose LEDGER \u00a76 prose; the actual per-line EW median is ~2^-9.8 A, so that range would clip the bulk of the distribution. This export uses the published figure's data-driven range instead (much wider), so the curve is faithful.",
+  "source_lineage": "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h box; one realization, fixed cosmology / UVB / thermal history",
+  "tv_distance_vs_nofeedback": {
+    "NoFeedback": 0.0,
+    "StellarWind": 0.012955900198466326,
+    "WindAGN": 0.017563665835802596,
+    "WindStrongAGN": 0.026003376425381895
+  },
+  "modal_ew_angstrom_per_class": {
+    "NoFeedback": 0.0007787463093648895,
+    "StellarWind": 0.0007787463093648895,
+    "WindAGN": 0.0007787463093648895,
+    "WindStrongAGN": 0.0007787463093648895
+  },
+  "n_lines_per_class": {
+    "NoFeedback": 846988,
+    "StellarWind": 846964,
+    "WindAGN": 823104,
+    "WindStrongAGN": 612145
+  },
+  "key_finding": "The per-line local-EW distributions are NEARLY IDENTICAL across all four feedback classes: same modal EW (~8e-4 A), >=97% distributional overlap (total-variation distance <= 0.026 vs NoFeedback). The real class separator is LINE DENSITY, not per-line EW: WindStrongAGN (Class 4) produces ~28% fewer absorption lines (612k vs 823-847k), consistent with a sparse, void-like environment.",
+  "honest_reporting_caveat": "The per-line EW distributions overlap almost completely across all four classes (total-variation distance <= 0.026 vs NoFeedback; identical modal EW). Class 4 does NOT have the lowest per-line EW \u2014 its median is marginally the highest. A small (~4-10%) progressive median right-shift runs C1<C2<C3~=C4. The genuine class separator is line density, not per-line EW: Class 4 carries ~28% fewer lines. Do NOT caption as 'Class 4 separates' / 'narrowest/lowest EW' or imply a classifier. Single z=0.3 snapshot, one realization, fixed cosmology."
+}
