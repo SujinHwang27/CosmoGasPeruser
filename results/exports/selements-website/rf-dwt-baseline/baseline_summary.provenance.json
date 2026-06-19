@@ -1,0 +1,19 @@
+{
+  "export_request_slug": "rf-dwt-baseline",
+  "consumer": "selements-website",
+  "producing_function": "src.core.export.export_episode4_rf_baseline_summary",
+  "consumer_facing_filename": "baseline_summary.csv",
+  "export_timestamp": "2026-06-18T22:15:36",
+  "git": {
+    "commit": "be95f71",
+    "branch": "service/data-export",
+    "dirty": "True",
+    "timestamp": "2026-06-18T22:15:36"
+  },
+  "recorded_source": "docs/feature/baseline-random-forest/baseline_rf_analysis.md:20-30 ; experiments/baseline-random-forest/LEDGER.md:144-154 ; D1 cross-checked vs MLflow run 82d7421e (mean_accuracy=0.3232)",
+  "methodology": "10-fold stratified CV, 4-class (1=NoFeedback..4=WindStrongAGN). RandomForest hyperparameters per MLflow run 82d7421e (n_estimators=100, max_depth=25, max_features=sqrt, min_samples_leaf=50, min_samples_split=100); exact random seed / fold assignment and the training code are NOT recorded (code removed) \u2014 values are exported from the record, not recomputed.",
+  "random_baseline_4class": 0.25,
+  "ci_note": "acc_std is the 10-fold CV std dev; acc_lo/hi_1sd = mean +/- 1 std (a band). NO bootstrap p16/p84 percentile CI was recorded.",
+  "source_lineage": "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h box; one realization, fixed cosmology",
+  "honest_reporting_caveat": "Accuracies are 10-fold stratified CV mean +/- std, exported VERBATIM from the recorded run (baseline_rf_analysis.md:20-30, LEDGER section 5, MLflow-cross-checked for D1). The original training code (BaselineRFClassifier, train_rf_baseline.py) was removed during cleanup and is absent on disk \u2014 these numbers are NOT re-derivable from the current repo, so the record is reproduced rather than recomputed. Hyperparameters are in MLflow; random seed and fold assignment are not recorded. Raw wins (0.4514 = the 45% 4-class ceiling); db8 DWT does NOT help; accuracy drops monotonically across the detail bands D1->D6 (0.3232->0.2094), and A6 (0.2177) sits just ABOVE the D6 floor \u2014 so 'monotonic D1->A6' would overstate it (the source itself scopes monotonicity to D6). Random 4-class baseline = 0.25; D4/D5/D6/A6 are at/near chance. The lo/hi columns are mean +/- 1 SD bands, NOT percentile CIs (no p16/p84 recorded). This table is accuracy ONLY \u2014 it carries NO per-class recall, and does NOT itself substantiate any 'only Class 4 is identified' claim; that is a confusion-matrix reading (PNG-only, no recorded numbers) pending a separate re-run. Not a deployment benchmark."
+}

@@ -1479,3 +1479,216 @@ def export_exploration_relationships_2d(
         json.dump(provenance, fh, indent=2)
 
     return out_dir
+
+
+# Recorded 10-fold stratified-CV accuracy from the baseline-RF study (raw spectra
+# vs db8-level-6 DWT features, 4-class feedback classification). Source of truth:
+# docs/feature/baseline-random-forest/baseline_rf_analysis.md:20-30 +
+# experiments/baseline-random-forest/LEDGER.md:144-154 (D1 cross-checked against
+# MLflow run 82d7421e .../metrics/mean_accuracy = 0.3232). Mean + 10-fold std;
+# NO percentile CI was recorded. The original 10-fold training code was removed,
+# so these recorded values are the authoritative source (exported, not re-derived).
+# (variant, accuracy, std_10fold)
+_RF_BASELINE_RECORDED: List[Tuple[str, float, float]] = [
+    ("RF_Raw", 0.4514, 0.0023),
+    ("RF_D1", 0.3232, 0.0031),
+    ("RF_D2", 0.2946, 0.0031),
+    ("RF_D3", 0.2745, 0.0043),
+    ("RF_D4", 0.2334, 0.0028),
+    ("RF_D5", 0.2154, 0.0021),
+    ("RF_D6", 0.2094, 0.0031),
+    ("RF_A6", 0.2177, 0.0015),
+    ("RF_Concat", 0.3139, 0.0030),
+]
+_RF_RANDOM_BASELINE_4CLASS = 0.25  # reference line for a balanced 4-class draw
+
+# Canonical DWT convention, single-sourced from src/core/transforms.py
+# WaveletTransform (db8, level 6, periodization).
+_DWT_WAVELET = "db8"
+_DWT_LEVEL = 6
+_DWT_MODE = "periodization"
+
+
+def export_episode4_rf_baseline_summary(out_dir: Path) -> Path:
+    """Export the 9-variant RF accuracy table (raw vs db8-L6 DWT), recorded values.
+
+    The numbers are the recorded 10-fold CV results (the original training code was
+    removed), transcribed verbatim from
+    ``docs/feature/baseline-random-forest/baseline_rf_analysis.md`` + the
+    baseline-RF LEDGER and cross-checked against MLflow. This is a retrieval, not a
+    re-derivation. Writes a clean CSV + a git-stamped provenance sidecar.
+
+    Columns: ``variant,accuracy,acc_std,acc_lo_1sd,acc_hi_1sd``. ``acc_lo/hi_1sd``
+    are mean +/- one 10-fold std (a band), NOT bootstrap percentiles — no p16/p84
+    CI was recorded; the column names say so to avoid implying percentiles.
+
+    Args:
+        out_dir: Landing directory (created if absent).
+
+    Returns:
+        Path to the written CSV (``baseline_summary.csv``).
+    """
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    csv_path = out_dir / "baseline_summary.csv"
+    header = ["variant", "accuracy", "acc_std", "acc_lo_1sd", "acc_hi_1sd"]
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        for variant, acc, std in _RF_BASELINE_RECORDED:
+            writer.writerow([
+                variant, repr(float(acc)), repr(float(std)),
+                repr(float(acc - std)), repr(float(acc + std)),
+            ])
+
+    git_info = get_git_info()
+    provenance = {
+        "export_request_slug": "rf-dwt-baseline",
+        "consumer": "selements-website",
+        "producing_function": "src.core.export.export_episode4_rf_baseline_summary",
+        "consumer_facing_filename": csv_path.name,
+        "export_timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git": git_info,
+        "recorded_source": (
+            "docs/feature/baseline-random-forest/baseline_rf_analysis.md:20-30 ; "
+            "experiments/baseline-random-forest/LEDGER.md:144-154 ; D1 cross-"
+            "checked vs MLflow run 82d7421e (mean_accuracy=0.3232)"
+        ),
+        "methodology": (
+            "10-fold stratified CV, 4-class (1=NoFeedback..4=WindStrongAGN). "
+            "RandomForest hyperparameters per MLflow run 82d7421e (n_estimators="
+            "100, max_depth=25, max_features=sqrt, min_samples_leaf=50, "
+            "min_samples_split=100); exact random seed / fold assignment and the "
+            "training code are NOT recorded (code removed) — values are exported "
+            "from the record, not recomputed."
+        ),
+        "random_baseline_4class": _RF_RANDOM_BASELINE_4CLASS,
+        "ci_note": (
+            "acc_std is the 10-fold CV std dev; acc_lo/hi_1sd = mean +/- 1 std "
+            "(a band). NO bootstrap p16/p84 percentile CI was recorded."
+        ),
+        "source_lineage": (
+            "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h "
+            "box; one realization, fixed cosmology"
+        ),
+        # PI-framing-checked honesty caveat (verbatim PI-approved string).
+        "honest_reporting_caveat": (
+            "Accuracies are 10-fold stratified CV mean +/- std, exported VERBATIM "
+            "from the recorded run (baseline_rf_analysis.md:20-30, LEDGER section "
+            "5, MLflow-cross-checked for D1). The original training code "
+            "(BaselineRFClassifier, train_rf_baseline.py) was removed during "
+            "cleanup and is absent on disk — these numbers are NOT re-derivable "
+            "from the current repo, so the record is reproduced rather than "
+            "recomputed. Hyperparameters are in MLflow; random seed and fold "
+            "assignment are not recorded. Raw wins (0.4514 = the 45% 4-class "
+            "ceiling); db8 DWT does NOT help; accuracy drops monotonically across "
+            "the detail bands D1->D6 (0.3232->0.2094), and A6 (0.2177) sits just "
+            "ABOVE the D6 floor — so 'monotonic D1->A6' would overstate it (the "
+            "source itself scopes monotonicity to D6). Random 4-class baseline = "
+            "0.25; D4/D5/D6/A6 are at/near chance. The lo/hi columns are mean +/- "
+            "1 SD bands, NOT percentile CIs (no p16/p84 recorded). This table is "
+            "accuracy ONLY — it carries NO per-class recall, and does NOT itself "
+            "substantiate any 'only Class 4 is identified' claim; that is a "
+            "confusion-matrix reading (PNG-only, no recorded numbers) pending a "
+            "separate re-run. Not a deployment benchmark."
+        ),
+    }
+    with open(out_dir / "baseline_summary.provenance.json", "w") as fh:
+        json.dump(provenance, fh, indent=2)
+
+    return csv_path
+
+
+def export_episode4_mean_energy_per_level(out_dir: Path) -> Path:
+    """Export the mean DWT energy per level (D1..D6, A6) over all sightlines.
+
+    Computed fresh with ``pywt.wavedec(db8, level 6, periodization)`` (the same
+    convention as ``src/core/transforms.py`` WaveletTransform), pooled over all
+    16,384 x 4 sightlines: per band, mean of squared coefficients. Spans ~7 orders
+    of magnitude (justifies "RF is scale-invariant, no z-score scaling needed").
+
+    Columns: ``level,mean_energy`` with ``level`` in ``{D1,D2,D3,D4,D5,D6,A6}``.
+
+    Args:
+        out_dir: Landing directory (created if absent).
+
+    Returns:
+        Path to the written CSV (``mean_energy_per_level.csv``).
+    """
+    import pywt
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    loader = SignalClusteringData()
+    flux_per_class, _ = loader.load_flux_per_class()
+
+    # Accumulate sum-of-squares and element count per band across classes.
+    bands = ["D1", "D2", "D3", "D4", "D5", "D6", "A6"]
+    sq_sum: Dict[str, float] = {b: 0.0 for b in bands}
+    n_elem: Dict[str, int] = {b: 0 for b in bands}
+    for class_id in (1, 2, 3, 4):
+        X = np.asarray(flux_per_class[class_id - 1], dtype=np.float64)
+        # coeffs = [cA6, cD6, cD5, cD4, cD3, cD2, cD1]
+        coeffs = pywt.wavedec(X, _DWT_WAVELET, level=_DWT_LEVEL, mode=_DWT_MODE, axis=1)
+        band_of = {
+            "A6": coeffs[0], "D6": coeffs[1], "D5": coeffs[2], "D4": coeffs[3],
+            "D3": coeffs[4], "D2": coeffs[5], "D1": coeffs[6],
+        }
+        for b in bands:
+            c = band_of[b]
+            sq_sum[b] += float(np.sum(c.astype(np.float64) ** 2))
+            n_elem[b] += int(c.size)
+
+    mean_energy = {b: sq_sum[b] / n_elem[b] for b in bands}
+
+    csv_path = out_dir / "mean_energy_per_level.csv"
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["level", "mean_energy"])
+        for b in bands:
+            writer.writerow([b, repr(float(mean_energy[b]))])
+
+    git_info = get_git_info()
+    provenance = {
+        "export_request_slug": "rf-dwt-baseline",
+        "consumer": "selements-website",
+        "producing_function": "src.core.export.export_episode4_mean_energy_per_level",
+        "consumer_facing_filename": csv_path.name,
+        "export_timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git": git_info,
+        "source_data_paths": {
+            _CLASS_LABELS[c]: str(
+                Path(SignalClusteringData.FLUX_BASE) / str(c) / "flux.npy"
+            )
+            for c in (1, 2, 3, 4)
+        },
+        "method": (
+            f"pywt.wavedec(wavelet={_DWT_WAVELET}, level={_DWT_LEVEL}, "
+            f"mode={_DWT_MODE}, axis=1); per band mean of squared coefficients, "
+            "pooled over all 16,384 x 4 sightlines. Matches src/core/transforms.py "
+            "WaveletTransform convention."
+        ),
+        "mean_energy_per_level": mean_energy,
+        # PI-framing-checked honesty caveat (verbatim PI-approved string).
+        "honest_reporting_caveat": (
+            "Per-level DWT energy, computed FRESH (pywt.wavedec, db8, L6, "
+            "periodization), pooled over all 65,536 sightlines as the mean of "
+            "squared coefficients per band. Energy spans ~10 orders of magnitude "
+            "and rises monotonically D1->A6 (1.04e-08 -> 6.15e+01); A6 dominates. "
+            "These are RAW (non-z-scored) coefficient energies. The baseline RF "
+            "needs no per-feature scaling because tree splits are threshold-based "
+            "and scale-invariant PER FEATURE — this is a property of RF, not a "
+            "general 'no scaling needed.' Note the DOWNSTREAM clustering pipeline "
+            "DOES apply a per-level z-score (CLAUDE.md domain convention) precisely "
+            "so A6/D5/D6 don't dominate the distance metric; this energy table is "
+            "the direct evidence for why that z-score is needed there. D1's small "
+            "coefficients are LOW-energy fine-scale detail, NOT noise (the Sherwood "
+            "data is noiseless)."
+        ),
+    }
+    with open(out_dir / "mean_energy_per_level.provenance.json", "w") as fh:
+        json.dump(provenance, fh, indent=2)
+
+    return csv_path

@@ -1,0 +1,30 @@
+{
+  "export_request_slug": "rf-dwt-baseline",
+  "consumer": "selements-website",
+  "producing_function": "src.core.export.export_episode4_mean_energy_per_level",
+  "consumer_facing_filename": "mean_energy_per_level.csv",
+  "export_timestamp": "2026-06-18T22:15:50",
+  "git": {
+    "commit": "be95f71",
+    "branch": "service/data-export",
+    "dirty": "True",
+    "timestamp": "2026-06-18T22:15:50"
+  },
+  "source_data_paths": {
+    "NoFeedback": "data/preprocessed/Sherwood_z0.3_inf/1/flux.npy",
+    "StellarWind": "data/preprocessed/Sherwood_z0.3_inf/2/flux.npy",
+    "WindAGN": "data/preprocessed/Sherwood_z0.3_inf/3/flux.npy",
+    "WindStrongAGN": "data/preprocessed/Sherwood_z0.3_inf/4/flux.npy"
+  },
+  "method": "pywt.wavedec(wavelet=db8, level=6, mode=periodization, axis=1); per band mean of squared coefficients, pooled over all 16,384 x 4 sightlines. Matches src/core/transforms.py WaveletTransform convention.",
+  "mean_energy_per_level": {
+    "D1": 1.0377505541554066e-08,
+    "D2": 1.2359122426624245e-06,
+    "D3": 0.00010923352567590019,
+    "D4": 0.003329550773408808,
+    "D5": 0.028532011427641033,
+    "D6": 0.1020674560012083,
+    "A6": 61.49519944518413
+  },
+  "honest_reporting_caveat": "Per-level DWT energy, computed FRESH (pywt.wavedec, db8, L6, periodization), pooled over all 65,536 sightlines as the mean of squared coefficients per band. Energy spans ~10 orders of magnitude and rises monotonically D1->A6 (1.04e-08 -> 6.15e+01); A6 dominates. These are RAW (non-z-scored) coefficient energies. The baseline RF needs no per-feature scaling because tree splits are threshold-based and scale-invariant PER FEATURE \u2014 this is a property of RF, not a general 'no scaling needed.' Note the DOWNSTREAM clustering pipeline DOES apply a per-level z-score (CLAUDE.md domain convention) precisely so A6/D5/D6 don't dominate the distance metric; this energy table is the direct evidence for why that z-score is needed there. D1's small coefficients are LOW-energy fine-scale detail, NOT noise (the Sherwood data is noiseless)."
+}

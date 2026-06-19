@@ -16,6 +16,8 @@ from src.core.export import (
     _N_PIXELS,
     _validate_spectrum,
     _write_pk_tidy_csv,
+    export_episode4_mean_energy_per_level,
+    export_episode4_rf_baseline_summary,
     export_exploration_line_density_per_class,
     export_exploration_local_ew_dist_per_class,
     export_exploration_pk_mean_per_class,
@@ -238,6 +240,40 @@ def test_export_exploration_line_density_real_data(tmp_path: Path):
         sums[r["class_name"]] = sums.get(r["class_name"], 0.0) + float(r["density"])
     for v in sums.values():
         assert v == pytest.approx(1.0, abs=1e-4)
+
+
+def test_export_episode4_rf_baseline_summary(tmp_path: Path):
+    # Recorded values — no real data needed.
+    csv_path = export_episode4_rf_baseline_summary(tmp_path)
+    rows = {r["variant"]: r for r in csv.DictReader(open(csv_path))}
+    assert len(rows) == 9
+    assert float(rows["RF_Raw"]["accuracy"]) == pytest.approx(0.4514)
+    # A6 sits ABOVE the D6 floor (the "monotonic D1->A6" overstatement guard).
+    assert float(rows["RF_A6"]["accuracy"]) > float(rows["RF_D6"]["accuracy"])
+    # Detail bands monotone decreasing D1..D6.
+    d = [float(rows[f"RF_D{i}"]["accuracy"]) for i in range(1, 7)]
+    assert all(d[i] > d[i + 1] for i in range(len(d) - 1))
+    with open(csv_path.with_name("baseline_summary.provenance.json")) as fh:
+        prov = json.load(fh)
+    cav = prov["honest_reporting_caveat"].lower()
+    assert "no per-class recall" in cav  # disowns the "only Class 4" claim
+    assert "reproduced rather than recomputed" in cav
+
+
+@pytest.mark.slow
+def test_export_episode4_mean_energy_per_level_real_data(tmp_path: Path):
+    csv_path = export_episode4_mean_energy_per_level(tmp_path)
+    rows = {r["level"]: float(r["mean_energy"]) for r in csv.DictReader(open(csv_path))}
+    assert set(rows) == {"D1", "D2", "D3", "D4", "D5", "D6", "A6"}
+    # Energy rises monotonically D1 -> A6, spanning many orders of magnitude.
+    order = ["D1", "D2", "D3", "D4", "D5", "D6", "A6"]
+    vals = [rows[k] for k in order]
+    assert all(vals[i] < vals[i + 1] for i in range(len(vals) - 1))
+    assert rows["A6"] / rows["D1"] > 1e6  # ~10 orders of magnitude
+    with open(csv_path.with_name("mean_energy_per_level.provenance.json")) as fh:
+        prov = json.load(fh)
+    # Must NOT carry the retired "no scaling needed" overclaim unqualified.
+    assert "per feature" in prov["honest_reporting_caveat"].lower()
 
 
 @pytest.mark.slow
