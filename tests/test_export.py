@@ -18,6 +18,7 @@ from src.core.export import (
     _write_pk_tidy_csv,
     export_episode4_mean_energy_per_level,
     export_episode4_rf_baseline_summary,
+    export_episode4_rf_confusion_matrices,
     export_exploration_line_density_per_class,
     export_exploration_local_ew_dist_per_class,
     export_exploration_pk_mean_per_class,
@@ -258,6 +259,34 @@ def test_export_episode4_rf_baseline_summary(tmp_path: Path):
     cav = prov["honest_reporting_caveat"].lower()
     assert "no per-class recall" in cav  # disowns the "only Class 4" claim
     assert "reproduced rather than recomputed" in cav
+
+
+@pytest.mark.slow
+def test_export_episode4_rf_confusion_matrices_real_data(tmp_path: Path):
+    csv_path = export_episode4_rf_confusion_matrices(tmp_path)
+    rows = list(csv.DictReader(open(csv_path)))
+    # 3 variants x 4x4 cells.
+    assert len(rows) == 3 * 16
+    # Each true-class row is normalized (fractions sum to ~1 per variant,true_class).
+    sums = {}
+    for r in rows:
+        k = (r["variant"], r["true_class"])
+        sums[k] = sums.get(k, 0.0) + float(r["fraction"])
+    for v in sums.values():
+        assert v == pytest.approx(1.0, abs=1e-6)
+
+    with open(csv_path.with_name("confusion_matrices.provenance.json")) as fh:
+        prov = json.load(fh)
+    # Faithful reproduction: holdout within 0.05 of recorded for all variants.
+    for v, d in prov["holdout_minus_recorded"].items():
+        assert abs(d) < 0.05
+    # Class 4 is the standout (recall well above chance for raw + D1).
+    assert prov["class4_recall"]["RF_Raw"] > 0.7
+    assert prov["class4_recall"]["RF_D1"] > 0.7
+    # Honesty: the caveat must carry the Class-1 SINK correction, not "confuse with each other".
+    cav = prov["honest_reporting_caveat"].lower()
+    assert "sink" in cav and "collapse into" in cav
+    assert "confuse heavily with each other" not in cav
 
 
 @pytest.mark.slow

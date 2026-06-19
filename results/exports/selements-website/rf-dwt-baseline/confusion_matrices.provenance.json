@@ -1,0 +1,43 @@
+{
+  "export_request_slug": "rf-dwt-baseline",
+  "consumer": "selements-website",
+  "producing_function": "src.core.export.export_episode4_rf_confusion_matrices",
+  "consumer_facing_filename": "confusion_matrices.csv",
+  "export_timestamp": "2026-06-19T11:11:50",
+  "git": {
+    "commit": "7e29ca4",
+    "branch": "service/data-export",
+    "dirty": "True",
+    "timestamp": "2026-06-19T11:11:50"
+  },
+  "source_data_paths": {
+    "NoFeedback": "data/preprocessed/Sherwood_z0.3_inf/1/flux.npy",
+    "StellarWind": "data/preprocessed/Sherwood_z0.3_inf/2/flux.npy",
+    "WindAGN": "data/preprocessed/Sherwood_z0.3_inf/3/flux.npy",
+    "WindStrongAGN": "data/preprocessed/Sherwood_z0.3_inf/4/flux.npy"
+  },
+  "methodology": "FRESH single 80/20 stratified holdout (random_state=42) with the recorded hyperparameters {'n_estimators': 100, 'max_depth': 25, 'max_features': 'sqrt', 'min_samples_leaf': 50, 'min_samples_split': 100, 'random_state': 42, 'n_jobs': -1}. The original 10-fold training code was removed, so this is a faithful reproduction, NOT the exact original run. Features: RF_Raw=raw flux (2048-dim); RF_D1=db8-L6 cD1 (1024-dim); RF_D6=db8-L6 cD6 (32-dim). Confusion matrices are row-normalized (each true-class row sums to 1).",
+  "holdout_accuracy": {
+    "RF_Raw": 0.4509,
+    "RF_D1": 0.3354,
+    "RF_D6": 0.2157
+  },
+  "recorded_10fold_accuracy": {
+    "RF_Raw": 0.4514,
+    "RF_D1": 0.3232,
+    "RF_D6": 0.2094
+  },
+  "holdout_minus_recorded": {
+    "RF_Raw": -0.0005,
+    "RF_D1": 0.0122,
+    "RF_D6": 0.0063
+  },
+  "holdout_vs_record_flag": "all variants within 0.05 of the recorded 10-fold accuracy",
+  "class4_recall": {
+    "RF_Raw": 0.8752,
+    "RF_D1": 0.9423,
+    "RF_D6": 0.6301
+  },
+  "figure_caption": "Row-normalized confusion matrices, RF on raw flux / db8-cD1 / db8-cD6 (single 80/20 holdout, seed 42; reproduces recorded 10-fold to within 0.013). Class 4 is the only self-identified class (recall 0.88/0.94/0.63). Class 1's high RF_Raw recall (0.84) is a sink artifact: true-2 (86%) and true-3 (78%) collapse INTO predicted-1, so Classes 2/3 are unrecovered (recall 0.04/0.05) \u2014 not a second well-identified class. Random 4-class baseline 0.25.",
+  "honest_reporting_caveat": "Row-normalized 4-class confusion matrices from a FRESH single 80/20 stratified holdout (random_state=42) with the recorded hyperparameters; the original 10-fold training code was removed, so this is a faithful reproduction, not the exact original run (holdout accuracy is within 0.013 of the recorded 10-fold: RF_Raw 0.4509 vs 0.4514, RF_D1 0.3354 vs 0.3232, RF_D6 0.2157 vs 0.2094). The empirical pattern: Class 4 (WindStrongAGN) is the only class identified by genuine self-recognition (Class-4 recall RF_Raw 0.875 / RF_D1 0.942 / RF_D6 0.630). The other three classes (NoFeedback/StellarWind/WindAGN) are NOT mutually confused symmetrically; the structure is variant-specific: in RF_Raw they COLLAPSE INTO a Class-1 sink (true-2 -> 86% predicted-1, true-3 -> 78% predicted-1), so Class 1's high 0.84 recall is a majority-attractor artifact, NOT a detection of Class 1 \u2014 Classes 2 and 3 are essentially unrecovered (recall 0.04 and 0.05). In RF_D1 the 1/2/3 mass scrambles (each <=16% self-recall) with the sink shifted toward Class 2, Class 4 still clean (0.94). In RF_D6 the 1/2/3 confusion is diffuse across all off-diagonal cells AND Class 4 itself degrades (0.63, mass leaking to all three). This 1/2/3 indistinguishability is the supervised shadow of the unsupervised EW-distribution overlap (per-line EW overlaps >=97% across all 4 classes; the real separator is line density, with Class 4 ~28% fewer lines; eda-sherwood LEDGER section 5). Descriptive, one z=0.3 snapshot; NOT a deployed classifier and not a per-sightline detection claim."
+}

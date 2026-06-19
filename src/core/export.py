@@ -1508,6 +1508,21 @@ _DWT_WAVELET = "db8"
 _DWT_LEVEL = 6
 _DWT_MODE = "periodization"
 
+# Recorded baseline-RF hyperparameters (MLflow run 82d7421e params). Used to
+# reproduce the confusion matrices faithfully; the original 10-fold training code
+# was removed, so this is a single 80/20 holdout with the same hyperparameters.
+_RF_RECORDED_HP = dict(
+    n_estimators=100,
+    max_depth=25,
+    max_features="sqrt",
+    min_samples_leaf=50,
+    min_samples_split=100,
+    random_state=42,
+    n_jobs=-1,
+)
+# Recorded 10-fold accuracy per variant, for the holdout-vs-record sanity check.
+_RF_RECORDED_ACC = {"RF_Raw": 0.4514, "RF_D1": 0.3232, "RF_D6": 0.2094}
+
 
 def export_episode4_rf_baseline_summary(out_dir: Path) -> Path:
     """Export the 9-variant RF accuracy table (raw vs db8-L6 DWT), recorded values.
@@ -1689,6 +1704,184 @@ def export_episode4_mean_energy_per_level(out_dir: Path) -> Path:
         ),
     }
     with open(out_dir / "mean_energy_per_level.provenance.json", "w") as fh:
+        json.dump(provenance, fh, indent=2)
+
+    return csv_path
+
+
+def export_episode4_rf_confusion_matrices(out_dir: Path) -> Path:
+    """Re-run RF_Raw / RF_D1 / RF_D6 and export row-normalized 4x4 confusion matrices.
+
+    The original 10-fold training code was removed, so this is a fresh SINGLE
+    80/20 stratified holdout (seed 42) with the RECORDED hyperparameters
+    (:data:`_RF_RECORDED_HP`) — a faithful reproduction, NOT the exact original
+    run. Features per variant:
+      - RF_Raw : raw flux (2048-dim).
+      - RF_D1  : db8-L6 level-1 detail band cD1 (1024-dim).
+      - RF_D6  : db8-L6 level-6 detail band cD6 (32-dim).
+
+    Each variant's holdout accuracy is checked against the recorded 10-fold value
+    (:data:`_RF_RECORDED_ACC`); the delta is recorded in the provenance and a large
+    mismatch is flagged (honest-reporting), but matrices are still written.
+
+    Writes one tidy CSV (all three variants) + a provenance sidecar carrying the
+    per-variant holdout accuracy, the recorded-vs-holdout delta, and the Class-4
+    recall (which is what substantiates the "only Class 4 is reliably identified"
+    reading — absent from disk until now).
+
+    CSV columns: ``variant,true_class,true_label,pred_class,pred_label,fraction,count``.
+
+    Args:
+        out_dir: Landing directory (created if absent).
+
+    Returns:
+        Path to the written CSV (``confusion_matrices.csv``).
+    """
+    import pywt
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.metrics import confusion_matrix
+    from sklearn.model_selection import train_test_split
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    loader = SignalClusteringData()
+    flux_per_class, _ = loader.load_flux_per_class()
+    X_raw = np.vstack(
+        [np.asarray(flux_per_class[c - 1], dtype=np.float64) for c in (1, 2, 3, 4)]
+    )  # shape: (65536, 2048)
+    y = np.concatenate([
+        np.full(flux_per_class[c - 1].shape[0], c, dtype=np.int64) for c in (1, 2, 3, 4)
+    ])  # shape: (65536,)
+
+    # db8-L6 bands: coeffs = [cA6, cD6, cD5, cD4, cD3, cD2, cD1].
+    coeffs = pywt.wavedec(X_raw, _DWT_WAVELET, level=_DWT_LEVEL, mode=_DWT_MODE, axis=1)
+    features = {
+        "RF_Raw": X_raw,
+        "RF_D1": np.ascontiguousarray(coeffs[6]),  # cD1, (65536, 1024)
+        "RF_D6": np.ascontiguousarray(coeffs[1]),  # cD6, (65536, 32)
+    }
+
+    labels = [1, 2, 3, 4]
+    rows: List[Dict[str, object]] = []
+    holdout_acc: Dict[str, float] = {}
+    acc_delta: Dict[str, float] = {}
+    class4_recall: Dict[str, float] = {}
+    for variant, X in features.items():
+        X_tr, X_te, y_tr, y_te = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
+        )
+        clf = RandomForestClassifier(**_RF_RECORDED_HP)
+        clf.fit(X_tr, y_tr)
+        y_pred = clf.predict(X_te)
+        acc = float((y_pred == y_te).mean())
+        holdout_acc[variant] = acc
+        acc_delta[variant] = round(acc - _RF_RECORDED_ACC[variant], 4)
+        cm = confusion_matrix(y_te, y_pred, labels=labels).astype(np.float64)
+        row_sums = cm.sum(axis=1, keepdims=True)
+        cm_norm = np.divide(cm, row_sums, out=np.zeros_like(cm), where=row_sums > 0)
+        class4_recall[variant] = round(float(cm_norm[3, 3]), 4)
+        for i, tc in enumerate(labels):
+            for j, pc in enumerate(labels):
+                rows.append({
+                    "variant": variant,
+                    "true_class": tc,
+                    "true_label": _CLASS_LABELS[tc],
+                    "pred_class": pc,
+                    "pred_label": _CLASS_LABELS[pc],
+                    "fraction": float(cm_norm[i, j]),
+                    "count": int(cm[i, j]),
+                })
+
+    csv_path = out_dir / "confusion_matrices.csv"
+    header = [
+        "variant", "true_class", "true_label", "pred_class", "pred_label",
+        "fraction", "count",
+    ]
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(header)
+        for r in rows:
+            writer.writerow([
+                str(r["variant"]), int(r["true_class"]), str(r["true_label"]),
+                int(r["pred_class"]), str(r["pred_label"]),
+                repr(float(r["fraction"])), int(r["count"]),
+            ])
+
+    # Honest sanity: flag any holdout-vs-recorded gap > 0.05.
+    large_gaps = {v: d for v, d in acc_delta.items() if abs(d) > 0.05}
+
+    git_info = get_git_info()
+    provenance = {
+        "export_request_slug": "rf-dwt-baseline",
+        "consumer": "selements-website",
+        "producing_function": "src.core.export.export_episode4_rf_confusion_matrices",
+        "consumer_facing_filename": csv_path.name,
+        "export_timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git": git_info,
+        "source_data_paths": {
+            _CLASS_LABELS[c]: str(
+                Path(SignalClusteringData.FLUX_BASE) / str(c) / "flux.npy"
+            )
+            for c in (1, 2, 3, 4)
+        },
+        "methodology": (
+            "FRESH single 80/20 stratified holdout (random_state=42) with the "
+            f"recorded hyperparameters {dict(_RF_RECORDED_HP)}. The original "
+            "10-fold training code was removed, so this is a faithful "
+            "reproduction, NOT the exact original run. Features: RF_Raw=raw flux "
+            "(2048-dim); RF_D1=db8-L6 cD1 (1024-dim); RF_D6=db8-L6 cD6 (32-dim). "
+            "Confusion matrices are row-normalized (each true-class row sums to 1)."
+        ),
+        "holdout_accuracy": {v: round(a, 4) for v, a in holdout_acc.items()},
+        "recorded_10fold_accuracy": _RF_RECORDED_ACC,
+        "holdout_minus_recorded": acc_delta,
+        "holdout_vs_record_flag": (
+            "all variants within 0.05 of the recorded 10-fold accuracy"
+            if not large_gaps
+            else f"WARNING: large holdout-vs-recorded gap(s): {large_gaps} — "
+            "feature construction or hyperparameters may not match the original"
+        ),
+        "class4_recall": class4_recall,
+        # PI-framing-checked (verbatim PI-approved strings). The earlier "confuse
+        # with each other" wording was wrong for RF_Raw — it is a Class-1 SINK.
+        "figure_caption": (
+            "Row-normalized confusion matrices, RF on raw flux / db8-cD1 / db8-cD6 "
+            "(single 80/20 holdout, seed 42; reproduces recorded 10-fold to within "
+            "0.013). Class 4 is the only self-identified class (recall "
+            "0.88/0.94/0.63). Class 1's high RF_Raw recall (0.84) is a sink "
+            "artifact: true-2 (86%) and true-3 (78%) collapse INTO predicted-1, so "
+            "Classes 2/3 are unrecovered (recall 0.04/0.05) — not a second "
+            "well-identified class. Random 4-class baseline 0.25."
+        ),
+        "honest_reporting_caveat": (
+            "Row-normalized 4-class confusion matrices from a FRESH single 80/20 "
+            "stratified holdout (random_state=42) with the recorded "
+            "hyperparameters; the original 10-fold training code was removed, so "
+            "this is a faithful reproduction, not the exact original run (holdout "
+            "accuracy is within 0.013 of the recorded 10-fold: RF_Raw 0.4509 vs "
+            "0.4514, RF_D1 0.3354 vs 0.3232, RF_D6 0.2157 vs 0.2094). The empirical "
+            "pattern: Class 4 (WindStrongAGN) is the only class identified by "
+            "genuine self-recognition (Class-4 recall RF_Raw 0.875 / RF_D1 0.942 / "
+            "RF_D6 0.630). The other three classes (NoFeedback/StellarWind/WindAGN) "
+            "are NOT mutually confused symmetrically; the structure is "
+            "variant-specific: in RF_Raw they COLLAPSE INTO a Class-1 sink (true-2 "
+            "-> 86% predicted-1, true-3 -> 78% predicted-1), so Class 1's high 0.84 "
+            "recall is a majority-attractor artifact, NOT a detection of Class 1 — "
+            "Classes 2 and 3 are essentially unrecovered (recall 0.04 and 0.05). In "
+            "RF_D1 the 1/2/3 mass scrambles (each <=16% self-recall) with the sink "
+            "shifted toward Class 2, Class 4 still clean (0.94). In RF_D6 the 1/2/3 "
+            "confusion is diffuse across all off-diagonal cells AND Class 4 itself "
+            "degrades (0.63, mass leaking to all three). This 1/2/3 "
+            "indistinguishability is the supervised shadow of the unsupervised "
+            "EW-distribution overlap (per-line EW overlaps >=97% across all 4 "
+            "classes; the real separator is line density, with Class 4 ~28% fewer "
+            "lines; eda-sherwood LEDGER section 5). Descriptive, one z=0.3 "
+            "snapshot; NOT a deployed classifier and not a per-sightline detection "
+            "claim."
+        ),
+    }
+    with open(out_dir / "confusion_matrices.provenance.json", "w") as fh:
         json.dump(provenance, fh, indent=2)
 
     return csv_path
