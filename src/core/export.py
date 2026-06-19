@@ -1885,3 +1885,90 @@ def export_episode4_rf_confusion_matrices(out_dir: Path) -> Path:
         json.dump(provenance, fh, indent=2)
 
     return csv_path
+
+
+def export_episode4_sample_sightline(
+    out_dir: Path,
+    class_id: int = 1,
+    sightline_idx: int = 0,
+) -> Path:
+    """Export one sample sightline's flux F and absorption A=1-F (frame 12-2).
+
+    Illustrative before/after panels for the DWT pipeline. Descriptive single
+    sightline (NOT claim-bearing). Reuses the same representative sightline as the
+    primer export (class 1, idx 0 = the EDA tier1_representative_spectra_2x2.png
+    top-left panel) for visual consistency across episodes.
+
+    Columns: ``pixel,wavelength_angstrom,flux,absorption`` (absorption = 1 - flux),
+    full float64.
+
+    Args:
+        out_dir: Landing directory (created if absent).
+        class_id: Physics class id in {1,2,3,4}. Default 1 (NoFeedback).
+        sightline_idx: Row index into the per-class flux block. Default 0.
+
+    Returns:
+        Path to the written CSV (``sample_sightline.csv``).
+    """
+    if class_id not in _CLASS_LABELS:
+        raise ValueError(f"class_id must be in {sorted(_CLASS_LABELS)}, got {class_id}")
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    loader = SignalClusteringData()
+    flux_per_class, _ = loader.load_flux_per_class()
+    block = flux_per_class[class_id - 1]
+    if not (0 <= sightline_idx < block.shape[0]):
+        raise ValueError(
+            f"sightline_idx {sightline_idx} out of range [0, {block.shape[0]})"
+        )
+    flux = np.asarray(block[sightline_idx], dtype=np.float64)
+    _validate_spectrum(flux, name=f"class{class_id}.sightline{sightline_idx}.flux")
+    absorption = 1.0 - flux
+    wavelength = _load_wavelength_axis(class_id)
+    pixel = np.arange(_N_PIXELS, dtype=np.int64)
+
+    csv_path = out_dir / "sample_sightline.csv"
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["pixel", "wavelength_angstrom", "flux", "absorption"])
+        for i in range(_N_PIXELS):
+            writer.writerow([
+                int(pixel[i]), repr(float(wavelength[i])),
+                repr(float(flux[i])), repr(float(absorption[i])),
+            ])
+
+    git_info = get_git_info()
+    provenance = {
+        "export_request_slug": "rf-dwt-baseline",
+        "consumer": "selements-website",
+        "producing_function": "src.core.export.export_episode4_sample_sightline",
+        "consumer_facing_filename": csv_path.name,
+        "export_timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git": git_info,
+        "source_data_path": str(
+            Path(SignalClusteringData.FLUX_BASE) / str(class_id) / "flux.npy"
+        ),
+        "class_id": class_id,
+        "class_label": _CLASS_LABELS[class_id],
+        "sightline_idx": sightline_idx,
+        "columns": (
+            "pixel; wavelength_angstrom; flux F (normalized transmitted, [0,1]); "
+            "absorption A = 1 - F"
+        ),
+        "source_lineage": (
+            "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h "
+            "box; noiseless (S/N=inf)"
+        ),
+        "honest_reporting_caveat": (
+            "Illustrative single sightline for the 12-2 before/after panels. "
+            "Selection = first stored sightline of class 1 (matches "
+            "results/eda/tier1_representative_spectra_2x2.png top-left and the "
+            "primer-synthetic-spectrum export), NOT a statistically-central / "
+            "'typical' spectrum. Noiseless data."
+        ),
+    }
+    with open(out_dir / "sample_sightline.provenance.json", "w") as fh:
+        json.dump(provenance, fh, indent=2)
+
+    return csv_path

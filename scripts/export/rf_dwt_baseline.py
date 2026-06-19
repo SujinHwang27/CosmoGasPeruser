@@ -16,6 +16,7 @@ from src.core.export import (
     export_episode4_mean_energy_per_level,
     export_episode4_rf_baseline_summary,
     export_episode4_rf_confusion_matrices,
+    export_episode4_sample_sightline,
 )
 
 
@@ -38,8 +39,10 @@ def main() -> None:
 
     acc = export_episode4_rf_baseline_summary(out_dir=args.out_dir)
     energy = export_episode4_mean_energy_per_level(out_dir=args.out_dir)
+    sample = export_episode4_sample_sightline(out_dir=args.out_dir)
     print(f"Wrote accuracy table: {acc}")
     print(f"Wrote per-level energy: {energy}")
+    print(f"Wrote sample sightline: {sample}")
     if args.confusion:
         cm = export_episode4_rf_confusion_matrices(out_dir=args.out_dir)
         print(f"Wrote confusion matrices: {cm}")

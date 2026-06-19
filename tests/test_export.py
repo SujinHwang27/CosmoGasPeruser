@@ -19,6 +19,7 @@ from src.core.export import (
     export_episode4_mean_energy_per_level,
     export_episode4_rf_baseline_summary,
     export_episode4_rf_confusion_matrices,
+    export_episode4_sample_sightline,
     export_exploration_line_density_per_class,
     export_exploration_local_ew_dist_per_class,
     export_exploration_pk_mean_per_class,
@@ -259,6 +260,19 @@ def test_export_episode4_rf_baseline_summary(tmp_path: Path):
     cav = prov["honest_reporting_caveat"].lower()
     assert "no per-class recall" in cav  # disowns the "only Class 4" claim
     assert "reproduced rather than recomputed" in cav
+
+
+@pytest.mark.slow
+def test_export_episode4_sample_sightline_real_data(tmp_path: Path):
+    csv_path = export_episode4_sample_sightline(tmp_path)
+    rows = list(csv.DictReader(open(csv_path)))
+    assert len(rows) == _N_PIXELS
+    assert list(rows[0].keys()) == ["pixel", "wavelength_angstrom", "flux", "absorption"]
+    for r in rows:
+        f = float(r["flux"])
+        assert 0.0 <= f <= 1.0
+        # absorption = 1 - flux exactly.
+        assert float(r["absorption"]) == pytest.approx(1.0 - f, abs=1e-12)
 
 
 @pytest.mark.slow
