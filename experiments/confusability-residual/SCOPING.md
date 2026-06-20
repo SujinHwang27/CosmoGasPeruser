@@ -78,7 +78,58 @@ bar.
    it inherits PROVISIONAL status. Promotion to a finding needs a fresh review.
 
 ## Status
-SCAFFOLDED — not yet run. Next step (user-gated): one worker pass —
-`core-implementer` (predict_proba + confusability score), `data-engineer`
-(per-sightline covariate join), `support-researcher` (residual/partial-correlation
-test + the single figure). Owner: PI-coordinated.
+**RUN & CLOSED — NULL (2026-06-20).** Single pass executed
+(`scripts/probe_confusability_residual.py`); PI close-out sign-off given
+(provisional status lifted via in-session re-verification). Outcome below.
+
+## Outcome — D-01 (NULL, the pre-committed expected end state)
+
+**Verdict: NULL.** After regressing out per-sightline mean flux AND line density,
+RF `predict_proba` confusability retains **no** orthogonal residual structure above
+the pre-committed |Spearman| ≥ 0.20 bar against any non-re-encoding third quantity.
+Confusability re-derives the known mean-flux / line-density confound. **NOT a paper
+trigger** (guardrail 2); does **not** reopen the parked reframe-suite verdict
+(guardrail 1).
+
+What was run (one script, one figure — boundary respected):
+- **RF anchor (faithful).** Reproduced the recorded RF_Raw fit — the cross-check
+  anchor `export_episode4_rf_confusion_matrices` (on `service/data-export`): raw
+  flux, single 80/20 stratified holdout, seed 42, recorded HP. Holdout accuracy
+  **0.4509 vs recorded 0.4514 (Δ=−0.0005)** → the fit is the correct anchor.
+  `predict_proba` read on the 13,108 held-out sightlines.
+- **Confusability** = Shannon entropy + top-two margin of the 4-vector.
+- **Covariates** recomputed per sightline with the eda Tier-1 extractor. NOTE: the
+  `results/eda/` CSVs are CLASS-level aggregates, so the SAME Tier-1 method was
+  re-run per sightline (reuse of method, not new feature extraction — in scope).
+  `total_ew` (≈ linear in mean_flux; raw ρ=−1.00) and `gap_mean` (≈ 1/line_density;
+  raw ρ=−0.99) were excluded from PASS as confound re-encodings, reported as
+  diagnostics.
+- **Partial Spearman** of confusability vs each pre-registered candidate
+  (depth_mean/std/max, ew_mean/std, gap_std), controlling for [mean_flux,
+  line_density].
+
+Honest deviation narrative ([D-37], recorded in execution order):
+1. The **first** run used a **linear** rank-control and produced a borderline
+   PASS: `gap_std` at ρ=−0.2589 — but **only under the margin score**; the entropy
+   score gave −0.1667 (< 0.20). The pre-committed **rule-4 fragility** gate
+   (must clear under *both* author-defined scores) therefore demoted it to
+   **PASS-FRAGILE → no-headline** independently of anything below.
+2. The test was then **hardened against my own borderline-positive first result**:
+   the control basis was extended to [mf, ld, mf², ld², mf·ld]. Rationale —
+   `gap_std` is a dispersion statistic of a quantity (gap_mean ~ 1/line_density),
+   so its dependence on line_density is expected to be curved; the faithful reading
+   of "regress out mean flux AND line density" is to strip their **full** (incl.
+   quadratic/interaction) association, not just the linear part. Under this control
+   `gap_std` drops to ρ=−0.1951 (margin) / −0.1026 (entropy) — both < 0.20.
+3. **Verdict is invariant to the linear-vs-nonlinear choice**: even granting the
+   lenient linear value (0.259), rule-4 fragility already demotes the candidate
+   (entropy 0.167 < 0.20). The nonlinear hardening **corroborates** the NULL; it
+   does not create it. Both control columns are reported transparently.
+
+Artifacts (under `results/confusability_residual/`): `verdict.txt`,
+`partial_correlations.csv` (linear + nonlinear columns, both scores),
+`per_sightline_analysis.csv` (audit dump of the single analysis frame),
+`figs/residual_partial_spearman.png` (the one figure).
+
+No successor work authorized: no paper-author dispatch, no reframe-suite touch,
+no §1 Pulse, no rerouting code (Part 1 remains declined-by-argument).

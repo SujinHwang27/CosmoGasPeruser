@@ -1,0 +1,17 @@
+VERDICT: NULL
+max |partial rho| (non-re-encoding, NONLINEAR control) = 0.1951 (threshold 0.2)
+strongest candidate: gap_std via margin (rho_nl=-0.1951, rho_lin=-0.2589, p=1.25e-112, n=13108)
+  same candidate under both confusability scores (rule-4 fragility):
+     entropy: rho_nl=-0.1026 (linear -0.1667)  <  0.2
+      margin: rho_nl=-0.1951 (linear -0.2589)  <  0.2
+
+RF_Raw holdout accuracy cross-check: 0.4509 (recorded 0.4514, delta -0.0005)
+
+re-encoding diagnostics (raw Spearman vs the confound re-encoded):
+  total_ew~mean_flux: rho=-1.0000
+  gap_mean~line_density: rho=-0.9935
+
+Interpretation (rule-7, honest framing):
+  Confusability re-derives the known mean-flux / line-density confound;
+  no orthogonal residual structure above the pre-committed 0.20 bar.
+  Expected NULL (SCOPING). NOT a paper trigger.
