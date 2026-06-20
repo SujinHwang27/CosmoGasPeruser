@@ -279,8 +279,9 @@ def test_export_episode4_sample_sightline_real_data(tmp_path: Path):
 def test_export_episode4_rf_confusion_matrices_real_data(tmp_path: Path):
     csv_path = export_episode4_rf_confusion_matrices(tmp_path)
     rows = list(csv.DictReader(open(csv_path)))
-    # 3 variants x 4x4 cells.
-    assert len(rows) == 3 * 16
+    # All 9 variants x 4x4 cells.
+    assert len({r["variant"] for r in rows}) == 9
+    assert len(rows) == 9 * 16
     # Each true-class row is normalized (fractions sum to ~1 per variant,true_class).
     sums = {}
     for r in rows:
@@ -291,15 +292,16 @@ def test_export_episode4_rf_confusion_matrices_real_data(tmp_path: Path):
 
     with open(csv_path.with_name("confusion_matrices.provenance.json")) as fh:
         prov = json.load(fh)
-    # Faithful reproduction: holdout within 0.05 of recorded for all variants.
+    # Faithful reproduction: holdout within 0.05 of recorded for all 9 variants.
+    assert len(prov["holdout_minus_recorded"]) == 9
     for v, d in prov["holdout_minus_recorded"].items():
         assert abs(d) < 0.05
-    # Class 4 is the standout (recall well above chance for raw + D1).
-    assert prov["class4_recall"]["RF_Raw"] > 0.7
-    assert prov["class4_recall"]["RF_D1"] > 0.7
-    # Honesty: the caveat must carry the Class-1 SINK correction, not "confuse with each other".
+    # Class 4 is the consistent standout across all 9 variants (recall > chance).
+    assert all(r > 0.6 for r in prov["class4_recall"].values())
+    assert prov["class4_recall"]["RF_D1"] > 0.9
+    # Honesty: caveat keeps the Class-1 sink AND the swap-overclaim correction.
     cav = prov["honest_reporting_caveat"].lower()
-    assert "sink" in cav and "collapse into" in cav
+    assert "sink" in cav and "not a swap" in cav
     assert "confuse heavily with each other" not in cav
 
 
