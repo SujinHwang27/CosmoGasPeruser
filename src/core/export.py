@@ -1508,6 +1508,23 @@ _DWT_WAVELET = "db8"
 _DWT_LEVEL = 6
 _DWT_MODE = "periodization"
 
+# Signal-clustering v2 separability vectors (24-dim per sightline, RBF
+# micro-probing, "fingerprints_*" historical filename). Pipeline intermediates
+# of the `probe` stage (scripts/run_probe.py --run both -> src/core/probe.py);
+# there is no SignalClusteringData loader for them, so raw np.load is the in-repo
+# access convention (cf. scripts/run_cluster.py). The md5s pin the exported
+# norms to the v0.4-clustering-v2 version (verified equal to
+# `git show v0.4-clustering-v2:dvc.lock` probe-stage outs).
+_SEPNORM_SOURCES = {
+    "wavelet": "data/feature_discovery/fingerprints_wavelet.npy",
+    "raw": "data/feature_discovery/fingerprints_raw.npy",
+}
+_SEPNORM_V04_MD5 = {
+    "wavelet": "b7160641e12650c0e536cb510690f12d",
+    "raw": "c39fcdfd81ed1c7bdbcad7348c385b35",
+}
+_SEPNORM_SHAPE = (16384, 24)
+
 # Recorded baseline-RF hyperparameters (MLflow run 82d7421e params). Used to
 # reproduce the confusion matrices faithfully; the original 10-fold training code
 # was removed, so this is a single 80/20 holdout with the same hyperparameters.
@@ -2006,6 +2023,174 @@ def export_episode4_sample_sightline(
         ),
     }
     with open(out_dir / "sample_sightline.provenance.json", "w") as fh:
+        json.dump(provenance, fh, indent=2)
+
+    return csv_path
+
+
+def export_signalclustering_v2_sep_norms(out_dir: Path) -> Path:
+    """Export per-sightline separability-vector L2 norms (wavelet vs raw, v2 track).
+
+    For the selements-website Episode-5 figure cgp-sc-sep-norms (two histograms).
+    Loads the two v0.4-clustering-v2 separability-vector arrays (24-dim per
+    sightline, RBF micro-probing), verifies each file's md5 against the recorded
+    v0.4 hash (pins the export to the v2 track), computes the per-sightline L2
+    norm (np.linalg.norm axis=1, matching run_probe.py's own norm-histogram), and
+    writes a wide tidy CSV (one row per sightline, both runs aligned) + a small
+    per-run summary CSV + a git-stamped provenance sidecar.
+
+    "Precomputed norm arrays" satisfies the request's A.5 (the alternative to
+    shipping the raw 16384x24 .npy); computing here keeps the export a small
+    git-committable CSV per the data-export contract.
+
+    CSV columns: ``sightline_idx,wavelet_l2_norm,raw_l2_norm``.
+
+    Args:
+        out_dir: Landing directory (created if absent).
+
+    Returns:
+        Path to the written distribution CSV (``sep-norms.csv``).
+
+    Raises:
+        ValueError: if an array is missing/wrong-shape/non-finite, or its md5
+            does not match the recorded v0.4-clustering-v2 hash.
+    """
+    import hashlib
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    norms: Dict[str, np.ndarray] = {}
+    md5s: Dict[str, str] = {}
+    for run, rel in _SEPNORM_SOURCES.items():
+        path = Path(rel)
+        if not path.exists():
+            raise ValueError(f"separability vectors not found at {path}")
+        md5 = hashlib.md5(path.read_bytes()).hexdigest()
+        md5s[run] = md5
+        if md5 != _SEPNORM_V04_MD5[run]:
+            raise ValueError(
+                f"{rel} md5 {md5} != recorded v0.4-clustering-v2 "
+                f"{_SEPNORM_V04_MD5[run]} — on-disk array is not the v2 version"
+            )
+        X = np.load(path).astype(np.float64, copy=False)  # shape: (16384, 24)
+        if X.shape != _SEPNORM_SHAPE:
+            raise ValueError(f"{rel} shape {X.shape}, expected {_SEPNORM_SHAPE}")
+        if not np.all(np.isfinite(X)):
+            raise ValueError(f"{rel} contains non-finite values")
+        n = np.linalg.norm(X, axis=1)  # shape: (16384,) per-sightline L2 norm
+        if not np.all(np.isfinite(n)):
+            raise ValueError(f"non-finite L2 norm for run {run}")
+        norms[run] = n
+
+    n_sightlines = _SEPNORM_SHAPE[0]
+    csv_path = out_dir / "sep-norms.csv"
+    with open(csv_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["sightline_idx", "wavelet_l2_norm", "raw_l2_norm"])
+        for i in range(n_sightlines):
+            writer.writerow([
+                i, repr(float(norms["wavelet"][i])), repr(float(norms["raw"][i])),
+            ])
+
+    # Small per-run summary for honest annotation of the histograms.
+    summary_path = out_dir / "sep-norms-summary.csv"
+    with open(summary_path, "w", newline="") as fh:
+        writer = csv.writer(fh)
+        writer.writerow([
+            "run", "n", "min", "p25", "median", "mean", "p75", "max", "std",
+        ])
+        for run in ("wavelet", "raw"):
+            v = norms[run]
+            q25, q50, q75 = np.quantile(v, [0.25, 0.5, 0.75])
+            writer.writerow([
+                run, int(v.size), repr(float(v.min())), repr(float(q25)),
+                repr(float(q50)), repr(float(v.mean())), repr(float(q75)),
+                repr(float(v.max())), repr(float(v.std(ddof=1))),
+            ])
+
+    git_info = get_git_info()
+    provenance = {
+        "export_request_slug": "signal-clustering-v2-sep-norms",
+        "consumer": "selements-website",
+        "producing_function": (
+            "src.core.export.export_signalclustering_v2_sep_norms"
+        ),
+        "consumer_facing_filenames": [csv_path.name, summary_path.name],
+        "export_timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git": git_info,
+        "source_data_paths": dict(_SEPNORM_SOURCES),
+        "source_md5_verified": md5s,
+        "version_pin": (
+            "v0.4-clustering-v2 (branch feature/signal-clustering-v2); each "
+            "source array md5 verified equal to git show "
+            "v0.4-clustering-v2:dvc.lock probe-stage outs"
+        ),
+        "producing_stage": (
+            "probe (scripts/run_probe.py --run both -> src/core/probe.py); RBF "
+            "micro-probing -> 24-dim separability vector per sightline"
+        ),
+        "quantity": (
+            "per-sightline L2 norm of the 24-dim separability vector "
+            "(np.linalg.norm axis=1), matching run_probe.py plot_separability_"
+            "vector_norms"
+        ),
+        "units": "dimensionless (SVM signed decision-distance space)",
+        "n_sightlines": n_sightlines,
+        "summary": {
+            run: {
+                "median": float(np.median(norms[run])),
+                "mean": float(norms[run].mean()),
+                "std": float(norms[run].std(ddof=1)),
+            }
+            for run in ("wavelet", "raw")
+        },
+        "source_lineage": (
+            "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h "
+            "box; separability vectors from signal-clustering-v2 track"
+        ),
+        # PI-framing-checked (verbatim PI-approved strings). Claim-bearing
+        # (wavelet-vs-raw): the magnitude gap is partly a feature-scaling artifact
+        # (z-scored wavelet vs bounded raw input), and norm != separability quality.
+        "figure_caption": (
+            "Per-sightline L2 norm of the 24-dim RBF micro-probing separability "
+            "vector, wavelet vs raw run (Sherwood z=0.3, n=16384 each): wavelet "
+            "norms are larger and tighter (median 2.04 vs 1.62), but this gap is "
+            "partly a feature-scaling artifact (z-scored wavelet vs bounded raw "
+            "input) and does NOT mean wavelet separates feedback better - "
+            "downstream RF accuracy decouples from norm magnitude."
+        ),
+        "honest_reporting_caveat": (
+            "Per-sightline L2 norm of the 24-dim separability vector (RBF "
+            "micro-probing signed decision distances), signal-clustering-v2 track "
+            "(v0.4-clustering-v2). EMPIRICAL OBSERVATION: the wavelet run yields "
+            "larger-magnitude, tighter-spread norms than the raw run (median 2.04 "
+            "vs 1.62; std 0.67 vs 0.80; raw has a longer low-norm tail); n=16384 "
+            "each. SCALE CAVEAT (mandatory): the two runs probe DIFFERENTLY-SCALED "
+            "inputs through the same RBF SVM - the wavelet input is per-level "
+            "z-scored (unit-variance per DWT level) while the raw input is bounded "
+            "absorption A = clip(1-F, 0, 1), un-standardized. Because the "
+            "separability-vector components ARE the SVM decision_function values "
+            "(and gamma='scale' adapts to each input's variance), the wavelet>raw "
+            "norm gap is partly an artifact of input feature scaling, NOT evidence "
+            "of intrinsically greater class separability. INTERPRETATION CAVEAT: "
+            "norm magnitude does not track class-discrimination accuracy. (i) The "
+            "project's own clustering record shows the largest-norm sightlines are "
+            "the rare 'signal-island' clusters where the wavelet and raw "
+            "representations DISAGREE (cross-run overlap only 20-33%), i.e. "
+            "representation-unstable, not better-separated ([D-13], "
+            "signal-clustering-v2 LEDGER section 5). (ii) The downstream Random "
+            "Forest baselines decouple from norm magnitude: the larger-norm "
+            "representation (wavelet) does NOT yield the more accurate classifier "
+            "- raw flux reaches the v0.2 global baseline (~0.451 test acc), "
+            "matching or exceeding every db8 wavelet RF variant. Do NOT caption "
+            "this as 'wavelet separates feedback better.' Descriptive distribution "
+            "of a scale-dependent derived quantity on one z=0.3 Sherwood snapshot "
+            "under two non-matched preprocessing pipelines; not a classifier "
+            "benchmark and not an intrinsic-separability comparison."
+        ),
+    }
+    with open(out_dir / "sep-norms.provenance.json", "w") as fh:
         json.dump(provenance, fh, indent=2)
 
     return csv_path

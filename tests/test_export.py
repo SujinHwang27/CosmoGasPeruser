@@ -25,6 +25,7 @@ from src.core.export import (
     export_exploration_pk_mean_per_class,
     export_exploration_relationships_2d,
     export_primer_synthetic_spectrum,
+    export_signalclustering_v2_sep_norms,
     write_spectrum_csv,
 )
 
@@ -260,6 +261,33 @@ def test_export_episode4_rf_baseline_summary(tmp_path: Path):
     cav = prov["honest_reporting_caveat"].lower()
     assert "no per-class recall" in cav  # disowns the "only Class 4" claim
     assert "reproduced rather than recomputed" in cav
+
+
+@pytest.mark.slow
+def test_export_signalclustering_v2_sep_norms_real_data(tmp_path: Path):
+    csv_path = export_signalclustering_v2_sep_norms(tmp_path)
+    rows = list(csv.DictReader(open(csv_path)))
+    assert len(rows) == 16384
+    assert list(rows[0].keys()) == ["sightline_idx", "wavelet_l2_norm", "raw_l2_norm"]
+    # All norms finite and non-negative.
+    for r in rows[:50]:
+        assert float(r["wavelet_l2_norm"]) >= 0.0
+        assert float(r["raw_l2_norm"]) >= 0.0
+
+    summ = {r["run"]: r for r in csv.DictReader(open(csv_path.with_name("sep-norms-summary.csv")))}
+    assert set(summ) == {"wavelet", "raw"}
+    # Sanity anchor: wavelet median ~2.04 > raw median ~1.62.
+    assert float(summ["wavelet"]["median"]) == pytest.approx(2.04, abs=0.02)
+    assert float(summ["raw"]["median"]) == pytest.approx(1.62, abs=0.02)
+
+    with open(csv_path.with_name("sep-norms.provenance.json")) as fh:
+        prov = json.load(fh)
+    # md5 pin to v0.4-clustering-v2 is verified by the export (would raise otherwise).
+    assert prov["source_md5_verified"]["wavelet"] == "b7160641e12650c0e536cb510690f12d"
+    # Honesty: caveat carries the scale-artifact + decoupling, not "wavelet better".
+    cav = prov["honest_reporting_caveat"].lower()
+    assert "scale caveat" in cav and "z-scored" in cav
+    assert "decouple" in cav
 
 
 @pytest.mark.slow

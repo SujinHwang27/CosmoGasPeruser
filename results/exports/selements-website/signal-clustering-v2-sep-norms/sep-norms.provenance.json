@@ -1,0 +1,44 @@
+{
+  "export_request_slug": "signal-clustering-v2-sep-norms",
+  "consumer": "selements-website",
+  "producing_function": "src.core.export.export_signalclustering_v2_sep_norms",
+  "consumer_facing_filenames": [
+    "sep-norms.csv",
+    "sep-norms-summary.csv"
+  ],
+  "export_timestamp": "2026-06-23T11:32:22",
+  "git": {
+    "commit": "9eb621e",
+    "branch": "service/data-export",
+    "dirty": "True",
+    "timestamp": "2026-06-23T11:32:22"
+  },
+  "source_data_paths": {
+    "wavelet": "data/feature_discovery/fingerprints_wavelet.npy",
+    "raw": "data/feature_discovery/fingerprints_raw.npy"
+  },
+  "source_md5_verified": {
+    "wavelet": "b7160641e12650c0e536cb510690f12d",
+    "raw": "c39fcdfd81ed1c7bdbcad7348c385b35"
+  },
+  "version_pin": "v0.4-clustering-v2 (branch feature/signal-clustering-v2); each source array md5 verified equal to git show v0.4-clustering-v2:dvc.lock probe-stage outs",
+  "producing_stage": "probe (scripts/run_probe.py --run both -> src/core/probe.py); RBF micro-probing -> 24-dim separability vector per sightline",
+  "quantity": "per-sightline L2 norm of the 24-dim separability vector (np.linalg.norm axis=1), matching run_probe.py plot_separability_vector_norms",
+  "units": "dimensionless (SVM signed decision-distance space)",
+  "n_sightlines": 16384,
+  "summary": {
+    "wavelet": {
+      "median": 2.041028965939373,
+      "mean": 1.9589313820061942,
+      "std": 0.6735298036988631
+    },
+    "raw": {
+      "median": 1.6243695399367382,
+      "mean": 1.5622546064461453,
+      "std": 0.7977997876682592
+    }
+  },
+  "source_lineage": "Sherwood simulation suite (Bolton+2017), z=0.3 snapshot, 60 cMpc/h box; separability vectors from signal-clustering-v2 track",
+  "figure_caption": "Per-sightline L2 norm of the 24-dim RBF micro-probing separability vector, wavelet vs raw run (Sherwood z=0.3, n=16384 each): wavelet norms are larger and tighter (median 2.04 vs 1.62), but this gap is partly a feature-scaling artifact (z-scored wavelet vs bounded raw input) and does NOT mean wavelet separates feedback better - downstream RF accuracy decouples from norm magnitude.",
+  "honest_reporting_caveat": "Per-sightline L2 norm of the 24-dim separability vector (RBF micro-probing signed decision distances), signal-clustering-v2 track (v0.4-clustering-v2). EMPIRICAL OBSERVATION: the wavelet run yields larger-magnitude, tighter-spread norms than the raw run (median 2.04 vs 1.62; std 0.67 vs 0.80; raw has a longer low-norm tail); n=16384 each. SCALE CAVEAT (mandatory): the two runs probe DIFFERENTLY-SCALED inputs through the same RBF SVM - the wavelet input is per-level z-scored (unit-variance per DWT level) while the raw input is bounded absorption A = clip(1-F, 0, 1), un-standardized. Because the separability-vector components ARE the SVM decision_function values (and gamma='scale' adapts to each input's variance), the wavelet>raw norm gap is partly an artifact of input feature scaling, NOT evidence of intrinsically greater class separability. INTERPRETATION CAVEAT: norm magnitude does not track class-discrimination accuracy. (i) The project's own clustering record shows the largest-norm sightlines are the rare 'signal-island' clusters where the wavelet and raw representations DISAGREE (cross-run overlap only 20-33%), i.e. representation-unstable, not better-separated ([D-13], signal-clustering-v2 LEDGER section 5). (ii) The downstream Random Forest baselines decouple from norm magnitude: the larger-norm representation (wavelet) does NOT yield the more accurate classifier - raw flux reaches the v0.2 global baseline (~0.451 test acc), matching or exceeding every db8 wavelet RF variant. Do NOT caption this as 'wavelet separates feedback better.' Descriptive distribution of a scale-dependent derived quantity on one z=0.3 Sherwood snapshot under two non-matched preprocessing pipelines; not a classifier benchmark and not an intrinsic-separability comparison."
+}
