@@ -1,0 +1,350 @@
+{
+  "verdict": "NULL",
+  "reading": "Content-clusters do NOT order into a monotone/separated/stable absorption gradient: clusters not distributionally separated on M1 (G-b); ordering does not survive raw-vs-wavelet (X). v1's Void/Forest/Dense labels are not supported by measured per-cluster absorption at K=5.",
+  "n_sightlines": 65536,
+  "raw_summary_arm": {
+    "gradient": {
+      "m1_order": [
+        2,
+        0,
+        4,
+        3,
+        1
+      ],
+      "spearman_vs_m1rank": {
+        "depth_mean": 1.0,
+        "saturated_frac": 0.9747,
+        "total_ew": 1.0,
+        "line_count": 0.6,
+        "A6_energy": 1.0
+      },
+      "n_metrics_rho_ge_0.9": 4,
+      "ks_adjacent_m1": [
+        0.2543,
+        0.8642,
+        0.9897,
+        1.0
+      ],
+      "n_adjacencies_ks_ge_0.2": 4,
+      "G_a_pass": true,
+      "G_b_pass": true
+    }
+  },
+  "wavelet_arm": {
+    "gradient": {
+      "m1_order": [
+        0,
+        2,
+        4,
+        3,
+        1
+      ],
+      "spearman_vs_m1rank": {
+        "depth_mean": 1.0,
+        "saturated_frac": 0.7071,
+        "total_ew": 1.0,
+        "line_count": 0.9487,
+        "A6_energy": 1.0
+      },
+      "n_metrics_rho_ge_0.9": 4,
+      "ks_adjacent_m1": [
+        0.0557,
+        0.1917,
+        0.0199,
+        0.9994
+      ],
+      "n_adjacencies_ks_ge_0.2": 1,
+      "G_a_pass": true,
+      "G_b_pass": false
+    }
+  },
+  "cross_representation": {
+    "matched_b_for_each_a": [
+      0,
+      1,
+      0,
+      1,
+      2
+    ],
+    "matched_mass_fraction": 0.4956,
+    "matched_median_m1_spearman": 0.9487,
+    "X_pass": false
+  },
+  "per_cluster": {
+    "raw_summary": {
+      "0": {
+        "size": 35285,
+        "mean_1mF": {
+          "median": 0.019272419774614268,
+          "iqr": 0.013494067520820085
+        },
+        "depth_mean": {
+          "median": 0.037820118399916766,
+          "iqr": 0.018917542305790756
+        },
+        "saturated_frac": {
+          "median": 0.0,
+          "iqr": 0.0
+        },
+        "total_ew": {
+          "median": 0.5532528400986924,
+          "iqr": 0.3876110368582163
+        },
+        "line_count": {
+          "median": 52.0,
+          "iqr": 7.0
+        },
+        "A6_energy": {
+          "median": 4.307492237964883,
+          "iqr": 8.058809983039447
+        }
+      },
+      "1": {
+        "size": 30,
+        "mean_1mF": {
+          "median": 0.7937677087978152,
+          "iqr": 0.22513032133103372
+        },
+        "depth_mean": {
+          "median": 0.9810026552460754,
+          "iqr": 0.03896807770696664
+        },
+        "saturated_frac": {
+          "median": 0.559814453125,
+          "iqr": 0.4345703125
+        },
+        "total_ew": {
+          "median": 22.807418906376995,
+          "iqr": 6.4980969343177115
+        },
+        "line_count": {
+          "median": 86.5,
+          "iqr": 50.75
+        },
+        "A6_energy": {
+          "median": 1381.586258331656,
+          "iqr": 647.6343022227463
+        }
+      },
+      "2": {
+        "size": 24431,
+        "mean_1mF": {
+          "median": 0.01324200809716317,
+          "iqr": 0.01121073599431457
+        },
+        "depth_mean": {
+          "median": 0.03416891091753273,
+          "iqr": 0.022992605703027157
+        },
+        "saturated_frac": {
+          "median": 0.0,
+          "iqr": 0.0
+        },
+        "total_ew": {
+          "median": 0.3799724569034568,
+          "iqr": 0.3219454380591338
+        },
+        "line_count": {
+          "median": 40.0,
+          "iqr": 9.0
+        },
+        "A6_energy": {
+          "median": 2.2464409609510643,
+          "iqr": 5.5908512600097025
+        }
+      },
+      "3": {
+        "size": 134,
+        "mean_1mF": {
+          "median": 0.23556836074122806,
+          "iqr": 0.1552763179269207
+        },
+        "depth_mean": {
+          "median": 0.5933821350456439,
+          "iqr": 0.2515405101300546
+        },
+        "saturated_frac": {
+          "median": 0.1123046875,
+          "iqr": 0.084228515625
+        },
+        "total_ew": {
+          "median": 6.756570517315807,
+          "iqr": 4.446183167086141
+        },
+        "line_count": {
+          "median": 42.0,
+          "iqr": 15.0
+        },
+        "A6_energy": {
+          "median": 300.7218911158237,
+          "iqr": 236.99622994863873
+        }
+      },
+      "4": {
+        "size": 5656,
+        "mean_1mF": {
+          "median": 0.04856559500494462,
+          "iqr": 0.014303922910039076
+        },
+        "depth_mean": {
+          "median": 0.08622997311261171,
+          "iqr": 0.07446772989026755
+        },
+        "saturated_frac": {
+          "median": 0.017578125,
+          "iqr": 0.01220703125
+        },
+        "total_ew": {
+          "median": 1.3935722695884678,
+          "iqr": 0.4114834490819881
+        },
+        "line_count": {
+          "median": 49.0,
+          "iqr": 11.0
+        },
+        "A6_energy": {
+          "median": 35.67296185314539,
+          "iqr": 21.090104638350294
+        }
+      }
+    },
+    "wavelet": {
+      "0": {
+        "size": 32206,
+        "mean_1mF": {
+          "median": 0.016802507912226018,
+          "iqr": 0.014822443525065017
+        },
+        "depth_mean": {
+          "median": 0.03666159449727824,
+          "iqr": 0.023011439438908682
+        },
+        "saturated_frac": {
+          "median": 0.0,
+          "iqr": 0.0
+        },
+        "total_ew": {
+          "median": 0.4823803586956791,
+          "iqr": 0.42529072803835133
+        },
+        "line_count": {
+          "median": 48.0,
+          "iqr": 11.0
+        },
+        "A6_energy": {
+          "median": 3.508296616611135,
+          "iqr": 8.592488735006617
+        }
+      },
+      "1": {
+        "size": 68,
+        "mean_1mF": {
+          "median": 0.5322420168337973,
+          "iqr": 0.35277234071590957
+        },
+        "depth_mean": {
+          "median": 0.9002127773930872,
+          "iqr": 0.15908427127890634
+        },
+        "saturated_frac": {
+          "median": 0.30224609375,
+          "iqr": 0.3155517578125
+        },
+        "total_ew": {
+          "median": 15.252947235616979,
+          "iqr": 10.132978712031342
+        },
+        "line_count": {
+          "median": 58.5,
+          "iqr": 34.5
+        },
+        "A6_energy": {
+          "median": 786.6045384850104,
+          "iqr": 742.698334628011
+        }
+      },
+      "2": {
+        "size": 28265,
+        "mean_1mF": {
+          "median": 0.018309543558416422,
+          "iqr": 0.01592138615678889
+        },
+        "depth_mean": {
+          "median": 0.038874260330134434,
+          "iqr": 0.023814993391733673
+        },
+        "saturated_frac": {
+          "median": 0.0,
+          "iqr": 0.00244140625
+        },
+        "total_ew": {
+          "median": 0.5256490332147008,
+          "iqr": 0.45692249747283464
+        },
+        "line_count": {
+          "median": 48.0,
+          "iqr": 11.0
+        },
+        "A6_energy": {
+          "median": 4.204071967933019,
+          "iqr": 10.048633039250202
+        }
+      },
+      "3": {
+        "size": 3100,
+        "mean_1mF": {
+          "median": 0.024449426360889256,
+          "iqr": 0.019778169792943782
+        },
+        "depth_mean": {
+          "median": 0.04841542687229505,
+          "iqr": 0.028444677464525413
+        },
+        "saturated_frac": {
+          "median": 0.0,
+          "iqr": 0.00927734375
+        },
+        "total_ew": {
+          "median": 0.7031144479944553,
+          "iqr": 0.5679550314631197
+        },
+        "line_count": {
+          "median": 50.0,
+          "iqr": 10.0
+        },
+        "A6_energy": {
+          "median": 8.3188985426013,
+          "iqr": 16.914700766903355
+        }
+      },
+      "4": {
+        "size": 1897,
+        "mean_1mF": {
+          "median": 0.02444139944001679,
+          "iqr": 0.01932662928665042
+        },
+        "depth_mean": {
+          "median": 0.04706579106474769,
+          "iqr": 0.027268638779659495
+        },
+        "saturated_frac": {
+          "median": 0.0,
+          "iqr": 0.0087890625
+        },
+        "total_ew": {
+          "median": 0.7028869410219085,
+          "iqr": 0.555962725499576
+        },
+        "line_count": {
+          "median": 50.0,
+          "iqr": 12.0
+        },
+        "A6_energy": {
+          "median": 7.870427037272467,
+          "iqr": 16.57435291138746
+        }
+      }
+    }
+  },
+  "ceiling_claim": "A measured absorption gradient supports 'clusters sort by absorption strength'; it does NOT establish 'dense gas vs void' (no halo/density catalog). Labels remain interpretive even on PASS."
+}

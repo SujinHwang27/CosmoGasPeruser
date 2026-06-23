@@ -144,6 +144,40 @@ per-sightline metrics through the canonical loader order and assert
 `len == labels.shape[0]` + class-block alignment. Misalignment → KILL.
 
 ## 8. Status
-SCAFFOLDED → executing. Owner: support-researcher (per PI dispatch). Two new
-metric fns in `src/core/`, `scripts/run_cluster_env_gradient.py`, one figure, the
-Spearman/KS gradient test, one D-XX entry. Report observed ρ/KS BEFORE narrative.
+RUN & CLOSED — **NULL (informative)**, 2026-06-23. Implemented in
+`src/core/env_metrics.py` + `src/core/cluster_env_probe.py`, driven by
+`scripts/run_cluster_env_gradient.py`; outputs in `results/cluster_environment_gradient/`.
+
+## 9. [D-01] — Outcome: NULL (pre-committed valid end state)
+
+Observed (K=5, seed=42, 65,536 sightlines; numbers before narrative):
+
+- **Wavelet arm** (512-dim D3–D6+A6 of A=1−F, standardized — the REAL test;
+  noisy D1/D2 dropped per v1 line 220; an earlier full-2048-dim run collapsed
+  99.97% into one cluster and was discarded as degenerate):
+  - cluster sizes 32206 / 28265 / 3100 / 1897 / **68** (largest 49% — non-degenerate).
+  - **G-a (monotonicity) PASS:** Spearman(M1-rank, cluster-median Mj) =
+    depth_mean 1.00, total_ew 1.00, A6_energy 1.00, line_count 0.95,
+    saturated_frac 0.71 → 4/5 ≥ 0.9.
+  - **G-b (separation) FAIL:** the four low-absorption clusters (median 1−F
+    0.017–0.024) are NOT distributionally distinct (adjacent-cluster KS ≈ 0
+    between them); only the tiny 68-sightline saturated cluster (median 1−F 0.53)
+    stands apart. Monotone ordering YES; discrete environment strata NO.
+- **Cross-representation (X) FAIL on membership:** raw-summary vs wavelet arms
+  agree on the absorption ORDERING (matched-cluster median-M1 Spearman 0.95) but
+  only ~50% of sightlines co-cluster (matched mass 0.496 < 0.60 bar). Ordering
+  stable; membership not (echoes the v2 cross-run overlap instability).
+- **Raw-summary arm** (sanity floor, near-circular — clusters on the absorption
+  scalars): G-a + G-b pass trivially; sizes 35285/24431/5656/134/30 — same shape:
+  two huge low-absorption bulks + tiny saturated groups.
+
+**VERDICT — NULL.** The absorption axis IS a real organizing dimension (clusters
+order monotonically by it), but the population is overwhelmingly ONE low-absorption
+bulk (~92% of sightlines in two clusters, median 1−F ≈ 0.018) plus a thin
+saturated/DLA tail (68 sightlines, median 0.53) — NOT five discrete, separated,
+representation-stable dense→void environment classes. **v1's "Void/Forest/Dense"
+labels are NOT supported as measured discrete strata.** CEILING (binding): even the
+real monotone ordering supports only "sightlines vary in absorption strength," not
+"dense gas cloud vs cosmic void" (no halo/density catalog). Consistent with v1's
+77%-bulk and the EW-distribution overlap. NOT a paper trigger; parked verdict
+unchanged.
