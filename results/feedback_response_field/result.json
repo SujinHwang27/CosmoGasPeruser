@@ -1,0 +1,36 @@
+{
+  "verdict": "NULL",
+  "reading": "The counterfactual response field does NOT clear the bar: response magnitude largely restates total absorption / the separability vector (D) \u2014 not a new axis. It is not a distinct embedding axis worth building out at this stage.",
+  "n_sightlines": 16384,
+  "noiseless_data": "S/N=inf \u2014 R_c is the exact physical feedback response",
+  "A_geometry_binding": {
+    "median_d_same": 1.8678,
+    "median_d_cross": 4.1199,
+    "frac_same_lt_cross": 0.9583,
+    "pass": true
+  },
+  "B_concentration": {
+    "top10pct_response_share": 0.2562,
+    "pass": false
+  },
+  "C_directionality": {
+    "posfrac_responding_px": {
+      "2": 0.1571,
+      "3": 0.2898,
+      "4": 0.711
+    },
+    "mean_signed_response": {
+      "2": -0.00388,
+      "3": -0.00318,
+      "4": 0.00505
+    },
+    "strongAGN_minus_stellarwind_posfrac_gap": 0.5539,
+    "pass": true
+  },
+  "D_orthogonality": {
+    "spearman_rho4_vs_total_absorption": 0.778,
+    "spearman_rho4_vs_separability_norm": 0.4569,
+    "bar": 0.6,
+    "pass": false
+  }
+}
