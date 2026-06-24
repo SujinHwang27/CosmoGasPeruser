@@ -1,0 +1,85 @@
+{
+  "n_sightlines": 16384,
+  "n_pixels": 2048,
+  "amplitude_s4": {
+    "mean": 0.00505,
+    "iqr": 0.007432,
+    "std": 0.018955,
+    "min": -0.9126,
+    "max": 0.2494,
+    "frac_abs_gt_0p05": 0.00427,
+    "frac_abs_gt_0p1": 0.00226,
+    "frac_abs_gt_0p3": 0.000488,
+    "n_abs_gt_0p3": 8
+  },
+  "extreme_negative_tail_top100": {
+    "mean_s4": -0.1335,
+    "mean_total_abs_of_tail": 0.0385,
+    "overall_mean_total_abs": 0.0216,
+    "note": "if tail total_abs >> overall, the big signed responses live in HIGH-absorption gas (physical); if << overall, they live in the diffuse bulk (suspicious per Nasir+2017)"
+  },
+  "participation_4": {
+    "median_effective_pixels_all": 156.2,
+    "median_effective_pixels_extreme_tail": 360.3,
+    "p10_effective_pixels_all": 89.4,
+    "median_top5px_share_of_signed_sum_all": 0.126,
+    "median_top5px_share_extreme_tail": 0.036,
+    "note": "effective pixels >> 5 and top-5 share small => NOT a few-pixel artifact"
+  },
+  "SR_calibration_1": {
+    "SR_observed": 0.832,
+    "iqr_observed": 0.007432,
+    "iqr_signperm_null": 0.001082,
+    "sign_coherence_ratio": 6.87,
+    "SR_bootstrap_mean": 0.833,
+    "SR_bootstrap_ci95": [
+      0.79,
+      0.878
+    ],
+    "SR_ci_excludes_0p5": true,
+    "note": "coherence_ratio >> 1 => within-sightline pixel signs are COHERENT (real direction), not random cancellation; ~1 => signed mean is noise"
+  },
+  "variance_decomposition_2_5": {
+    "r2_linear_total_abs": 0.018,
+    "r2_binned_nonlinear_total_abs": 0.015,
+    "residual_var_fraction_after_nonlinear": 0.985,
+    "spearman_s4_total_abs": 0.41,
+    "cond_iqr_by_absorption_decile_lowtohigh": [
+      0.00184,
+      0.00299,
+      0.00395,
+      0.00471,
+      0.00606,
+      0.00763,
+      0.0093,
+      0.01093,
+      0.01375,
+      0.01877
+    ],
+    "note": "if residual_var_fraction is large AND cond_iqr does not vanish across deciles, the spread is NOT just an absorption fan"
+  },
+  "cross_recipe_7": {
+    "2": {
+      "iqr": 0.002569,
+      "sign_coherence_ratio": 9.62,
+      "spearman_vs_total_abs": -0.483,
+      "mean": -0.003877
+    },
+    "3": {
+      "iqr": 0.003732,
+      "sign_coherence_ratio": 7.75,
+      "spearman_vs_total_abs": -0.216,
+      "mean": -0.003177
+    },
+    "4": {
+      "iqr": 0.007432,
+      "sign_coherence_ratio": 6.75,
+      "spearman_vs_total_abs": 0.41,
+      "mean": 0.00505
+    }
+  },
+  "magnitude_recompute_8": {
+    "spearman_normR4_vs_total_abs": 0.778,
+    "expected_from_predecessor_ledger": 0.778
+  }
+}

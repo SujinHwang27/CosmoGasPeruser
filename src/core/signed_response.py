@@ -229,6 +229,143 @@ def run_signed_response_probe(out_dir: Path, seed: int = _SEED) -> Dict[str, obj
     return result
 
 
+def verify_signed_response_pass(out_dir: Path, seed: int = _SEED) -> Dict[str, object]:
+    """Adversarial verification of the [D-01] PASS against the defense-panel attacks.
+
+    Answers, numbers-first (the verdict may DOWNGRADE the PASS):
+      #1  SR-bar calibration: sign-permutation null (destroy within-sightline sign
+          coherence) + bootstrap CI on SR.
+      #4  few-pixel domination: participation ratio (effective # pixels) + top-5
+          pixel share of the signed sum, for the bulk and the extreme tail.
+      #2/#5 variance decomposition vs total absorption (linear AND nonlinear/binned)
+          + conditional spread by absorption decile (the 'fan').
+      #7  cross-recipe: coherence + absorption coupling for c in {2,3,4}.
+      #8  magnitude recompute: Spearman(||R_4||, total_abs) in-session (expect ~0.778).
+    """
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    rng = np.random.default_rng(seed)
+
+    loader = SignalClusteringData()
+    fpc, _y = loader.load_flux_per_class()
+    F = {c: np.asarray(fpc[c - 1], dtype=np.float64) for c in (1, 2, 3, 4)}
+    n, npix = F[1].shape
+    R = {c: F[c] - F[1] for c in (2, 3, 4)}
+    s = {c: R[c].mean(axis=1) for c in (2, 3, 4)}
+    total_abs = (1.0 - F[1]).mean(axis=1)
+    mean_s = {c: float(s[c].mean()) for c in (2, 3, 4)}
+    sep = abs(mean_s[4] - mean_s[2])
+    s4 = s[4]
+
+    def _iqr_(a):
+        q75, q25 = np.percentile(a, [75, 25])
+        return float(q75 - q25)
+
+    out: Dict[str, object] = {"n_sightlines": n, "n_pixels": npix}
+
+    # --- amplitude of s4 + the extreme negative tail the panel flagged (#3/#4) ---
+    ext = np.argsort(s4)[:100]                       # 100 most-negative s4
+    out["amplitude_s4"] = {
+        "mean": round(float(s4.mean()), 6), "iqr": round(_iqr_(s4), 6),
+        "std": round(float(s4.std()), 6),
+        "min": round(float(s4.min()), 4), "max": round(float(s4.max()), 4),
+        "frac_abs_gt_0p05": round(float(np.mean(np.abs(s4) > 0.05)), 5),
+        "frac_abs_gt_0p1": round(float(np.mean(np.abs(s4) > 0.1)), 5),
+        "frac_abs_gt_0p3": round(float(np.mean(np.abs(s4) > 0.3)), 6),
+        "n_abs_gt_0p3": int(np.sum(np.abs(s4) > 0.3)),
+    }
+    out["extreme_negative_tail_top100"] = {
+        "mean_s4": round(float(s4[ext].mean()), 4),
+        "mean_total_abs_of_tail": round(float(total_abs[ext].mean()), 4),
+        "overall_mean_total_abs": round(float(total_abs.mean()), 4),
+        "note": "if tail total_abs >> overall, the big signed responses live in HIGH-"
+                "absorption gas (physical); if << overall, they live in the diffuse "
+                "bulk (suspicious per Nasir+2017)",
+    }
+
+    # --- #4 few-pixel domination: participation ratio + top-5 signed share ---
+    absR = np.abs(R[4])
+    pr = (absR.sum(axis=1) ** 2) / np.maximum((R[4] ** 2).sum(axis=1), 1e-30)
+    signed_sum = R[4].sum(axis=1)                    # = s4 * npix
+    top5_idx = np.argsort(absR, axis=1)[:, -5:]
+    top5_signed = np.take_along_axis(R[4], top5_idx, axis=1).sum(axis=1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        frac_top5 = np.where(np.abs(signed_sum) > 1e-9, top5_signed / signed_sum, np.nan)
+    out["participation_4"] = {
+        "median_effective_pixels_all": round(float(np.median(pr)), 1),
+        "median_effective_pixels_extreme_tail": round(float(np.median(pr[ext])), 1),
+        "p10_effective_pixels_all": round(float(np.percentile(pr, 10)), 1),
+        "median_top5px_share_of_signed_sum_all": round(float(np.nanmedian(frac_top5)), 3),
+        "median_top5px_share_extreme_tail": round(float(np.nanmedian(frac_top5[ext])), 3),
+        "note": "effective pixels >> 5 and top-5 share small => NOT a few-pixel artifact",
+    }
+
+    # --- #1 SR calibration: sign-permutation null + bootstrap CI ---
+    signs = rng.integers(0, 2, size=R[4].shape) * 2 - 1
+    s4_signperm = (absR * signs).mean(axis=1)        # incoherent-sign null
+    iqr_obs, iqr_null = _iqr_(s4), _iqr_(s4_signperm)
+    coherence_ratio = iqr_obs / iqr_null if iqr_null > 0 else float("inf")
+    boot = np.empty(1000)
+    for b in range(1000):
+        bi = rng.integers(0, n, n)
+        sepb = abs(s4[bi].mean() - s[2][bi].mean())
+        boot[b] = _iqr_(s4[bi]) / sepb if sepb > 0 else np.nan
+    out["SR_calibration_1"] = {
+        "SR_observed": round(iqr_obs / sep, 3),
+        "iqr_observed": round(iqr_obs, 6),
+        "iqr_signperm_null": round(iqr_null, 6),
+        "sign_coherence_ratio": round(coherence_ratio, 2),
+        "SR_bootstrap_mean": round(float(np.nanmean(boot)), 3),
+        "SR_bootstrap_ci95": [round(float(np.nanpercentile(boot, 2.5)), 3),
+                              round(float(np.nanpercentile(boot, 97.5)), 3)],
+        "SR_ci_excludes_0p5": bool(np.nanpercentile(boot, 2.5) > 0.5),
+        "note": "coherence_ratio >> 1 => within-sightline pixel signs are COHERENT "
+                "(real direction), not random cancellation; ~1 => signed mean is noise",
+    }
+
+    # --- #2/#5 variance decomposition: linear + nonlinear(binned) + the fan ---
+    slope, intercept = np.polyfit(total_abs, s4, 1)
+    r2_lin = 1.0 - np.var(s4 - (slope * total_abs + intercept)) / np.var(s4)
+    edges = np.percentile(total_abs, np.linspace(0, 100, 11))
+    binidx = np.clip(np.digitize(total_abs, edges[1:-1]), 0, 9)
+    cond_mean = np.array([s4[binidx == b].mean() for b in range(10)])
+    cond_iqr = np.array([_iqr_(s4[binidx == b]) for b in range(10)])
+    r2_bin = 1.0 - np.var(s4 - cond_mean[binidx]) / np.var(s4)
+    out["variance_decomposition_2_5"] = {
+        "r2_linear_total_abs": round(float(r2_lin), 3),
+        "r2_binned_nonlinear_total_abs": round(float(r2_bin), 3),
+        "residual_var_fraction_after_nonlinear": round(float(1 - r2_bin), 3),
+        "spearman_s4_total_abs": round(_spearman(s4, total_abs), 3),
+        "cond_iqr_by_absorption_decile_lowtohigh": [round(float(x), 5) for x in cond_iqr],
+        "note": "if residual_var_fraction is large AND cond_iqr does not vanish across "
+                "deciles, the spread is NOT just an absorption fan",
+    }
+
+    # --- #7 cross-recipe coherence + coupling ---
+    cross = {}
+    for c in (2, 3, 4):
+        sp = (np.abs(R[c]) * (rng.integers(0, 2, size=R[c].shape) * 2 - 1)).mean(axis=1)
+        cr = _iqr_(s[c]) / _iqr_(sp) if _iqr_(sp) > 0 else float("inf")
+        cross[str(c)] = {
+            "iqr": round(_iqr_(s[c]), 6),
+            "sign_coherence_ratio": round(cr, 2),
+            "spearman_vs_total_abs": round(_spearman(s[c], total_abs), 3),
+            "mean": round(mean_s[c], 6),
+        }
+    out["cross_recipe_7"] = cross
+
+    # --- #8 magnitude recompute (in-session) ---
+    rho4_mag = np.linalg.norm(R[4], axis=1)
+    out["magnitude_recompute_8"] = {
+        "spearman_normR4_vs_total_abs": round(_spearman(rho4_mag, total_abs), 3),
+        "expected_from_predecessor_ledger": 0.778,
+    }
+
+    with open(out_dir / "verification.json", "w") as fh:
+        json.dump(out, fh, indent=2)
+    return out
+
+
 def _write_figure(path, s, resid, total_abs, mean_s, result):
     import matplotlib
     matplotlib.use("Agg")

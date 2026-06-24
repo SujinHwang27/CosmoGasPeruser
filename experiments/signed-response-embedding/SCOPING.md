@@ -235,3 +235,57 @@ NO claim about it — it is an interpretive/embedding axis, not a classifier. Pe
 this PASS authorizes ONLY the SCOPING of a future signed-response embedding track,
 defense-panel-gated BEFORE any compute commitment; it does not authorize that
 track's execution. NOT a paper trigger; parked verdict unchanged.
+
+### Verification addendum — defense-panel adversarial pass (2026-06-24)
+
+The PASS was stress-tested by the `defense-panel` (verdict: NEEDS WORK, named the
+few-pixel test [#4] + SR calibration [#1] as the deciders). All decisive checks were
+computed (`src/core/signed_response.py::verify_signed_response_pass` →
+`results/signed_response_embedding/verification.json`). **The PASS SURVIVES**; the
+panel forced the right computations and they came back in favor of the finding, with
+one correction and one refinement:
+
+- **#1 SR calibration — REFUTED.** Sign-permutation null (destroy within-sightline
+  pixel-sign coherence): IQR(s_4) collapses 0.00743 → 0.00108, **sign-coherence
+  ratio = 6.9×**; the signed mean is 7× larger than random sign-cancellation → the
+  per-sightline signs are physically COHERENT, not a constant+noise cloud. SR
+  bootstrap CI **[0.79, 0.88] excludes 0.5** → the bar is cleared with margin, not a
+  small-denominator fluke.
+- **#4 few-pixel domination — REFUTED.** Participation ratio (effective contributing
+  pixels) = **156 (all) / 360 (extreme tail)**; top-5 pixels carry only **12.6% /
+  3.6%** of the signed sum. The response is spatially distributed; "per-sightline
+  axis" is not a per-line-core artifact. (The panel's #4 premise — that a few pixels
+  could drive a *mean* of −0.85 — is also arithmetically impossible for a mean over
+  2048 bounded pixels.)
+- **#3 unphysical low-absorption tail — REFUTED (panel was fed a wrong figure
+  reading).** The 100 most-negative-s_4 sightlines sit at total_abs **0.0385 vs
+  0.0216 overall** — *above*-average absorption, NOT the diffuse bulk. Consistent
+  with Nasir/Bolton+2017 (feedback acts in overdense gas). The extremes (min s_4
+  −0.91; only 8 sightlines with |s_4|>0.3) are rare, coherent whole-region flips.
+- **#7 c=4-only / forking path — STRENGTHENED.** All three recipes show coherent
+  signs (ratio 6.8–9.6×) and within-recipe spread scaling with feedback strength
+  (IQR 0.0026 → 0.0037 → 0.0074); the absorption coupling **sign-flips**
+  Spearman −0.48 (StellarWind: adds more where there's more gas) → +0.41 (StrongAGN:
+  removes more where there's more gas). A physically-coherent recipe-ordered pattern
+  noise cannot produce.
+- **#8 magnitude 0.778 unverifiable — CONFIRMED in-session.** Spearman(‖R_4‖,
+  total_abs) recomputed = **0.778**, exactly the predecessor ledger value → the
+  0.778→0.41 sign-decorrelation narrative is verified, not recalled.
+- **#2/#5 orthogonality leak — MOSTLY REFUTED, one valid REFINEMENT.** Total
+  absorption explains only **1.5% of Var(s_4)** (nonlinear/binned; linear 1.8%) →
+  the DIRECTION is 98.5% orthogonal to absorption, far past the bar. BUT the
+  conditional IQR of s_4 grows **10× across absorption deciles** (0.0018 → 0.0188) —
+  the panel's "fan" is real: the *amplitude* of the directional spread is
+  heteroscedastic in absorption. **Honest refinement:** the SIGN/direction is
+  orthogonal to absorption strength; the MAGNITUDE of the signed response is not
+  (you can only add/remove absorption where gas exists). This characterizes the axis;
+  it does not dissolve it.
+
+**Post-verification disposition: PASS CONFIRMED (refined).** The signed-response
+direction is a real, coherent, recipe-ordered, physically-sensible per-sightline
+axis whose central tendency is orthogonal to absorption strength and whose amplitude
+is gas-gated. The defense-panel gate for *scoping* a future embedding track is met.
+Open items the panel raised for that downstream track (NOT for this probe): a full
+P_F(k) orthogonality test (#10, beyond scalar mean-absorption), a de-entangled sign
+feature (#9, median/sign-fraction corroboration), and the heteroscedastic-amplitude
+handling (#5) in any learned embedding. Ceiling and parked verdict unchanged.
