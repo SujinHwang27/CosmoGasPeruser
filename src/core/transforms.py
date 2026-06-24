@@ -1,8 +1,67 @@
 import numpy as np
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Tuple
 from scipy.fftpack import dct
 import pywt
 from src.core.base import BaseTransformer
+
+
+class FluxPowerSpectrumTransform(BaseTransformer):
+    """Per-sightline flux power spectrum P_F(k), the canonical Lyα-forest sufficient
+    statistic feedback modifies ([D-13]).
+
+    Scientific purpose
+    ------------------
+    Computes, per sightline, P_F(k) = |rFFT(delta_F)|^2 on the flux contrast
+    delta_F = F / <F>_global - 1, then log-bins it geometrically in k. <F>_global is
+    the GLOBAL mean flux over the whole input array (a single scalar) — NOT a per-class
+    or per-sightline mean: a per-class mean-flux would leak the feedback-recipe label
+    (the [D-13]/confounder), so any cross-recipe use must pass one recipe's flux at a
+    time and normalize by that recipe's own global mean.
+
+    A power spectrum is phase/sign-insensitive by construction, so P_F(k) cannot encode
+    the SIGN of a per-pixel flux change — which is exactly why the signed-response axis
+    is, in principle, orthogonal to this basis (the Gate-1 test measures whether that
+    holds empirically).
+
+    Output is log10(mean power per geometric k-bin); only populated bins are emitted
+    (k=0 / DC is dropped). Set `dv_kms` to attach a physical k-axis (rad / (km/s)).
+    """
+
+    def __init__(self, n_bins: int = 64, dv_kms: Optional[float] = None,
+                 log_power: bool = True) -> None:
+        self.n_bins = n_bins
+        self.dv_kms = dv_kms
+        self.log_power = log_power
+        self.k_bin_centers_: Optional[np.ndarray] = None   # populated by fit_transform
+
+    def fit_transform(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+        X = np.asarray(X, dtype=np.float64)                # shape: (n_sightlines, n_pix)
+        if not np.isfinite(X).all():
+            raise ValueError("FluxPowerSpectrumTransform: X contains NaN/Inf")
+        n, npix = X.shape
+        mean_F = float(X.mean())                           # <F>_global, a scalar
+        if mean_F == 0.0:
+            raise ValueError("FluxPowerSpectrumTransform: global mean flux is zero")
+        delta = X / mean_F - 1.0                            # flux contrast
+        power = np.abs(np.fft.rfft(delta, axis=1)) ** 2     # shape: (n, npix//2 + 1)
+        power = power[:, 1:]                                # drop k=0 (DC)
+        kidx = np.arange(1, power.shape[1] + 1)             # integer wavenumbers 1..npix/2
+
+        edges = np.geomspace(1.0, float(power.shape[1]), self.n_bins + 1)
+        binid = np.clip(np.digitize(kidx, edges) - 1, 0, self.n_bins - 1)
+        cols, centers = [], []
+        for b in range(self.n_bins):
+            m = binid == b
+            if not m.any():
+                continue
+            cols.append(power[:, m].mean(axis=1))           # mean power in the bin
+            centers.append(float(kidx[m].mean()))
+        out = np.column_stack(cols)                         # shape: (n, n_populated_bins)
+        centers_arr = np.asarray(centers, dtype=np.float64)
+        if self.dv_kms is not None:                         # physical k = 2*pi*idx/(npix*dv)
+            centers_arr = 2.0 * np.pi * centers_arr / (npix * self.dv_kms)
+        self.k_bin_centers_ = centers_arr
+        return np.log10(out + 1e-30) if self.log_power else out
 
 class PCATransform(BaseTransformer):
     def __init__(self, n_components: int = 2, centered: bool = False):

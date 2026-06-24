@@ -1,6 +1,6 @@
 # TRACK DESIGN SPEC — signed-response-embedding (plan-of-record)
 
-**Status:** SCOPED-BUT-DEFERRED (PI worth-ruling + design, 2026-06-24). Execution gated.
+**Status:** SCOPED-BUT-DEFERRED (PI worth-ruling + design, 2026-06-24). **Gate-1 de-risk RUN 2026-06-24 → PASS** (§3.1 outcome below). Execution still gated on user-unpark + defense-panel.
 **Branch:** `exp/signed-response-embedding` (the thin probe lives here; reuse in-place per exFAT policy).
 **Origin:** the word2vec "meaning-from-context" reframe; seed = the defense-panel-VERIFIED
 PASS of the thin probe ([D-01], `SCOPING.md` §10 + Verification addendum).
@@ -145,6 +145,17 @@ leak a false NULL):
 - **NULL (P_F(k) shadow):** RF-OOB R² ≥ 0.30 OR ρ₁ ≥ 0.60 → track NULLs at Gate 1, no embedding built.
 - **CHARACTERIZE (ambiguous):** between bars → proceed only if panel judges the residual-orthogonal
   component worth embedding. Default NULL-leaning.
+
+#### GATE 1 OUTCOME — RUN 2026-06-24 (S0 de-risk) → **PASS**
+Code: `src/core/transforms.py::FluxPowerSpectrumTransform` (new) + `src/core/signed_response.py::gate1_pk_orthogonality`; wrapper `scripts/run_gate1_pk_orthogonality.py`; outputs `results/signed_response_embedding/gate1_pk_orthogonality.json` + `figs/gate1_pk_orthogonality.png`. Δv=2.6365 km/s/px read from disk (`vel.npy`); per-sightline P_F(k) of baseline C1, 52 populated log-k bins, δ_F=F/⟨F⟩_global−1. Target = the amplitude-free net direction (ΣR₄/Σ|R₄| ∈[−1,1]) ⊕ signfrac₄, NEVER raw s₄ (16,248 of 16,384 sightlines have a defined direction; ≥5 responding px).
+
+Numbers (all three pre-committed bars cleared):
+- **ridge-CV R² = 0.022** (PASS < 0.10) — P_F(k) explains 2.2% of direction variance linearly.
+- **RF-OOB R² = 0.030** (PASS < 0.15; NULL ≥ 0.30) — even a nonlinear learner cannot predict the direction from the power spectrum. THE decisive (out-of-sample) statistic.
+- **CCA ρ₁ = 0.324** (PASS < 0.40; NULL ≥ 0.60) — the closest-to-bar metric, but an in-sample canonical correlation over 52 features (upward-biased); the out-of-sample RF-OOB R² is the honest measure and sits far inside PASS.
+- **Robustness — the false-PASS guard:** high-absorption tail (top decile, n=1639, where direction is most robust) RF-OOB R² = **0.034** — essentially identical to the full population → this is NOT a "direction-is-noise-on-the-bulk-so-trivially-unpredictable" false PASS; the direction is orthogonal to P_F(k) even where it is a strong, coherent signal. Direction is uncoupled from total power (Spearman −0.07).
+
+**Verdict PASS:** the amplitude-free feedback-response DIRECTION is orthogonal to the canonical P_F(k) content basis, not just to scalar mean absorption — confirming empirically what phase-blindness predicts a priori (a power spectrum cannot carry the response sign). The signed-response axis is genuinely novel against the field's real content representation. **The track's HARD DECIDER is cleared.** What this does NOT yet establish: that the embedding reveals *incremental structure* (the primary success criterion §4.1, untested — that is S2's job). Per §0.4, Gate-1 PASS returns the open/defer decision to the user (unpark) + a defense-panel execution review; it does NOT auto-open the track.
 
 ### 3.2 GATE 2 — De-entangled sign feature (#9) — construction constraint
 Primary direction features must be amplitude-free; the verified axis must corroborate on them.

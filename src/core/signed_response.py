@@ -366,6 +366,191 @@ def verify_signed_response_pass(out_dir: Path, seed: int = _SEED) -> Dict[str, o
     return out
 
 
+def gate1_pk_orthogonality(out_dir: Path, seed: int = _SEED,
+                           dv_kms: float = 2.636502840371587) -> Dict[str, object]:
+    """GATE 1 (TRACK_SPEC §3.1): is the amplitude-free feedback-RESPONSE DIRECTION
+    orthogonal to the per-sightline flux power spectrum P_F(k) of the baseline?
+
+    Tests whether the SIGN/direction axis is novel against the field's canonical content
+    representation (P_F(k)), not just against scalar mean absorption. The target is the
+    AMPLITUDE-FREE direction (never raw s_4 — the gas-gated magnitude would leak a false
+    correlation through total power). PASS => the axis is orthogonal to content (novel);
+    NULL => it is a P_F(k) shadow and the embedding track closes here at probe cost.
+
+    Pre-committed bars (rule-5 symmetric):
+      PASS : ridge-CV R^2 < 0.10  AND  RF-OOB R^2 < 0.15  AND  CCA rho_1 < 0.40
+      NULL : RF-OOB R^2 >= 0.30  OR  CCA rho_1 >= 0.60
+      else : CHARACTERIZE (default NULL-leaning; panel adjudicates).
+    """
+    from sklearn.linear_model import Ridge
+    from sklearn.model_selection import cross_val_score
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.cross_decomposition import CCA
+    from sklearn.preprocessing import StandardScaler
+
+    from src.core.transforms import FluxPowerSpectrumTransform
+
+    out_dir = Path(out_dir)
+    (out_dir / "figs").mkdir(parents=True, exist_ok=True)
+    rng = np.random.default_rng(seed)
+
+    loader = SignalClusteringData()
+    fpc, _y = loader.load_flux_per_class()
+    F1 = np.asarray(fpc[0], dtype=np.float64)
+    F4 = np.asarray(fpc[3], dtype=np.float64)
+    R4 = F4 - F1
+    total_abs = (1.0 - F1).mean(axis=1)
+
+    # amplitude-free direction features (Gate-2-compliant; scale-invariant net direction)
+    absR = np.abs(R4)
+    l1 = absR.sum(axis=1)
+    dir_unit4 = R4.sum(axis=1) / (l1 + 1e-8)              # in [-1, 1]; net directionality
+    mask = absR > _HIRESP_PX
+    cnt = mask.sum(axis=1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        signfrac4 = np.where(cnt >= 5, ((R4 > 0) & mask).sum(axis=1) / np.maximum(cnt, 1),
+                             np.nan)
+
+    # per-sightline P_F(k) of the BASELINE recipe (the sightline's intrinsic content)
+    pk_tf = FluxPowerSpectrumTransform(n_bins=64, dv_kms=dv_kms)
+    pk1 = pk_tf.fit_transform(F1)                          # shape: (n, n_bins)
+    total_power = (10.0 ** pk1).sum(axis=1)               # un-logged total power per sightline
+
+    # restrict to rows with a defined direction (>=5 responding px; ~99% retained)
+    keep = np.isfinite(signfrac4)
+    X = pk1[keep]
+    y_dir = dir_unit4[keep]
+    Yblock = np.column_stack([dir_unit4[keep], signfrac4[keep]])
+    n_used = int(keep.sum())
+
+    Xs = StandardScaler().fit_transform(X)
+
+    # --- linear: ridge 5-fold CV R^2 predicting the net direction ---
+    ridge = Ridge(alpha=1.0)
+    lin_r2 = float(np.mean(cross_val_score(ridge, Xs, y_dir, cv=5, scoring="r2")))
+
+    # --- nonlinear: RF out-of-bag R^2 (the strong test) ---
+    rf = RandomForestRegressor(n_estimators=200, oob_score=True, n_jobs=-1,
+                               random_state=seed, max_depth=None, min_samples_leaf=20)
+    rf.fit(X, y_dir)
+    rf_oob_r2 = float(rf.oob_score_)
+
+    # --- CCA first canonical correlation between P_F(k) and the direction block ---
+    cca = CCA(n_components=1)
+    xc, yc = cca.fit_transform(Xs, Yblock)
+    rho1 = float(abs(np.corrcoef(xc[:, 0], yc[:, 0])[0, 1]))
+
+    # --- robustness: RF-OOB on the high-absorption tail (top decile) where the
+    #     direction is most robust (guards a noise-driven false PASS on the bulk) ---
+    tail_thr = np.percentile(total_abs, 90.0)
+    tail = keep & (total_abs >= tail_thr)
+    rf_tail = RandomForestRegressor(n_estimators=200, oob_score=True, n_jobs=-1,
+                                    random_state=seed, min_samples_leaf=10)
+    rf_tail.fit(pk1[tail], dir_unit4[tail])
+    rf_oob_tail = float(rf_tail.oob_score_)
+    sp_dir_power = _spearman(dir_unit4[keep], total_power[keep])
+
+    # --- verdict (pre-committed) ---
+    pass_ = (lin_r2 < 0.10) and (rf_oob_r2 < 0.15) and (rho1 < 0.40)
+    null_ = (rf_oob_r2 >= 0.30) or (rho1 >= 0.60)
+    verdict = "PASS" if pass_ else ("NULL" if null_ else "CHARACTERIZE")
+    if verdict == "PASS":
+        reading = (
+            f"GATE 1 PASS: the amplitude-free feedback-response DIRECTION is NOT "
+            f"recoverable from the baseline flux power spectrum (ridge-CV R^2={lin_r2:.3f}, "
+            f"RF-OOB R^2={rf_oob_r2:.3f}, CCA rho_1={rho1:.3f}) — the signed-response axis "
+            f"is orthogonal to the canonical P_F(k) content basis, not just to scalar "
+            f"absorption. The embedding track clears its hard decider; opening it now "
+            f"returns to the user (unpark) + a defense-panel execution review."
+        )
+    elif verdict == "NULL":
+        reading = (
+            f"GATE 1 NULL: the response direction IS recoverable from P_F(k) "
+            f"(RF-OOB R^2={rf_oob_r2:.3f}, CCA rho_1={rho1:.3f}) — the signed axis is a "
+            f"power-spectrum shadow, not a new axis against the field's content "
+            f"representation. The signed-response EMBEDDING line closes here (the scalar "
+            f"directional axis from the probe [D-01] stands on its own); track does not open."
+        )
+    else:
+        reading = (
+            f"GATE 1 CHARACTERIZE (NULL-leaning): partial coupling to P_F(k) "
+            f"(ridge-CV R^2={lin_r2:.3f}, RF-OOB R^2={rf_oob_r2:.3f}, CCA rho_1={rho1:.3f}); "
+            f"between the pre-committed bars. Panel adjudicates whether the "
+            f"residual-orthogonal component is worth embedding."
+        )
+
+    result = {
+        "gate": "1 — P_F(k) orthogonality",
+        "verdict": verdict,
+        "reading": reading,
+        "n_sightlines_total": int(F1.shape[0]),
+        "n_used_direction_defined": n_used,
+        "pk_basis": {"n_bins": int(pk1.shape[1]), "dv_kms": dv_kms,
+                     "normalization": "delta_F = F/<F>_global - 1 on baseline C1"},
+        "linear_ridge_cv_r2": round(lin_r2, 4),
+        "rf_oob_r2": round(rf_oob_r2, 4),
+        "cca_rho1": round(rho1, 4),
+        "bars": {"pass": "ridge_r2<0.10 AND rf_oob<0.15 AND rho1<0.40",
+                 "null": "rf_oob>=0.30 OR rho1>=0.60"},
+        "robustness": {
+            "rf_oob_r2_high_absorption_tail_top10pct": round(rf_oob_tail, 4),
+            "n_tail": int(tail.sum()),
+            "spearman_dir_vs_total_pk_power": round(sp_dir_power, 4),
+            "note": "tail RF-OOB guards against a noise-driven false PASS on the bulk; "
+                    "spearman_dir_vs_total_power checks direction is not coupled to "
+                    "overall power magnitude",
+        },
+    }
+    _write_gate1_figure(out_dir / "figs" / "gate1_pk_orthogonality.png",
+                        X, y_dir, rf, total_power[keep], dir_unit4[keep], result)
+    with open(out_dir / "gate1_pk_orthogonality.json", "w") as fh:
+        json.dump(result, fh, indent=2)
+    return result
+
+
+def _write_gate1_figure(path, X, y_dir, rf, total_power, dir_unit4, result):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    yhat = rf.oob_prediction_ if hasattr(rf, "oob_prediction_") else rf.predict(X)
+    fig, ax = plt.subplots(2, 2, figsize=(13, 9))
+    ax[0, 0].scatter(y_dir, yhat, s=2, alpha=0.15)
+    lim = [min(y_dir.min(), yhat.min()), max(y_dir.max(), yhat.max())]
+    ax[0, 0].plot(lim, lim, "k--", lw=1)
+    ax[0, 0].set_title(f"RF OOB: predict direction from P_F(k) (OOB R^2={result['rf_oob_r2']})")
+    ax[0, 0].set_xlabel("actual net direction (amplitude-free)")
+    ax[0, 0].set_ylabel("OOB predicted from P_F(k)")
+
+    imp = rf.feature_importances_
+    ax[0, 1].bar(np.arange(len(imp)), imp, color="C0")
+    ax[0, 1].set_title("RF feature importance across P_F(k) bins (low-k -> high-k)")
+    ax[0, 1].set_xlabel("P_F(k) bin"); ax[0, 1].set_ylabel("importance")
+
+    ax[1, 0].scatter(total_power, dir_unit4, s=2, alpha=0.15)
+    ax[1, 0].axhline(0.0, color="k", lw=0.8)
+    ax[1, 0].set_xscale("log")
+    ax[1, 0].set_title(f"direction vs total P_F(k) power "
+                       f"(Spearman={result['robustness']['spearman_dir_vs_total_pk_power']})")
+    ax[1, 0].set_xlabel("total flux power (log)"); ax[1, 0].set_ylabel("net direction")
+
+    ax[1, 1].axis("off")
+    txt = (f"VERDICT: {result['verdict']}\n\n"
+           f"ridge-CV R^2 = {result['linear_ridge_cv_r2']}  (PASS<0.10)\n"
+           f"RF-OOB R^2  = {result['rf_oob_r2']}  (PASS<0.15, NULL>=0.30)\n"
+           f"CCA rho_1   = {result['cca_rho1']}  (PASS<0.40, NULL>=0.60)\n"
+           f"tail RF-OOB = {result['robustness']['rf_oob_r2_high_absorption_tail_top10pct']}\n\n"
+           f"n used = {result['n_used_direction_defined']} / {result['n_sightlines_total']}\n\n"
+           "CEILING: tests novelty of the DIRECTION axis vs the\n"
+           "P_F(k) content basis; makes no classification claim.")
+    ax[1, 1].text(0.02, 0.98, txt, va="top", ha="left", fontsize=11, family="monospace")
+    fig.suptitle(f"signed-response embedding — GATE 1 (P_F(k) orthogonality): {result['verdict']}",
+                 fontsize=13)
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
+    fig.savefig(path, dpi=110)
+    plt.close(fig)
+
+
 def _write_figure(path, s, resid, total_abs, mean_s, result):
     import matplotlib
     matplotlib.use("Agg")

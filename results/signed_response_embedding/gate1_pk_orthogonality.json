@@ -1,0 +1,25 @@
+{
+  "gate": "1 \u2014 P_F(k) orthogonality",
+  "verdict": "PASS",
+  "reading": "GATE 1 PASS: the amplitude-free feedback-response DIRECTION is NOT recoverable from the baseline flux power spectrum (ridge-CV R^2=0.022, RF-OOB R^2=0.030, CCA rho_1=0.324) \u2014 the signed-response axis is orthogonal to the canonical P_F(k) content basis, not just to scalar absorption. The embedding track clears its hard decider; opening it now returns to the user (unpark) + a defense-panel execution review.",
+  "n_sightlines_total": 16384,
+  "n_used_direction_defined": 16248,
+  "pk_basis": {
+    "n_bins": 52,
+    "dv_kms": 2.636502840371587,
+    "normalization": "delta_F = F/<F>_global - 1 on baseline C1"
+  },
+  "linear_ridge_cv_r2": 0.0217,
+  "rf_oob_r2": 0.0302,
+  "cca_rho1": 0.3239,
+  "bars": {
+    "pass": "ridge_r2<0.10 AND rf_oob<0.15 AND rho1<0.40",
+    "null": "rf_oob>=0.30 OR rho1>=0.60"
+  },
+  "robustness": {
+    "rf_oob_r2_high_absorption_tail_top10pct": 0.0335,
+    "n_tail": 1639,
+    "spearman_dir_vs_total_pk_power": -0.0726,
+    "note": "tail RF-OOB guards against a noise-driven false PASS on the bulk; spearman_dir_vs_total_power checks direction is not coupled to overall power magnitude"
+  }
+}
