@@ -177,15 +177,57 @@ The verified 10× gas-gated amplitude fan must be handled by separating directio
 
 **NOT classification accuracy** (ceiling-barred). Embedding is valid iff:
 
-### 4.1 Primary — INCREMENTAL STRUCTURE over existing reps
-Does clustering/2D-embedding the direction block reveal structure not in the separability-vector
-and content/wavelet clusterings?
-- **PASS:** AMI < 0.15 with EACH existing clustering (genuinely different axis) WHILE itself
-  structured (silhouette ≥ 0.25 on the direction block, OR a physical gradient Spearman ≥ 0.5 to a
-  named quantity that is NOT total absorption).
-- **NULL:** AMI ≥ 0.40 with either existing clustering (re-derives a known partition) OR no structure
-  beyond a zero-centered noise cloud (silhouette < 0.10, no physical gradient) — the bulk null
-  re-biting. Either NULLs the track.
+### 4.0 PANEL-REQUIRED EXECUTION CONTROLS (defense-panel APPROVE-WITH-MODIFICATIONS, 2026-06-24, [D-03])
+The panel verdict on the S1–S3 plan: §4.1 as originally written (AMI<0.15 AND silhouette≥0.25,
+absolute bars, full population) would risk a FALSE PASS from a degenerate one-giant-cluster partition
+(low AMI is trivially satisfied when one cluster dominates; silhouette is gameable by outlier-peel) —
+the cluster-environment-gradient ghost. Seven required modifications, ALL pre-committed before any
+S1+ compute:
+1. **Pre-registered analysis SUBSET** (not full population): the primary S2 clustering runs on the
+   **responding subset** = sightlines with **≥ 20 responding pixels** (|R₄|>0.05; binomial SE on
+   signfrac < ~0.11). Full-population clustering reported only as an expected-to-collapse degeneracy
+   control. **Hard degeneracy guard: largest cluster ≥ 70% of the subset ⇒ degenerate-NULL** regardless
+   of other metrics.
+2. **Surrogate-null-calibrated bars, not absolute.** Primary null = the **sign-permutation surrogate**
+   (permute within-sightline pixel signs of R₄ → destroys directional coherence, preserves magnitude/
+   absorption structure), recompute the direction block, run the identical pipeline. A real PASS
+   requires the structure statistic ABOVE the 95th percentile and AMI BELOW the 5th percentile of the
+   surrogate distribution (≥20 permutations).
+3. **Stability replaces silhouette.** Structure = bootstrap **cluster stability** (mean pairwise ARI
+   over subsample resamples) + the **gap statistic** vs a uniform reference (Tibshirani, Walther &
+   Hastie 2001, JRSS-B 63(2):411). Silhouette reported only as a descriptor, NOT gating.
+4. **Closed physical-gradient list (the OR-branch), pre-registered NOW:** exactly two allowed
+   quantities — **(a)** the recipe-ordered coupling-flip statistic (the actual physical content:
+   per-sightline `signfrac₂→signfrac₄` slope) and **(b)** the baseline saturated-pixel fraction
+   `frac(1−F₁>0.8)` (a density/structure proxy). Each must clear **|Spearman with total_abs| < 0.41**
+   (else it is absorption-in-disguise and is struck), and the gradient test uses **Holm correction**
+   across the two. No other quantity may be fished.
+5. **AMI calibrated on THIS population:** report AMI(separability-K5, content-K5) [both on disk] as the
+   **related-axes upper anchor** and AMI(direction, random) as the **lower anchor**; interpret the
+   direction-block AMI on that scale, NOT against an absolute 0.15 (two bulk-dominated partitions have
+   low AMI regardless of novelty).
+6. **Primary clustering is the c=4 direction SUB-BLOCK only** (`dir_unit₄, signfrac₄, sign-autocorr₄,
+   mean-run-length₄`); the cross-recipe profile (c=2,3,4) moves to §4.2 interpretation only (it carries
+   the recipe-ordered trajectory and would let the partition recover the treatment label).
+7. **Gas-gate audit (clustering-level Gate-3):** post-clustering, the partition's separation by
+   total_abs (between-cluster η² of total_abs) must be **< 0.30**; if absorption predicts the partition,
+   it is the gas gate, not the direction ⇒ NULL.
+
+Probe items (non-blocking, folded into the build): sign-autocorr/run features computed in km/s on the
+responding subset; signfrac reported at a single pre-registered θ=0.05 with a sweep ribbon; every bar
+traces to a surrogate percentile or a cited convention, not a round number.
+
+### 4.1 Primary — INCREMENTAL STRUCTURE over existing reps (REVISED per §4.0)
+Cluster the c=4 direction sub-block (§4.0-6) on the responding subset (§4.0-1), K=5 (matching existing).
+- **PASS (ALL of):** largest cluster < 70% (§4.0-1) AND bootstrap-ARI stability > 95th pct of the
+  sign-permutation null (§4.0-2,3) AND total_abs between-cluster η² < 0.30 (§4.0-7, not the gas gate)
+  AND AMI vs BOTH existing clusterings below the related-axes upper anchor (§4.0-5, a genuinely
+  different axis) AND [structured: stability gap-statistic positive OR a pre-registered physical
+  gradient (§4.0-4) significant after Holm].
+- **NULL (ANY of):** largest cluster ≥ 70% (degenerate, the bulk null re-biting) OR stability ≤ null
+  95th pct (no structure above the sign-permutation surrogate) OR η²(total_abs) ≥ 0.30 (it is the gas
+  gate) OR AMI ≥ 0.40 with either existing clustering (re-derives a known partition). Any NULLs the
+  track per §4.5.
 
 ### 4.2 Secondary — defensible physical interpretation
 - **PASS:** per-recipe direction profile reproduces the recipe-ordered coupling sign-flip at
@@ -193,11 +235,15 @@ and content/wavelet clusterings?
   feedback-in-overdensities).
 - **NULL:** no coherent physical reading → CHARACTERIZE-only, not a usable embedding.
 
-### 4.3 Tertiary — cross-representation stability
+### 4.3 Tertiary — cross-representation stability (REVISED per §4.0-2)
+On NOISELESS data R_c is exact; the bootstrap over sightlines measures sampling variability of the
+z=0.3 draw, NOT noise (there is none). The operative null for "is this structure real" is the
+**sign-permutation surrogate** (§4.0-2), not zero.
 - **PASS:** axis reproduces across de-entangled feature variants (rank-corr ≥ 0.6 among
-  median-sign / sign-fraction / unit-direction) AND a multi-seed bootstrap CI on the primary
-  structure statistic excludes the NULL bar (rule-9 statistically-confirmed stability).
-- **NULL:** structure flips with feature choice or its bootstrap CI straddles the NULL bar.
+  median-sign / sign-fraction / unit-direction) AND the bootstrap-ARI stability CI lies ABOVE the
+  sign-permutation surrogate's 95th percentile (rule-9 statistically-confirmed stability vs the
+  surrogate null, not a colloquial bar).
+- **NULL:** structure flips with feature choice or the stability CI overlaps the surrogate null band.
 
 ### 4.4 Anti-degeneracy audit (rule-3, MANDATORY)
 On the ~92% low-absorption bulk the sign of R_c is **near-arbitrary** → the embedding has near-zero

@@ -1,0 +1,82 @@
+{
+  "stage": "S1+S2 \u2014 embedding construction + structure test",
+  "verdict": "PASS",
+  "reading": "S2 PASS: the c=4 direction embedding partitions the responding subset (n=15805) into a non-degenerate (largest 0.34), stable (ARI 0.958 > null 0.947) structure that is NOT the gas gate (eta^2=0.079) and is a genuinely different axis from the existing separability/content clusterings (AMI 0.022/0.032 < anchor 0.109). The signed-response direction supports an incremental-structure embedding. CEILING: interpretive axis, no classification claim.",
+  "n_total": 16384,
+  "responding_subset": {
+    "min_responding_px": 20,
+    "n_subset": 15805,
+    "frac_of_population": 0.9647
+  },
+  "gate2_de_entangled": {
+    "spearman_dir_unit4_total_abs": -0.059,
+    "frac_signfrac_gt_0p5": 0.866,
+    "pass": true
+  },
+  "gate3_fan": {
+    "dir_unit4_decile_iqr_fan_factor": 1.42,
+    "bar_lt": 3.0,
+    "pass": true
+  },
+  "gradient_list_screen": {
+    "coupling_slope": {
+      "spearman_with_total_abs": 0.086
+    },
+    "saturated_frac": {
+      "spearman_with_total_abs": 0.599
+    }
+  },
+  "ami_anchors": {
+    "related_axes_upper": 0.1088,
+    "random_lower": 0.0001
+  },
+  "primary_clustering": {
+    "k": 5,
+    "largest_cluster_frac": 0.3421,
+    "cluster_sizes": [
+      4452,
+      2248,
+      5407,
+      3694,
+      4
+    ],
+    "ami_vs_wavelet_k5": 0.0223,
+    "ami_vs_raw_k5": 0.0324,
+    "total_abs_between_cluster_eta2": 0.0789,
+    "bootstrap_ari_stability": 0.9577,
+    "stability_multiseed_min_mean_max": [
+      0.9523,
+      0.9577,
+      0.9666
+    ],
+    "gap_statistic": 2.7589,
+    "gap_sk": 0.0041
+  },
+  "sign_permutation_null": {
+    "n_perm": 50,
+    "stability_null_mean": 0.8606,
+    "stability_null_95pct": 0.947,
+    "stability_permutation_pvalue": 0.0392,
+    "stability_margin_robust(min_seed>null95 AND p<0.05)": true,
+    "ami_null_wavelet_5pct": 0.0004,
+    "ami_null_raw_5pct": -0.0,
+    "largest_frac_null_mean": 0.2726
+  },
+  "physical_gradient_holm": {
+    "coupling_slope": {
+      "passes_abs_screen": true,
+      "spearman_dir_vs_quantity": 0.427
+    },
+    "saturated_frac": {
+      "passes_abs_screen": false,
+      "spearman_dir_vs_quantity": -0.094
+    }
+  },
+  "decision_checks": {
+    "not_degenerate(<0.70)": true,
+    "stability_above_null_95": true,
+    "not_gas_gate(eta2<0.30)": true,
+    "different_axis(<anchor)": true,
+    "not_rederive(<0.40)": true
+  }
+}
