@@ -1,0 +1,49 @@
+{
+  "verdict": "PASS",
+  "reading": "The SIGNED feedback response is a per-sightline directional axis: within StrongAGN, sightline-to-sightline spread (SR=0.83) is comparable to the between-recipe shift (NOT a per-recipe constant), and a real residual axis survives absorption control (SR_resid=0.68, |Spearman(s_4, total_abs)|=0.41 < 0.5). Worth scoping a future signed-response embedding track (separately, defense-panel-gated). CEILING: characterizes the DIRECTION of feedback action per sightline; does NOT beat the ~0.45 4-class classification ceiling and claims nothing about it.",
+  "n_sightlines": 16384,
+  "noiseless_data": "S/N=inf \u2014 R_c is the exact physical feedback response",
+  "C_prime_ordering": {
+    "mean_s": {
+      "2": -0.003877,
+      "3": -0.003177,
+      "4": 0.00505
+    },
+    "reproduces_global_C_pass": true
+  },
+  "F_within_recipe_spread": {
+    "spread_within_IQR_s4": 0.007432,
+    "sep_between_meanS4_minus_meanS2": 0.008927,
+    "spread_ratio_SR": 0.8325,
+    "frac_s4_positive": 0.8621,
+    "two_sided_minority": true,
+    "pass_bar": 0.5,
+    "null_bar": 0.25,
+    "pass": true,
+    "null": false
+  },
+  "E_absorption_orthogonality": {
+    "spearman_s4_vs_total_absorption": 0.4102,
+    "spearman_s4_vs_separability_norm": 0.2118,
+    "SR_resid_after_absorption": 0.6813,
+    "ortho_bar": 0.5,
+    "ortho_null": 0.7,
+    "sr_resid_pass": 0.4,
+    "sr_resid_null": 0.2,
+    "pass": true,
+    "null": false
+  },
+  "secondary_posfrac_per_sightline": {
+    "median_p_c": {
+      "2": 0.0,
+      "3": 0.25,
+      "4": 0.7744
+    },
+    "n_sightlines_masked_lt5_responding_px": {
+      "2": 4698,
+      "3": 2366,
+      "4": 136
+    },
+    "note": "p_c is threshold-dependent (0.05 px cut) -> reported, NOT gating"
+  }
+}
