@@ -1,0 +1,30 @@
+{
+  "stage": "S3 \u2014 cross-feature stability + physical interpretation",
+  "verdict": "TEMPERED",
+  "reading": "S3 TEMPERED: the direction axis is NOT fully feature-robust (min pairwise Spearman 0.19 < 0.6 among the de-entangled variants) \u2014 the modest S2 structure depends on the feature choice and should be reported as feature-sensitive, narrowing the claim.",
+  "n_subset": 15805,
+  "crossfeature_rank_correlations": {
+    "unit_vs_signfrac": 0.89,
+    "unit_vs_median": 0.26,
+    "signfrac_vs_median": 0.192
+  },
+  "crossfeature_min_spearman": 0.192,
+  "crossfeature_bar": 0.6,
+  "recipe_ordered_coupling": {
+    "2": {
+      "mean_signed_response": -0.00388,
+      "posfrac_responding": 0.1571
+    },
+    "3": {
+      "mean_signed_response": -0.00318,
+      "posfrac_responding": 0.2898
+    },
+    "4": {
+      "mean_signed_response": 0.00505,
+      "posfrac_responding": 0.711
+    }
+  },
+  "direction_vs_coupling_spearman": 0.555,
+  "coupling_vs_total_abs_spearman": -0.31,
+  "s2_stability_above_surrogate": "p=0.039 (from S2 [D-04]); CI above null 95th pct"
+}

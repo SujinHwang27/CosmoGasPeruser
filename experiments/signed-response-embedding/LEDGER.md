@@ -18,7 +18,7 @@ Design: `TRACK_SPEC.md` (plan-of-record). Probe origin: `SCOPING.md`.
 | S0 — Gate-1 P_F(k) orthogonality de-risk | direction ⊥ canonical content basis? | ✅ **DONE** — PASS |
 | S1 — embedding construction + Gates 2,3 | handcrafted direction⊕magnitude; de-entangled; fan removed | ✅ **DONE** — Gate-2 ✓ (Spearman −0.06), Gate-3 ✓ (fan 1.4×) |
 | S2 — structure analysis (THE deliverable) | cluster c=4 direction sub-block; surrogate-calibrated AMI/stability/gas-gate | ✅ **DONE** — PASS (modest, p=0.039) |
-| S3 — stability + physical interpretation | cross-feature + bootstrap vs surrogate; Nasir/Bolton+2017 | ⏳ PENDING |
+| S3 — stability + physical interpretation | cross-feature + bootstrap vs surrogate; Nasir/Bolton+2017 | ✅ **DONE** — TEMPERED (feature-sensitive) |
 
 ### ✅ Completed Milestones
 - **2026-06-23**: probe — signed-response DIRECTION is a coherent per-sightline axis ([D-01], PASS).
@@ -26,6 +26,8 @@ Design: `TRACK_SPEC.md` (plan-of-record). Probe origin: `SCOPING.md`.
 - **2026-06-24**: Gate-1 — direction ⊥ P_F(k) content basis ([D-02], PASS; RF-OOB R²=0.030, tail 0.034).
 - **2026-06-24**: track OPENED (user unpark); defense-panel APPROVE-WITH-7-MODIFICATIONS to §4 ([D-03]).
 - **2026-06-24**: S1 built (Gates 2,3 pass); S2 structure test PASS (modest, p=0.039) ([D-04]).
+- **2026-06-25**: S3 cross-feature stability TEMPERED — direction is feature-sensitive, localized to
+  the responding regions ([D-05]). Track complete.
 
 ---
 
@@ -90,6 +92,20 @@ AMI population-anchoring, c=4-only primary, gas-gate η² audit).
   coupling-gradient evidence. Clears all panel-hardened §4.1 bars. CEILING: interpretive direction
   axis; does NOT beat the ~0.45 ceiling; NOT a paper trigger. Any downstream use needs a defense-panel
   review of the RESULT (per §5.3 / SCOPING §11).
+- **[D-05] S3 cross-feature stability: TEMPERED (feature-sensitive); track complete**: the direction
+  axis is robust between the two responding-pixel-weighted variants (unit-direction vs sign-fraction
+  Spearman **0.89**) but NOT vs the bulk-weighted median-sign (0.26 / 0.19; **min 0.19 « the 0.6 bar**)
+  — the median is ~0 for the transparent bulk and does not see the direction. So the directional
+  structure is **localized to the responding regions**, not a feature-robust whole-sightline embedding;
+  the claim narrows accordingly (consistent with §4.4's pre-committed re-verb to the responding
+  minority). Physical interpretation SOLID and unchanged: recipe-ordered coupling — net signed
+  response flips −0.0039 (StellarWind ADDS) → +0.0051 (strong-AGN REMOVES); posfrac 0.16 → 0.71; the
+  direction tracks this coupling (Spearman 0.555), which is absorption-clean (Spearman −0.31 with
+  total_abs); maps to Nasir/Bolton+2017 feedback-in-overdensities (winds enrich/compress → more Lyα;
+  AGN heats → less HI/Lyα). **NET TRACK OUTCOME:** the embedding's incremental structure over the
+  probe's scalar directional axis is **modest AND feature-sensitive** — the durable contribution is
+  the directional PHYSICS (probe [D-01] + Gate-1 [D-02]), not a robust new embedding representation.
+  CEILING holds; NOT a paper trigger; parked verdict unchanged.
 
 ---
 
@@ -135,26 +151,30 @@ Pre-committed NO-PUBLICATION path (§4.5): Gate-1 NULL or §4.1 NULL ⇒ recorde
   Insight: the direction embedding partitions the responding subset into a stable (p=0.039 vs
   sign-permutation null), absorption-orthogonal directional structure — modest but real; reads as a
   directional continuum sliced into bins.
+- **S3 stability/interpretation**: `results/signed_response_embedding/figs/s3_stability_interpretation.png`
+  (+ `s3_stability_interpretation.json`). Insight: direction robust across responding-pixel-weighted
+  variants (0.89) but feature-sensitive vs the bulk-weighted median (0.19) → localized to responding
+  regions; recipe-coupling flip (winds ADD → strong-AGN REMOVES) is solid.
 - Tracker run_ids: (none — CPU in-process; no MLflow run for the de-risk/structure probes).
 
 ---
 
 ## 7. Session History & Next Handoff
 
-### Session Snapshot: June 24, 2026 (track-open + S1/S2)
+### Session Snapshot: June 24–25, 2026 (track complete: S0→S3)
 - Probe PASS ([D-01]) defense-panel-verified; Gate-1 PASS ([D-02]); track opened ([D-03]).
 - §4 success criteria hardened with the 7 panel-required execution controls.
-- S0/S1/S2 complete. S2 PASS ([D-04]) — modest (p=0.039), robust across seeds, absorption-orthogonal,
-  not the gas gate, distinct from existing reps; reads as a directional continuum sliced into bins.
+- S2 PASS ([D-04]) — modest (p=0.039), absorption-orthogonal, not the gas gate.
+- S3 TEMPERED ([D-05]) — direction is feature-sensitive (robust unit/sign-fraction 0.89 but not
+  bulk-weighted median 0.19), localized to the responding regions. Physical coupling solid.
+- **TRACK COMPLETE.** Net: a real, physically-coherent, but MODEST and FEATURE-SENSITIVE directional
+  structure. Durable contribution = the directional physics (probe + Gate-1); the embedding adds only
+  modest, feature-sensitive incremental structure over the scalar axis already in hand.
 
 ### Immediate Next Steps
-- S3 (PENDING): cross-feature stability (rank-corr ≥0.6 among median-sign/sign-fraction/unit-direction)
-  + physical interpretation tied to Nasir/Bolton+2017. Only worth running if the modest S2 PASS is to
-  be carried further.
-- Per §5.3 / SCOPING §11, the S2 PASS feeding any downstream (S3 build-out, learned variant) needs a
-  defense-panel review of the RESULT — user owns whether to commission it. NOT a paper trigger.
+- None required. Track is closed at S3. The learned-embedding variant (§2.2) remains explicitly
+  DEFERRED and separately-gated; the bulk/feature-sensitivity lessons here argue against it unless a
+  new-input gate opens (higher-z / density catalog). NOT a paper trigger.
 
 ### Blockers
-- None. S2 PASS is modest; the honest open question is whether the directional structure is strong
-  enough to be worth S3 + a learned embedding, or whether it is recorded as a modest interpretive
-  finding and the track parked.
+- None. Track complete; parked verdict unchanged.

@@ -303,6 +303,141 @@ def run_embedding_structure(out_dir: Path, seed: int = _SEED) -> Dict[str, objec
     return result
 
 
+def run_s3_stability_interpretation(out_dir: Path, seed: int = _SEED) -> Dict[str, object]:
+    """S3 (TRACK_SPEC §4.3 + §4.2): cross-feature stability + physical interpretation.
+
+    Cross-feature: does the direction axis reproduce across the three de-entangled
+    variants — unit-direction (sum(R)/sum(|R|)), sign-fraction, median-sign — at pairwise
+    Spearman >= 0.6? (The S2 stability-above-surrogate condition is already met.)
+    Interpretation: the recipe-ordered coupling (winds ADD / strong-AGN REMOVES Lya
+    absorption) mapped to Nasir/Bolton+2017 feedback-in-overdensities.
+    """
+    out_dir = Path(out_dir)
+    (out_dir / "figs").mkdir(parents=True, exist_ok=True)
+
+    loader = SignalClusteringData()
+    fpc, _y = loader.load_flux_per_class()
+    F = {c: np.asarray(fpc[c - 1], dtype=np.float64) for c in (1, 2, 3, 4)}
+    R = {c: F[c] - F[1] for c in (2, 3, 4)}
+    absR4 = np.abs(R[4])
+    cnt4 = (absR4 > _HIRESP_PX).sum(axis=1)
+    sub = cnt4 >= _MIN_RESP
+    n_sub = int(sub.sum())
+
+    # three de-entangled direction variants (amplitude-free), responding subset
+    v_unit = (R[4].sum(axis=1) / (absR4.sum(axis=1) + 1e-8))[sub]
+    mask = absR4 > _HIRESP_PX
+    v_signfrac = (((R[4] > 0) & mask).sum(axis=1) / np.maximum(cnt4, 1))[sub]
+    med_R = np.median(R[4], axis=1)
+    med_absR = np.median(absR4, axis=1)
+    v_median = (med_R / (med_absR + 1e-8))[sub]
+
+    rc = {
+        "unit_vs_signfrac": round(_spearman(v_unit, v_signfrac), 3),
+        "unit_vs_median": round(_spearman(v_unit, v_median), 3),
+        "signfrac_vs_median": round(_spearman(v_signfrac, v_median), 3),
+    }
+    min_rc = min(rc.values())
+    crossfeat_pass = min_rc >= 0.6
+
+    # physical interpretation: recipe-ordered signed response (the coupling flip)
+    recipe = {}
+    for c in (2, 3, 4):
+        Rc = R[c]
+        mc = np.abs(Rc) > _HIRESP_PX
+        recipe[str(c)] = {
+            "mean_signed_response": round(float(Rc.mean()), 5),
+            "posfrac_responding": round(float((Rc[mc] > 0).mean()), 4),
+        }
+    # direction relates to the absorption-clean recipe coupling (signfrac4 - signfrac2)
+    signfrac2 = (((R[2] > 0) & (np.abs(R[2]) > _HIRESP_PX)).sum(axis=1)
+                 / np.maximum((np.abs(R[2]) > _HIRESP_PX).sum(axis=1), 1))[sub]
+    coupling = v_signfrac - signfrac2
+    total_abs = (1.0 - F[1]).mean(axis=1)[sub]
+    dir_vs_coupling = round(_spearman(v_unit, coupling), 3)
+    coupling_vs_abs = round(_spearman(coupling, total_abs), 3)
+
+    verdict = "PASS" if crossfeat_pass else "TEMPERED"
+    if crossfeat_pass:
+        reading = (
+            f"S3 PASS: the direction axis is feature-robust (pairwise Spearman among "
+            f"unit-direction / sign-fraction / median-sign all >= {min_rc:.2f}); combined with "
+            f"the S2 stability-above-surrogate (p=0.039), the modest structure is not an artifact "
+            f"of one feature choice. Physical reading (Nasir/Bolton+2017, feedback acts in "
+            f"overdense gas): the net signed response flips from ADD (StellarWind, mean "
+            f"{recipe['2']['mean_signed_response']}) to REMOVE (strong-AGN, mean "
+            f"{recipe['4']['mean_signed_response']}) — galactic winds enrich/compress gas (more Lya "
+            f"absorption) while AGN thermal feedback heats gas, lowering HI and Lya absorption; the "
+            f"direction axis tracks this recipe coupling (Spearman {dir_vs_coupling}) which is "
+            f"absorption-clean (Spearman {coupling_vs_abs} with total_abs). CEILING: interpretive "
+            f"axis; no classification claim; NOT a paper trigger."
+        )
+    else:
+        reading = (
+            f"S3 TEMPERED: the direction axis is NOT fully feature-robust (min pairwise Spearman "
+            f"{min_rc:.2f} < 0.6 among the de-entangled variants) — the modest S2 structure depends "
+            f"on the feature choice and should be reported as feature-sensitive, narrowing the claim."
+        )
+
+    result = {
+        "stage": "S3 — cross-feature stability + physical interpretation",
+        "verdict": verdict,
+        "reading": reading,
+        "n_subset": n_sub,
+        "crossfeature_rank_correlations": rc,
+        "crossfeature_min_spearman": round(min_rc, 3),
+        "crossfeature_bar": 0.6,
+        "recipe_ordered_coupling": recipe,
+        "direction_vs_coupling_spearman": dir_vs_coupling,
+        "coupling_vs_total_abs_spearman": coupling_vs_abs,
+        "s2_stability_above_surrogate": "p=0.039 (from S2 [D-04]); CI above null 95th pct",
+    }
+    _write_s3_figure(out_dir / "figs" / "s3_stability_interpretation.png",
+                     v_unit, v_signfrac, v_median, recipe, result)
+    with open(out_dir / "s3_stability_interpretation.json", "w") as fh:
+        json.dump(result, fh, indent=2)
+    return result
+
+
+def _write_s3_figure(path, v_unit, v_signfrac, v_median, recipe, result):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rc = result["crossfeature_rank_correlations"]
+    fig, ax = plt.subplots(2, 2, figsize=(13, 9))
+    ax[0, 0].scatter(v_unit, v_signfrac, s=2, alpha=0.12)
+    ax[0, 0].set_title(f"unit-direction vs sign-fraction (Spearman {rc['unit_vs_signfrac']})")
+    ax[0, 0].set_xlabel("unit-direction sum(R)/sum(|R|)"); ax[0, 0].set_ylabel("sign-fraction")
+    ax[0, 1].scatter(v_unit, v_median, s=2, alpha=0.12, color="C1")
+    ax[0, 1].set_title(f"unit-direction vs median-sign (Spearman {rc['unit_vs_median']})")
+    ax[0, 1].set_xlabel("unit-direction"); ax[0, 1].set_ylabel("median-sign")
+    cs = [2, 3, 4]
+    means = [recipe[str(c)]["mean_signed_response"] for c in cs]
+    ax[1, 0].bar([str(c) for c in cs], means, color=["C2", "C1", "C3"])
+    ax[1, 0].axhline(0.0, color="k", lw=0.8)
+    ax[1, 0].set_title("recipe-ordered net signed response (ADD<0, REMOVE>0)")
+    ax[1, 0].set_xlabel("recipe (2=Wind 3=WindAGN 4=StrongAGN)")
+    ax[1, 1].axis("off")
+    txt = (f"VERDICT: {result['verdict']}\n\n"
+           f"cross-feature min Spearman = {result['crossfeature_min_spearman']} (PASS>=0.6)\n"
+           f"  unit/signfrac = {rc['unit_vs_signfrac']}\n"
+           f"  unit/median   = {rc['unit_vs_median']}\n"
+           f"  signfrac/median = {rc['signfrac_vs_median']}\n\n"
+           f"S2 stability: {result['s2_stability_above_surrogate']}\n\n"
+           f"direction vs recipe-coupling = {result['direction_vs_coupling_spearman']}\n"
+           f"coupling vs total_abs = {result['coupling_vs_total_abs_spearman']} (abs-clean)\n\n"
+           "Physical: winds ADD, strong-AGN REMOVES Lya\n"
+           "absorption (Nasir/Bolton+2017).\n"
+           "CEILING: interpretive axis; not a paper trigger.")
+    ax[1, 1].text(0.02, 0.98, txt, va="top", ha="left", fontsize=10, family="monospace")
+    fig.suptitle(f"signed-response embedding — S3 stability + interpretation: {result['verdict']}",
+                 fontsize=13)
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
+    fig.savefig(path, dpi=110)
+    plt.close(fig)
+
+
 def _write_structure_figure(path, Xs, clusters, total_abs_sub, dir_unit4_sub,
                             null_stab, stab_real, result):
     import matplotlib
