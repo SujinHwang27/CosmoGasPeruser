@@ -16,14 +16,16 @@ the full run; the smoke checks engineering correctness only.
 | Stage | Description | Status |
 |---|---|---|
 | EV-0 — orientation + data audit | PI design review; data-engineer locality/noise/pairing audit | ✅ **DONE** |
-| EV-1 — Voigt catalogs | VoigtFit decomposition of all 4 × 16384 sightlines, fiducial + τ-rescaled | 🚀 **NEXT** — smoke ✅, full running |
-| EV-2 — embeddings + evaluation | grouped CV: PCA vs Laplacian eigenmaps on raw / Voigt / P_F(k); confound controls; clusters | 🚀 **NEXT** — smoke ✅, full queued behind EV-1 |
-| EV-3 — interpretation + panel | read full results against §5 ceilings; defense-panel on the result | ⏳ **PENDING** |
+| EV-1 — Voigt catalogs | VoigtFit decomposition of all 4 × 16384 sightlines, fiducial + τ-rescaled | ✅ **DONE** — 98.2–98.9% converged, 0 crashes |
+| EV-2 — embeddings + evaluation | spatially-blocked CV: PCA vs Laplacian eigenmaps on raw / Voigt / P_F(k); confound controls; clusters | ✅ **DONE** — pre-registered **NULL** ([D-08], [D-09]) |
+| EV-3 — interpretation + panel | read full results against §5 ceilings; post-hoc checks; figures | ✅ **DONE** (PI-only); defense-panel on the result optional ([D-09]) |
 
 ### ✅ Completed Milestones
 - **2026-10-18**: track opened; PI APPROVE-WITH-CAVEATS (provisional); data audit complete.
 - **2026-10-18**: VoigtFit pipeline validated (exact synthetic recovery incl. saturated/LLS/DLA-strength lines); 4 VoigtFit defects found and patched.
 - **2026-10-18**: smoke run (256 skewers × 4 classes) of EV-1 (both variants) and EV-2 (2 seeds) end to end; full run launched.
+- **2026-10-18**: defense-panel protocol review (NEEDS WORK) → 7 amendments applied before any full EV-2 result ([D-07]).
+- **2026-10-19**: full run complete (both variants, 10 seeds × 5 spatial-block folds, 293 configs/split). Eigenvector embeddings: NULL ([D-08], [D-09]). Exploratory lead: Voigt line widths on the 2–3 axis.
 
 ---
 
@@ -161,6 +163,39 @@ the full run; the smoke checks engineering correctness only.
     so counts mostly carry ⟨F⟩, whereas widths survive.
   - **Voigt converged-only skewers.** 95.2% kept; ⟨F⟩ kept 0.9786 vs dropped 0.9635, so the dropped
     skewers are more absorbed (panel #9).
+- **[D-09] τ-rescaled EV-2 + clusters → track verdict: eigenvector embeddings NULL; Voigt line widths are
+  the durable, exploratory lead.**
+  - **τ-rescaled primary cell.** Eigenmap − PCA is negative in every mode for every input: raw −0.016 /
+    −0.001 / −0.007, Voigt −0.031 / −0.012 / −0.027, P_F(k) −0.043 / −0.030 / −0.041 (resid 0 / 1 / 2).
+    The fiducial spline-residualised positives do not survive. **"Beyond PCA" fails in both variants
+    for all inputs.**
+  - **The control works.** The ⟨F⟩, ⟨τ⟩ scalars fall from 0.340 to 0.282 BA (chance 0.25) after
+    rescaling.
+  - **Why eigenmaps lose: they re-derive ⟨F⟩.** Leading eigenvector vs ⟨F⟩: P_F(k) φ1 Spearman 0.91
+    (both variants); Voigt φ1–φ5 |ρ| 0.52–0.77. The harmonic test leaves 1 (P_F(k)), 4–5 (Voigt) and
+    3 (raw) non-harmonic coordinates among the first 8. Same-skewer neighbour share is low (raw 14%,
+    P_F(k) 7%, Voigt 2–3%), and masked and unmasked results agree.
+  - **Spectral clusters fail the §5 criteria in both variants (K = 4).**
+    - Voigt eigenmap: degenerate, largest cluster 0.95–0.96.
+    - Raw eigenmap: ⟨F⟩-dominated, η² 0.56, largest cluster 0.79.
+    - P_F(k) eigenmap: stability 0.948 / 0.924, below PCA + K-Means at 0.968 / 0.956. AMI vs class
+      0.018 / 0.007, against 0.008 / 0.001 for the ⟨F⟩-only null.
+    - AMI vs the v2 K = 5 labels ≤ 0.016.
+  - **Raw-pixel RF rises under rescaling** (0.477 → 0.505, with 1–3 0.554 → 0.616). This is the
+    rescaling-artefact direction panel #3 warned about, so it is not read as feedback signal.
+  - **Exploratory lead (not pre-registered; verb ceiling "observed").** Direct Voigt features give
+    2–3 pairwise BA 0.575 (p16 0.571) τ-rescaled vs 0.576 fiducial, unchanged. That compares with raw
+    pixels 0.544 / 0.544 and P_F(k) 0.528–0.537. It holds at log N ≥ 12.5 (0.570) and weakens at
+    log N ≥ 13 (0.539). The catalogs locate it in line widths: b-feature AUC 0.589 → 0.588, and class 4
+    median b 31.1 → 31.3 km/s vs ~24.8 for class 1. Caveats: the pairwise BA comes from a 4-class
+    model, the data are noiseless with no LSF, and the cut was not chosen in advance.
+  - **Net.** The user's eigenvector idea is tested in full and is a clean, well-controlled NULL on
+    raw spectra, on Voigt features and on P_F(k). The Voigt-library feature extraction is the
+    productive half: it gives a physically interpretable per-sightline representation that matches
+    P_F(k) on 4-class BA (0.42–0.44) and carries a mean-flux-robust line-width signal on the
+    hardest pair. CEILING: no representation beats the spatially-blocked raw-pixel RF (0.477
+    fiducial). Not a paper trigger; parked verdict unchanged. PI-only, non-provisional for the NULL
+    (narrowing, rule 15); the 2–3 lead is explicitly not a claim.
 
 ---
 
@@ -215,9 +250,16 @@ eigenvectors; an unbounded Voigt component count.
 
 ## 6. Visualization & Artifacts
 
-- **Run ID**: none (CPU in-process; no MLflow run yet — wire one for EV-2 full if results are reported).
-- **Primary trace**: `results/eigen_voigt_embedding/ev2_fiducial_full/summary_by_config.csv` (pending).
-- **Insights**: pending the full run.
+- **Run ID**: none (CPU in-process, no MLflow run; provenance in each `ev2_*_full/meta.json`, git-stamped).
+- **Primary trace**: `results/eigen_voigt_embedding/ev2_{fiducial,taurescaled}_full/le_minus_pca.csv`
+  (+ `summary_by_config.csv`, `headroom_vs_scalar.csv`, `cluster_diagnostics.csv`, `diagnostics.json`).
+- **Figures**: `results/eigen_voigt_embedding/figs/fig_le_minus_pca_full.png` (eigenmap − PCA vs d, all
+  inputs × variants × confound modes), `fig_representation_ba_full.png` (per-sightline BA per
+  representation), `fig_voigt_b_by_class.png` (Voigt b CDFs by class).
+- **Catalog post-hoc**: `results/eigen_voigt_embedding/ev3_catalog_posthoc.json`.
+- **Insights**: graph-Laplacian eigenvectors are a worse compression than PCA here and their leading
+  coordinates restate ⟨F⟩; the Voigt decomposition's lasting value is the line-width channel, which
+  survives mean-flux equalisation and leads on the StellarWind-vs-WindAGN axis (exploratory).
 
 ---
 
@@ -229,10 +271,17 @@ eigenvectors; an unbounded Voigt component count.
 - Smoke EV-1 (both variants) + EV-2 complete ([D-06]); full driver running detached:
   `nohup bash scripts/run_eigen_voigt_full.sh > results/eigen_voigt_embedding/logs/full.log 2>&1 &`.
 
-### Immediate Next Steps
-1. Let the full run finish (EV-1 τ-rescaled ≈ 40 min, then EV-2 fiducial and τ-rescaled; resumable).
-2. Read the results against §5; PI interpretation; defense-panel on the result.
-3. DVC-track the full catalogs and OOF arrays; wire an MLflow run for EV-2 if results are reported.
+### Session Snapshot: October 19, 2026 (full run complete → verdict)
+- Full EV-1 (2 × 65536 sightlines) and EV-2 (2 variants × 50 splits) complete; [D-08], [D-09] recorded.
+- Catalogs + OOF arrays DVC-tracked and pushed (`artifacts.dvc`, `ev2_*_full/oof_*.npz.dvc`).
+
+### Immediate Next Steps (user-owned; none auto-dispatched)
+1. If the 2–3 line-width lead is worth pursuing: pre-register a dedicated binary 2-vs-3 test on Voigt
+   b-features (spatial-block CV, both variants, a detection-threshold sweep, an LSF/noise-degraded
+   variant), with a defense-panel pass BEFORE running it.
+2. Optional: defense-panel review of the [D-09] verdict text (a narrowing NULL needs no panel under
+   rule 15; the exploratory lead is not a claim).
+3. Not a paper trigger; parked project verdict unchanged.
 
 ### Blockers
-- None. Laptop CPU is shared with the user's `graph-clustering` jobs, so wall time may stretch.
+- None.

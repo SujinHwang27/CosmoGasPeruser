@@ -147,7 +147,7 @@ def fig_representation_ba(res_dirs: Dict[str, Path], out: Path) -> Optional[Path
     ax.invert_yaxis()
     ax.set_xlim(0.2, max(0.55, float(df.hi.max()) + 0.03))
     ax.set_xlabel("4-class balanced accuracy per sightline (RF; median, 16–84% over splits)", fontsize=8, color=INK2)
-    ax.legend(frameon=False, fontsize=8, loc="lower right")
+    ax.legend(frameon=False, fontsize=8, loc="upper right")
     fig.tight_layout()
     fig.savefig(out, dpi=160, bbox_inches="tight", facecolor=SURFACE)
     plt.close(fig)

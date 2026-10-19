@@ -1,0 +1,6 @@
+outs:
+- md5: f1919873d2c83e7a367792a2cbd2425a
+  size: 5447321
+  isexec: true
+  hash: md5
+  path: oof_seed3.npz

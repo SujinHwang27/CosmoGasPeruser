@@ -1,0 +1,6 @@
+outs:
+- md5: 40b57f41c70c055e335de645b6e10962
+  size: 116590387
+  isexec: true
+  hash: md5
+  path: oof_proba_seed0.npz

@@ -1,0 +1,6 @@
+outs:
+- md5: d96c0facdf16d50746bb869021baea81
+  size: 5486132
+  isexec: true
+  hash: md5
+  path: oof_seed6.npz
