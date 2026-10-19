@@ -324,3 +324,59 @@ def summarise(data: Dict[str, object], out_dir: Path, seeds: Sequence[int], n_bo
             diag[f"ba4_by_meanF_decile|{k}"] = [float(balanced_accuracy_score(y[dec == q], o[dec == q])) for q in range(10)]
     (out_dir / "diagnostics.json").write_text(json.dumps(diag, indent=2))
     log(f"[ev-2] summary written; converged-only skewers kept: {keep.mean():.4f}")
+
+
+# ---------------------------------------------------------------------------
+# Stage EV-3 post-hoc checks (catalog-only; defense-panel #3, #9)
+# ---------------------------------------------------------------------------
+def catalog_posthoc(art_dir: Path, mode: str = "full") -> Dict[str, object]:
+    """Per-class catalog statistics and per-feature class separability, fiducial vs
+    tau-rescaled.
+
+    For every Voigt line-statistic feature, the one-vs-one ROC AUC for the class pairs
+    (reported as |AUC - 0.5|, so direction-free) in each variant. Panel #3: tau-rescaling
+    shifts every log N of a class by log10 A_c, so a feature whose separability RISES
+    under rescaling flags a rescaling artefact rather than a surviving feedback signal.
+    """
+    from sklearn.metrics import roc_auc_score
+    from src.core.eigen_eval import PAIRS
+    from src.core.voigt import line_feature_names, line_statistics_features
+
+    wave, vel = load_grid()
+    span = wave.size * float(vel[1] - vel[0])
+    names = line_feature_names()
+    out: Dict[str, object] = {"per_class": {}, "auc_abs_dev": {}}
+    feats = {}
+    for variant in VARIANTS:
+        per = []
+        for c in range(1, N_CLASSES + 1):
+            cat = np.load(Path(art_dir) / f"catalog_{variant}_{mode}" / f"class{c}.npz")
+            n = cat["diag"].shape[0]
+            keys = list(cat["diag_keys"])
+            det = cat["logN"] >= 12.0
+            out["per_class"][f"{variant}|{c}"] = {
+                "n_sightlines": int(n),
+                "components_per_sightline": float(cat["logN"].size / n),
+                "lines_logN12_per_sightline": float(det.sum() / n),
+                "lines_logN13_per_sightline": float((cat["logN"] >= 13.0).sum() / n),
+                "b_median_logN12": float(np.median(cat["b_kms"][det])),
+                "b_q90_logN12": float(np.percentile(cat["b_kms"][det], 90)),
+                "logN_median_logN12": float(np.median(cat["logN"][det])),
+                "converged_frac": float(cat["diag"][:, keys.index("converged")].mean()),
+                "crashed": int(np.sum(cat["diag"][:, keys.index("n_fit_errors")] < 0)),
+                "max_resid_median": float(np.median(cat["diag"][:, keys.index("max_resid")])),
+            }
+            per.append(line_statistics_features(cat["sightline"], cat["v_kms"], cat["b_kms"], cat["logN"],
+                                                n_sightlines=n, span_kms=span, impute=False))
+        feats[variant] = per
+    for variant in VARIANTS:
+        for a, b in PAIRS:
+            Xa, Xb = feats[variant][a - 1], feats[variant][b - 1]
+            for j, name in enumerate(names):
+                va, vb = Xa[:, j], Xb[:, j]
+                va, vb = va[np.isfinite(va)], vb[np.isfinite(vb)]
+                if va.size < 50 or vb.size < 50 or np.ptp(np.concatenate([va, vb])) == 0:
+                    continue
+                auc = roc_auc_score(np.r_[np.zeros(va.size), np.ones(vb.size)], np.r_[va, vb])
+                out["auc_abs_dev"][f"{variant}|{a}{b}|{name}"] = float(abs(auc - 0.5))
+    return out
