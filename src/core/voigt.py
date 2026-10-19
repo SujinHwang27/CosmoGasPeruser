@@ -511,7 +511,7 @@ def line_feature_names() -> List[str]:
              "b_q10", "b_q25", "b_q50", "b_q75", "b_q90", "b_Nweighted",
              "frac_b_gt40", "frac_b_lt15",
              "logN_q25", "logN_q50", "logN_q75", "logN_q90",
-             "bN_slope", "dv_nn_median", "has_lines"]
+             "bN_slope", "dv_nn_median", "has_lines", "has_bN_slope", "has_dv_nn"]
     for i in range(len(_B_EDGES) - 1):
         for j in range(len(_N_EDGES) - 1):
             names.append(f"occ_b{i}_N{j}")
@@ -520,14 +520,17 @@ def line_feature_names() -> List[str]:
 
 def line_statistics_features(sightline: np.ndarray, v_kms: np.ndarray, b_kms: np.ndarray,
                              logN: np.ndarray, n_sightlines: int, span_kms: float,
-                             logN_detect: float = 12.0) -> np.ndarray:
+                             logN_detect: float = 12.0, impute: bool = True) -> np.ndarray:
     """Fixed-length line statistics per sightline from a flattened absorber catalog.
 
     Only components with logN >= `logN_detect` enter the distribution features (weaker
     components are residual-fill terms of the decomposition); logNtot sums ALL
-    components. Sightlines with < 1 (quantiles) or < 3 (b-N slope) detected lines get
-    the population median of that feature among sightlines that have it, flagged by
-    `has_lines` = 0 — a documented imputation, never NaN.
+    components. Features undefined for a sightline (quantiles with no detected line,
+    line spacing with < 2, b-N slope with < 3) are flagged by `has_lines`, `has_dv_nn`,
+    `has_bN_slope`. With `impute=False` they are returned as NaN, to be imputed by the
+    caller from a label-free pool (never per class: a per-class median would hand a
+    classifier the label on every imputed row). With `impute=True` the median of this
+    call's input is used — only valid when the input pools all classes.
     """
     names = line_feature_names()
     X = np.full((n_sightlines, len(names)), np.nan, dtype=np.float64)   # shape: (n, n_feat)
@@ -545,6 +548,8 @@ def line_statistics_features(sightline: np.ndarray, v_kms: np.ndarray, b_kms: np
         X[i, col["n_lines_13"]] = np.sum(Ni_all >= 13.0)
         X[i, col["n_lines_14"]] = np.sum(Ni_all >= 14.0)
         X[i, col["has_lines"]] = float(bi.size > 0)
+        X[i, col["has_dv_nn"]] = 0.0
+        X[i, col["has_bN_slope"]] = 0.0
         for jb in range(len(_B_EDGES) - 1):
             for jn in range(len(_N_EDGES) - 1):
                 X[i, col[f"occ_b{jb}_N{jn}"]] = np.sum((bi >= _B_EDGES[jb]) & (bi < _B_EDGES[jb + 1])
@@ -559,12 +564,16 @@ def line_statistics_features(sightline: np.ndarray, v_kms: np.ndarray, b_kms: np
         X[i, col["frac_b_lt15"]] = np.mean(bi < 15.0)
         X[i, [col["logN_q25"], col["logN_q50"], col["logN_q75"], col["logN_q90"]]] = \
             np.percentile(Ni, [25, 50, 75, 90])
+        X[i, col["has_dv_nn"]] = float(bi.size >= 2)
+        X[i, col["has_bN_slope"]] = float(bi.size >= 3 and np.ptp(Ni) > 0)
         if bi.size >= 2:
             vs = np.sort(vi)
             gaps = np.diff(np.concatenate([vs, [vs[0] + span_kms]]))   # periodic sightline
             X[i, col["dv_nn_median"]] = np.median(gaps)
         if bi.size >= 3 and np.ptp(Ni) > 0:
             X[i, col["bN_slope"]] = np.polyfit(Ni, bi, 1)[0]
+    if not impute:
+        return X
     for k in range(X.shape[1]):
         miss = ~np.isfinite(X[:, k])
         if miss.any():

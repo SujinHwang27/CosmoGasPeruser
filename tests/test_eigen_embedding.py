@@ -85,18 +85,37 @@ def test_balanced_scores_perfect_and_pairs():
     assert all(s[f"ba_{a}{b}"] == 1.0 for a, b in [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)])
 
 
-def test_group_bootstrap_matches_naive_resampling():
+def test_block_bootstrap_matches_naive_resampling():
     from sklearn.metrics import balanced_accuracy_score
-    from src.core.eigen_eval import group_bootstrap_delta
+    from src.core.eigen_eval import block_bootstrap
     rng = np.random.default_rng(0)
-    G = 60
-    y = np.repeat(np.arange(1, 5), G)
-    groups = np.tile(np.arange(G), 4)
+    n_sk = 120
+    y = np.repeat(np.arange(1, 5), n_sk)
+    blocks = np.tile(np.arange(n_sk) // 4, 4)                 # 30 blocks of 4 whole skewers
     pa = np.where(rng.random(y.size) < 0.6, y, rng.integers(1, 5, y.size))
-    pb = np.where(rng.random(y.size) < 0.4, y, rng.integers(1, 5, y.size))
-    res = group_bootstrap_delta(y, groups, pa, pb, n_boot=1, seed=3)
-    w = np.bincount(np.random.default_rng(3).integers(0, G, G), minlength=G)
-    idx = np.concatenate([np.flatnonzero(groups == g).repeat(w[g]) for g in range(G)])
-    naive = balanced_accuracy_score(y[idx], pa[idx]) - balanced_accuracy_score(y[idx], pb[idx])
-    assert abs(res["ci_lo"] - naive) < 1e-12
-    assert abs(res["delta"] - (balanced_accuracy_score(y, pa) - balanced_accuracy_score(y, pb))) < 1e-12
+    point, boot = block_bootstrap(y, blocks, (pa == y).astype(float)[None, :], n_boot=1, seed=3)
+    assert abs(point[0] - balanced_accuracy_score(y, pa)) < 1e-12
+    ub = np.unique(blocks)
+    w = np.bincount(np.random.default_rng(3).integers(0, ub.size, ub.size), minlength=ub.size)
+    idx = np.concatenate([np.flatnonzero(blocks == b).repeat(w[b]) for b in ub])
+    assert abs(boot[0, 0] - balanced_accuracy_score(y[idx], pa[idx])) < 1e-12
+
+
+def test_spatial_blocks_keep_projection_axes_apart():
+    from src.core.eigen_eval import spatial_blocks
+    axis = np.array([[1, 100.0, 100.0, 100.0], [2, 100.0, 100.0, 100.0], [3, 100.0, 100.0, 100.0],
+                     [1, 59000.0, 100.0, 100.0], [1, 100.0, 59000.0, 59000.0]])
+    b = spatial_blocks(axis, 60000.0, 8)
+    assert len(set(b[:3])) == 3                               # same point, different axes
+    assert b[3] == b[0]                                       # axis-1 skewer: x is along the skewer
+    assert b[4] != b[0]
+
+
+def test_spline_residualiser_removes_nonlinear_scalar_dependence():
+    from src.core.eigen_eval import _SplineResidualiser
+    rng = np.random.default_rng(0)
+    S = rng.random((4000, 2))
+    Z = np.column_stack([np.cos(6 * np.pi * S[:, 0]), rng.standard_normal(4000)])
+    R = _SplineResidualiser().fit(S, Z).residual(S, Z)
+    assert np.var(R[:, 0]) < 0.02 * np.var(Z[:, 0])           # harmonic of the scalar removed
+    assert np.var(R[:, 1]) > 0.95 * np.var(Z[:, 1])           # independent signal kept

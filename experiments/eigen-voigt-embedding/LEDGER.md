@@ -107,6 +107,34 @@ the full run; the smoke checks engineering correctness only.
   both variants): no crashes, convergence 97.7–99.2% (fiducial) and 98.4–98.8% (τ-rescaled). EV-2 smoke
   (2 seeds): 185 configurations per split, no NaN, every training graph connected, no short
   neighbour lists. Smoke-scale BA values are not interpreted (n = 1024). Full driver launched detached.
+- **[D-07] Defense-panel protocol review (NEEDS WORK) → amendments, applied before any full-run EV-2
+  result existed**: the driver was stopped while still waiting on EV-1, so no full EV-2 split ran
+  under the old protocol. The EV-1 catalogs are unaffected; every finding concerns EV-2.
+  - **#1 KILLER, fixed: Voigt imputation leaked the label.** Features were built per class, so missing
+    entries got a within-class median, a constant an RF can map back to the class. Features are now
+    NaN-preserving, imputed with the training-fold median inside each split. The kNN metric uses a
+    label-free pooled fill. Missingness flags `has_dv_nn` and `has_bN_slope` were added (33 features).
+  - **#2, fixed: linear residualisation was lopsided against PCA.** It is replaced by (resid=1)
+    fold-internal additive cubic splines (48 knots) on rank-transformed scalars, which removes harmonics
+    of rank ⟨F⟩; a unit test confirms cos(6πu) is removed. A new increment test (resid=2) gives the
+    classifier [scalars ∪ embedding].
+  - **#5, fixed: spatial leakage.** Skewers are randomly placed (~0.8 Mpc/h spacing, 3 projection axes),
+    so CV folds and the bootstrap now use 192 spatial blocks (axis × 8×8 transverse cells of
+    7.5 Mpc/h), not individual skewers.
+  - **#6, fixed: train/test embedding mismatch.** Training rows are now embedded by the same
+    leave-self-out Nyström map as the test rows. The masked graph is primary; unmasked is secondary.
+  - **#7, fixed: scalar naming.** The second scalar is renamed ⟨τ⟩_clip, with τ clipped at 30 (not 700),
+    so it is not a count of underflowed pixels.
+  - **#4, fixed: statistics.** Seed-averaged correctness with block bootstrap CIs, a simultaneous max-T
+    band over all Δ rows, a Nadeau–Bengio corrected t, and a pre-declared primary cell (§5).
+  - **#10 / #12 / #13.** Voigt detection-threshold sensitivity added (log N ≥ 12.5, 13; direct
+    features). Seed-0 probabilities saved. Raw-pixel RF baseline run on 3 seeds.
+  - **Clusters.** An ⟨F⟩-only K-Means null was added.
+  - **Carried to EV-3 as post-hoc checks:** #3 (τ-rescaling can create class signal: compare
+    per-feature class AUC fiducial vs rescaled, and ba_14 / ba_24); #8 (read the RF Δ as the geometry
+    test and report the non-harmonic count next to d); #9 (converged-only filters predictions without
+    refitting; report ⟨F⟩ of kept vs dropped skewers).
+  - **Re-smoke:** 293 configurations per split, end to end, no NaN.
 
 ---
 
@@ -133,16 +161,23 @@ the full run; the smoke checks engineering correctness only.
 
 ## 5. Evaluation Plan
 
-Verb ceilings, binding on the full-run write-up:
-- **"Beyond PCA"** requires the eigenmap − PCA ΔBA 95% CI to exclude 0 with Δ ≥ 0.02 at matched d, and
-  the gain must survive both the ⟨F⟩ residualisation and the τ-rescaled re-run.
-- **"Exceeds the per-sightline ceiling"** requires p16 above the recomputed grouped raw-pixel baseline.
+Verb ceilings, binding on the full-run write-up (amended by [D-07], fixed before any full result):
+- **Primary cell (pre-declared):** masked Laplacian eigenmap vs PCA, random forest, d = 8, for each
+  input (raw / Voigt / P_F(k)). All other cells are exploratory and are read only through the
+  simultaneous band.
+- **"Beyond PCA"** for an input requires, in BOTH the fiducial and the τ-rescaled variant:
+  - resid = 0: Δ ≥ 0.02 (point estimate; a practical-significance bar set by the PI before data), with
+    the simultaneous 95% band's lower bound above 0 and Nadeau–Bengio one-sided p < 0.05;
+  - resid = 1 (spline-residualised): block-bootstrap 95% CI lower bound above 0;
+  - resid = 2 (increment test): Δ > 0 with block-bootstrap 95% CI lower bound above 0.
+- **"Exceeds the per-sightline ceiling"** requires the primary cell's seed-averaged BA to exceed the
+  recomputed spatially-blocked raw-pixel RF baseline, with Nadeau–Bengio p < 0.05.
 - Anything that does not survive the confound controls is reported as **"re-derives ⟨F⟩"**.
 - No "invariant" / "representation-independent" wording (rule 9).
 - C2–C3 is expected near chance at a single sightline (pk-feedback-classifier [D-26]); it is reported,
   not spun.
-- Cluster structure counts only if the largest cluster is < 70%, η²(⟨F⟩) < 0.30 and stability beats
-  PCA + K-Means at matched d.
+- Cluster structure counts only if the largest cluster is < 70%, η²(⟨F⟩) < 0.30, stability beats
+  PCA + K-Means at matched d, and AMI vs class beats the ⟨F⟩-only K-Means null.
 
 Prior-failure ledger this track inherits ([D-37] / rule 4): signal-clustering-v2 [D-13];
 pk-feedback-classifier [D-01], [D-10]/[D-15], [D-26]; confusability / response-magnitude /

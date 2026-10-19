@@ -57,7 +57,8 @@ def main() -> None:
         v2 = np.load(V2_LABELS)
         if rows is not None:
             v2 = v2[rows]
-        crow, extra = cluster_diagnostics(data["reps"], data["scalars"], data["y"], data["groups"], v2, log=log)
+        crow, extra = cluster_diagnostics(data["reps"], data["scalars"], data["y"], data["skewers"],
+                                          data["blocks"], v2, log=log)
         pd.DataFrame(crow).to_csv(out_dir / "cluster_diagnostics.csv", index=False)
         (out_dir / "cluster_extra.json").write_text(json.dumps(extra, indent=2))
     log("done")

@@ -72,3 +72,14 @@ def test_line_statistics_features_shape_and_imputation():
     assert X[2, col["has_lines"]] == 0.0 and X[0, col["has_lines"]] == 1.0
     assert X[0, col["n_lines_12"]] == 6
     assert X[2, col["n_lines_12"]] == 0
+
+
+def test_line_statistics_features_no_impute_leaves_nan_and_flags():
+    sl = np.array([0, 0, 0, 2])
+    X = line_statistics_features(sl, np.array([10.0, 900.0, 3000.0, 50.0]), np.array([20.0, 30.0, 40.0, 25.0]),
+                                 np.array([12.5, 13.0, 13.5, 12.4]), n_sightlines=3, span_kms=N_PIX * DV,
+                                 impute=False)
+    col = {k: i for i, k in enumerate(line_feature_names())}
+    assert np.isnan(X[1, col["b_q50"]]) and X[1, col["has_lines"]] == 0.0
+    assert np.isnan(X[2, col["bN_slope"]]) and X[2, col["has_bN_slope"]] == 0.0
+    assert X[0, col["has_bN_slope"]] == 1.0 and np.isfinite(X[0, col["bN_slope"]])

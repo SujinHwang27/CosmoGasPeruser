@@ -89,11 +89,17 @@ def stacked_labels_groups(n_per_class: int) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def scalar_baselines(flux: np.ndarray) -> np.ndarray:
-    """[<F>, <tau_eff>] per sightline. Total equivalent width is affine in <F> (EW =
-    N dv (1 - <F>)), so <tau_eff> = <-ln F> is the second, non-redundant scalar."""
+    """[<F>, <tau>_clip] per sightline.
+
+    Total equivalent width is affine in <F> (to the ~1.8% lambda-span weighting of the
+    log-lambda grid), and the literature tau_eff = -ln<F> is monotone in it, so the second
+    scalar is the pixel-mean optical depth <-ln F> with tau clipped at 30. The clip keeps
+    it a property of the absorption profile rather than a count of underflowed pixels
+    (flux underflows above tau ~ 745).
+    """
     meanF = flux.mean(axis=1)
-    taueff = -np.log(np.clip(flux, 1e-300, None)).clip(max=700.0).mean(axis=1)
-    return np.column_stack([meanF, taueff])                  # shape: (n, 2)
+    meantau = (-np.log(np.clip(flux, 1e-300, None))).clip(max=30.0).mean(axis=1)
+    return np.column_stack([meanF, meantau])                 # shape: (n, 2)
 
 
 def pk_features(flux_per_class: List[np.ndarray], dv_kms: float, n_bins: int = 32) -> np.ndarray:
@@ -110,51 +116,74 @@ def pk_features(flux_per_class: List[np.ndarray], dv_kms: float, n_bins: int = 3
 # ---------------------------------------------------------------------------
 # Stage EV-2 orchestration
 # ---------------------------------------------------------------------------
+BOX_KPC = 60000.0             # Sherwood box, kpc/h (axis.npy coordinates span 0-60000)
+N_BLOCK_CELLS = 8             # 7.5 Mpc/h transverse cells per projection axis -> 192 blocks
+VOIGT_DETECT_SENSITIVITY = (12.5, 13.0)
+
+
 def build_representations(variant: str, catalog_dir: Path, rows: Optional[np.ndarray],
                           factors: Optional[List[float]], knn_k: int = 64,
                           log: Optional[Callable[[str], None]] = None) -> Dict[str, object]:
     """Raw flux, Voigt line statistics and P_F(k) for all 4 classes (class-major), plus
-    scalars, labels, skewer groups, Voigt convergence flags and kNN tables."""
+    scalars, labels, skewer ids, spatial blocks, Voigt convergence flags and kNN tables.
+
+    Voigt features keep NaN for undefined entries (imputed per training fold by the
+    harness); the kNN metric uses a label-free pooled-median fill.
+    """
     from src.core.eigen_embedding import knn_table
+    from src.core.eigen_eval import spatial_blocks
     from src.core.voigt import line_statistics_features
     from sklearn.preprocessing import StandardScaler
 
     wave, vel = load_grid()
     dv = float(vel[1] - vel[0])
     span = wave.size * dv
-    fluxes, lines, conv = [], [], []
+    fluxes, conv, cats = [], [], []
     for c in range(1, N_CLASSES + 1):
         F = load_flux_variant(variant, c, rows=rows, factors=factors)          # shape: (n, 2048)
-        cat = np.load(Path(catalog_dir) / f"class{c}.npz")
-        n = F.shape[0]
-        if cat["diag"].shape[0] != n:
+        cat = dict(np.load(Path(catalog_dir) / f"class{c}.npz"))
+        if cat["diag"].shape[0] != F.shape[0]:
             raise ValueError(f"build_representations: class {c} catalog has {cat['diag'].shape[0]} "
-                             f"sightlines, flux has {n}")
-        lines.append(line_statistics_features(cat["sightline"], cat["v_kms"], cat["b_kms"],
-                                              cat["logN"], n_sightlines=n, span_kms=span))
+                             f"sightlines, flux has {F.shape[0]}")
         keys = list(cat["diag_keys"])
         conv.append(cat["diag"][:, keys.index("converged")])
         fluxes.append(F)
+        cats.append(cat)
     n = fluxes[0].shape[0]
-    y, groups = stacked_labels_groups(n)
+    y, skewers = stacked_labels_groups(n)
+
+    def voigt_feats(detect: float) -> np.ndarray:
+        return np.vstack([line_statistics_features(cat["sightline"], cat["v_kms"], cat["b_kms"], cat["logN"],
+                                                   n_sightlines=n, span_kms=span, logN_detect=detect,
+                                                   impute=False) for cat in cats])
+
+    axis = np.load(Path(FLUX_BASE) / "1" / "axis.npy")
+    if rows is not None:
+        axis = axis[rows]
+    blocks = np.tile(spatial_blocks(axis, BOX_KPC, N_BLOCK_CELLS), N_CLASSES)
     raw = np.vstack(fluxes).astype(np.float32)                                # shape: (4n, 2048)
     scal = scalar_baselines(np.vstack(fluxes))
-    pk = pk_features(fluxes, dv)
-    voigt = np.vstack(lines)
-    reps: Dict[str, Dict[str, np.ndarray]] = {"raw": {"X": raw}, "voigt": {"X": voigt}, "pk": {"X": pk}}
+    reps: Dict[str, Dict[str, np.ndarray]] = {"raw": {"X": raw}, "voigt": {"X": voigt_feats(12.0)},
+                                              "pk": {"X": pk_features(fluxes, dv)}}
     for name, R in reps.items():
-        Xk = R["X"] if name == "raw" else StandardScaler().fit_transform(R["X"])
+        Xk = R["X"]
+        if name != "raw":
+            Xk = np.where(np.isnan(Xk), np.nanmedian(Xk, axis=0), Xk)
+            Xk = StandardScaler().fit_transform(Xk)
         R["knn_idx"], R["knn_dist"] = knn_table(Xk, knn_k)
         if log:
-            log(f"  kNN table {name}: X {R['X'].shape}")
-    return {"reps": reps, "scalars": scal, "y": y, "groups": groups,
+            log(f"  kNN table {name}: X {R['X'].shape}, NaN frac {float(np.isnan(R['X']).mean()):.4f}")
+    for det in VOIGT_DETECT_SENSITIVITY:
+        reps[f"voigt_det{det:g}"] = {"X": voigt_feats(det), "direct_only": True}
+    return {"reps": reps, "scalars": scal, "y": y, "skewers": skewers, "blocks": blocks,
             "voigt_converged": np.concatenate(conv), "n_per_class": n}
 
 
 def run_evaluation(data: Dict[str, object], out_dir: Path, seeds: Sequence[int], n_folds: int = 5,
-                   n_jobs: int = -1, log: Callable[[str], None] = print) -> None:
-    """Grouped-CV evaluation; resumable per (seed, fold). Writes split_metrics.csv,
-    split_diags.jsonl and oof_seed<S>.npz (out-of-fold predicted labels per config)."""
+                   n_jobs: int = -1, raw_rf_seeds: int = 3, log: Callable[[str], None] = print) -> None:
+    """Spatially-blocked CV; resumable per (seed, fold). Writes split_metrics.csv (with
+    n_train/n_test), split_diags.jsonl, oof_seed<S>.npz (labels per config) and, for the
+    first seed, oof_proba_seed<S>.npz (float16 probabilities)."""
     import csv
     import json
     from src.core.eigen_eval import evaluate_split, group_splits
@@ -166,27 +195,34 @@ def run_evaluation(data: Dict[str, object], out_dir: Path, seeds: Sequence[int],
     if metrics_path.exists():
         with open(metrics_path) as fh:
             done = {(int(r["seed"]), int(r["fold"])) for r in csv.DictReader(fh)}
-    y, groups = data["y"], data["groups"]
+    y, blocks, skewers = data["y"], data["blocks"], data["skewers"]
     for seed in seeds:
+        keep_proba = seed == seeds[0]
         oof_path = out_dir / f"oof_seed{seed}.npz"
+        prob_path = out_dir / f"oof_proba_seed{seed}.npz"
         oof: Dict[str, np.ndarray] = dict(np.load(oof_path)) if oof_path.exists() else {}
-        for fold, (train, test) in enumerate(group_splits(groups, n_folds, seed)):
+        prob: Dict[str, np.ndarray] = dict(np.load(prob_path)) if (keep_proba and prob_path.exists()) else {}
+        for fold, (train, test) in enumerate(group_splits(blocks, n_folds, seed)):
             if (seed, fold) in done:
                 continue
             t0 = time.time()
-            rows, preds, diags = evaluate_split(data["reps"], data["scalars"], y, groups, train, test,
-                                                seed=seed, n_jobs=n_jobs, raw_direct_rf=(seed == seeds[0]))
+            rows, preds, probas, diags = evaluate_split(
+                data["reps"], data["scalars"], y, skewers, train, test, seed=seed, n_jobs=n_jobs,
+                raw_direct_rf=(seed in seeds[:raw_rf_seeds]), keep_proba=keep_proba)
             for key, p in preds.items():
-                arr = oof.setdefault(key, np.zeros(y.size, dtype=np.int8))
-                arr[test] = p
+                oof.setdefault(key, np.zeros(y.size, dtype=np.int8))[test] = p
+            for key, p in probas.items():
+                prob.setdefault(key, np.zeros((y.size, 4), dtype=np.float16))[test] = p
             np.savez_compressed(oof_path, **oof)
+            if keep_proba:
+                np.savez_compressed(prob_path, **prob)
             write_header = not metrics_path.exists()
             with open(metrics_path, "a", newline="") as fh:
-                w = csv.DictWriter(fh, fieldnames=["seed", "fold"] + list(rows[0].keys()))
+                w = csv.DictWriter(fh, fieldnames=["seed", "fold", "n_train", "n_test"] + list(rows[0].keys()))
                 if write_header:
                     w.writeheader()
                 for r in rows:
-                    w.writerow({"seed": seed, "fold": fold, **r})
+                    w.writerow({"seed": seed, "fold": fold, "n_train": train.size, "n_test": test.size, **r})
             with open(out_dir / "split_diags.jsonl", "a") as fh:
                 fh.write(json.dumps({"seed": seed, "fold": fold, **diags}) + "\n")
             log(f"[ev-2] seed {seed} fold {fold}: {len(rows)} configs in {time.time() - t0:.0f}s")
@@ -194,11 +230,22 @@ def run_evaluation(data: Dict[str, object], out_dir: Path, seeds: Sequence[int],
 
 def summarise(data: Dict[str, object], out_dir: Path, seeds: Sequence[int], n_boot: int = 2000,
               log: Callable[[str], None] = print) -> None:
-    """Per-config split statistics, LE-vs-PCA group-bootstrap deltas, scalar-baseline
-    headroom, and the Voigt-converged-only sensitivity."""
+    """Pre-registered statistics ([D-04] as amended by [D-07]).
+
+    * summary_by_config.csv : split median / p16 / p84 of every score.
+    * le_minus_pca.csv      : per (input, LE mode, d, resid, clf): seed-averaged-correctness
+      BA delta (eigenmap - PCA), block-bootstrap 95% CI, simultaneous max-T band over all
+      delta rows, Nadeau-Bengio corrected t on the per-split BA differences, and the
+      primary-cell flag.
+    * headroom_vs_scalar.csv: BA of every config minus the [<F>, <tau>_clip] baseline
+      (same classifier), seed-averaged, with block CIs.
+    * diagnostics.json      : Voigt-converged-only BA + <F> of kept vs dropped skewers;
+      BA within <F> deciles for the primary cells.
+    """
+    import json
     import pandas as pd
-    from sklearn.metrics import balanced_accuracy_score
-    from src.core.eigen_eval import DIMS, LE_MODES, group_bootstrap_delta
+    from src.core.eigen_eval import (DIMS, LE_MODES, PRIMARY, RESID_MODES, block_bootstrap,
+                                     corrected_resampled_t, max_t_band)
 
     out_dir = Path(out_dir)
     df = pd.read_csv(out_dir / "split_metrics.csv")
@@ -209,44 +256,71 @@ def summarise(data: Dict[str, object], out_dir: Path, seeds: Sequence[int], n_bo
         .join(g.quantile(0.84).add_suffix("_p84")).join(g.size().rename("n_splits")).reset_index()
     summ.to_csv(out_dir / "summary_by_config.csv", index=False)
 
-    y, groups = data["y"], data["groups"]
-    conv_group = np.ones(groups.max() + 1, dtype=bool)
-    np.logical_and.at(conv_group, groups, data["voigt_converged"] > 0.5)
-    keep = conv_group[groups]
+    y, blocks = data["y"], data["blocks"]
     oofs = {s: dict(np.load(out_dir / f"oof_seed{s}.npz")) for s in seeds}
-    oof0 = oofs[seeds[0]]
-    deltas = []
+    all_keys = sorted(set.intersection(*[set(o) for o in oofs.values()]))
+    correct = {k: np.mean([(oofs[s][k] == y) for s in seeds], axis=0) for k in all_keys}
+    n_tr, n_te = int(df["n_train"].median()), int(df["n_test"].median())
+
+    def split_scores(key: str) -> pd.Series:
+        rep, method, d, resid, clf = key.split("|")
+        m = (df.rep == rep) & (df.method == method) & (df.d == int(d)) & (df.resid == int(resid)) & (df.clf == clf)
+        return df[m].set_index(["seed", "fold"])["ba4"]
+
+    pairs = []
     for rep in ("raw", "voigt", "pk"):
         for mode in LE_MODES:
             for d in DIMS:
-                for resid in (0, 1):
+                for resid in RESID_MODES:
                     for clf in ("logreg", "rf"):
                         ka, kb = f"{rep}|{mode}|{d}|{resid}|{clf}", f"{rep}|pca|{d}|{resid}|{clf}"
-                        if ka not in oof0 or kb not in oof0:
-                            continue
-                        res = group_bootstrap_delta(y, groups, oof0[ka], oof0[kb], n_boot=n_boot, seed=0)
-                        per_seed = [balanced_accuracy_score(y, oofs[s][ka]) - balanced_accuracy_score(y, oofs[s][kb])
-                                    for s in seeds]
-                        deltas.append({"rep": rep, "le_mode": mode, "d": d, "resid": resid, "clf": clf,
-                                       "delta_ba4_seed0": res["delta"], "ci95_lo": res["ci_lo"],
-                                       "ci95_hi": res["ci_hi"], "delta_ba4_median_seeds": float(np.median(per_seed)),
-                                       "ba4_le_converged_only": float(balanced_accuracy_score(y[keep], oof0[ka][keep])),
-                                       "ba4_pca_converged_only": float(balanced_accuracy_score(y[keep], oof0[kb][keep]))})
-    pd.DataFrame(deltas).to_csv(out_dir / "le_minus_pca.csv", index=False)
-    base = {}
-    for name in ("meanF", "meanF_taueff"):
-        for clf in ("logreg", "rf"):
-            k = f"scalar|{name}|{1 if name == 'meanF' else 2}|0|{clf}"
-            base[(name, clf)] = float(balanced_accuracy_score(y, oof0[k]))
-    head = []
-    for k, p in oof0.items():
-        rep, method, d, resid, clf = k.split("|")
-        if rep == "scalar":
-            continue
-        ba = float(balanced_accuracy_score(y, p))
-        head.append({"rep": rep, "method": method, "d": int(d), "resid": int(resid), "clf": clf,
-                     "ba4_seed0": ba, "headroom_vs_meanF_taueff": ba - base[("meanF_taueff", clf)]})
-    pd.DataFrame(head).sort_values("ba4_seed0", ascending=False).to_csv(out_dir / "headroom_vs_scalar.csv", index=False)
-    (out_dir / "scalar_baselines.json").write_text(
-        __import__("json").dumps({f"{a}|{b}": v for (a, b), v in base.items()}, indent=2))
-    log(f"[ev-2] summary written; converged-only groups kept: {keep.mean():.4f}")
+                        if ka in correct and kb in correct:
+                            pairs.append((rep, mode, d, resid, clf, ka, kb))
+    D = np.stack([correct[ka] - correct[kb] for *_, ka, kb in pairs])
+    point, boot = block_bootstrap(y, blocks, D, n_boot=n_boot, seed=0)
+    lo_s, hi_s = max_t_band(point, boot)
+    out = []
+    for i, (rep, mode, d, resid, clf, ka, kb) in enumerate(pairs):
+        sa, sb = split_scores(ka), split_scores(kb)
+        common = sa.index.intersection(sb.index)
+        nb = corrected_resampled_t((sa[common] - sb[common]).to_numpy(), n_tr, n_te)
+        out.append({"rep": rep, "le_mode": mode, "d": d, "resid": resid, "clf": clf,
+                    "delta_ba4": float(point[i]),
+                    "ci95_lo": float(np.percentile(boot[:, i], 2.5)), "ci95_hi": float(np.percentile(boot[:, i], 97.5)),
+                    "simul95_lo": float(lo_s[i]), "simul95_hi": float(hi_s[i]),
+                    "nb_t": nb["t"], "nb_p_one_sided": nb["p_one_sided"], "n_splits": nb["n_splits"],
+                    "primary_cell": bool(mode == PRIMARY["le_mode"] and clf == PRIMARY["clf"] and d == PRIMARY["d"])})
+    pd.DataFrame(out).to_csv(out_dir / "le_minus_pca.csv", index=False)
+
+    base_key = {clf: f"scalar|meanF_meantau|2|0|{clf}" for clf in ("logreg", "rf")}
+    hkeys = [k for k in all_keys if not k.startswith("scalar|")]
+    H = np.stack([correct[k] - correct[base_key[k.split("|")[-1]]] for k in hkeys])
+    hp, hb = block_bootstrap(y, blocks, H, n_boot=n_boot, seed=1)
+    bp, _ = block_bootstrap(y, blocks, np.stack([correct[k] for k in hkeys]), n_boot=1, seed=2)
+    head = [{"rep": k.split("|")[0], "method": k.split("|")[1], "d": int(k.split("|")[2]),
+             "resid": int(k.split("|")[3]), "clf": k.split("|")[4], "ba4_seedavg": float(bp[i]),
+             "headroom": float(hp[i]), "headroom_ci95_lo": float(np.percentile(hb[:, i], 2.5)),
+             "headroom_ci95_hi": float(np.percentile(hb[:, i], 97.5))} for i, k in enumerate(hkeys)]
+    pd.DataFrame(head).sort_values("ba4_seedavg", ascending=False).to_csv(out_dir / "headroom_vs_scalar.csv", index=False)
+
+    conv_sk = np.ones(data["skewers"].max() + 1, dtype=bool)
+    np.logical_and.at(conv_sk, data["skewers"], data["voigt_converged"] > 0.5)
+    keep = conv_sk[data["skewers"]]
+    meanF = data["scalars"][:, 0]
+    diag: Dict[str, object] = {"converged_skewer_frac": float(keep.mean()),
+                               "meanF_kept": float(meanF[keep].mean()),
+                               "meanF_dropped": float(meanF[~keep].mean()) if (~keep).any() else None,
+                               "scalar_baselines_seedavg": {k: float(np.mean([(oofs[s][v] == y).mean() for s in seeds]))
+                                                            for k, v in base_key.items()}}
+    dec = np.digitize(meanF, np.quantile(meanF, np.linspace(0, 1, 11)[1:-1]))
+    for k in all_keys:
+        parts = k.split("|")
+        is_primary = len(parts) == 5 and parts[1] in ("pca", PRIMARY["le_mode"]) and parts[2] == str(PRIMARY["d"]) \
+            and parts[4] == PRIMARY["clf"] and parts[3] == "0"
+        if is_primary or k.startswith("scalar|") or parts[1] == "direct":
+            from sklearn.metrics import balanced_accuracy_score
+            o = oofs[seeds[0]][k]
+            diag[f"converged_only_ba4|{k}"] = float(balanced_accuracy_score(y[keep], o[keep]))
+            diag[f"ba4_by_meanF_decile|{k}"] = [float(balanced_accuracy_score(y[dec == q], o[dec == q])) for q in range(10)]
+    (out_dir / "diagnostics.json").write_text(json.dumps(diag, indent=2))
+    log(f"[ev-2] summary written; converged-only skewers kept: {keep.mean():.4f}")
