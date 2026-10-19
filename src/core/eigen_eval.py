@@ -173,19 +173,24 @@ def evaluate_split(reps: Dict[str, Dict[str, np.ndarray]], scalars: np.ndarray, 
 
 def group_bootstrap_delta(y: np.ndarray, groups: np.ndarray, pred_a: np.ndarray, pred_b: np.ndarray,
                           n_boot: int = 2000, seed: int = 0) -> Dict[str, float]:
-    """Paired bootstrap over skewer groups of BA(a) - BA(b) from out-of-fold predictions."""
+    """Paired bootstrap over skewer groups of BA(a) - BA(b) from out-of-fold predictions.
+
+    Every group holds exactly one sightline per class, so under group resampling each
+    class recall is sum_g w_g correct[g, c] / sum_g w_g and BA is the w-weighted mean of
+    the per-group score s_g = mean_c correct[g, c]; the bootstrap is vectorised on that.
+    """
     rng = np.random.default_rng(seed)
     ug, inv = np.unique(groups, return_inverse=True)
-    members = [np.flatnonzero(inv == g) for g in range(ug.size)]
-    sizes = np.array([m.size for m in members])
-    flat = np.concatenate(members)
-    offs = np.concatenate([[0], np.cumsum(sizes)])
+    classes = np.unique(y)
+    if not np.all(np.bincount(inv) == classes.size):
+        raise ValueError("group_bootstrap_delta: each group must hold one sightline per class")
+    diff = (pred_a == y).astype(np.float64) - (pred_b == y).astype(np.float64)
+    s = np.bincount(inv, weights=diff, minlength=ug.size) / classes.size   # shape: (G,)
     point = balanced_accuracy_score(y, pred_a) - balanced_accuracy_score(y, pred_b)
     deltas = np.empty(n_boot)
     for i in range(n_boot):
-        pick = rng.integers(0, ug.size, ug.size)
-        idx = np.concatenate([flat[offs[g]:offs[g + 1]] for g in pick])
-        deltas[i] = balanced_accuracy_score(y[idx], pred_a[idx]) - balanced_accuracy_score(y[idx], pred_b[idx])
+        w = np.bincount(rng.integers(0, ug.size, ug.size), minlength=ug.size)
+        deltas[i] = float(w @ s) / ug.size
     lo, hi = np.percentile(deltas, [2.5, 97.5])
     return {"delta": float(point), "ci_lo": float(lo), "ci_hi": float(hi)}
 

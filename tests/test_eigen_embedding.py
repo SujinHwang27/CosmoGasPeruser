@@ -83,3 +83,20 @@ def test_balanced_scores_perfect_and_pairs():
     s = balanced_scores(y, proba, np.arange(1, 5))
     assert s["ba4"] == 1.0
     assert all(s[f"ba_{a}{b}"] == 1.0 for a, b in [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)])
+
+
+def test_group_bootstrap_matches_naive_resampling():
+    from sklearn.metrics import balanced_accuracy_score
+    from src.core.eigen_eval import group_bootstrap_delta
+    rng = np.random.default_rng(0)
+    G = 60
+    y = np.repeat(np.arange(1, 5), G)
+    groups = np.tile(np.arange(G), 4)
+    pa = np.where(rng.random(y.size) < 0.6, y, rng.integers(1, 5, y.size))
+    pb = np.where(rng.random(y.size) < 0.4, y, rng.integers(1, 5, y.size))
+    res = group_bootstrap_delta(y, groups, pa, pb, n_boot=1, seed=3)
+    w = np.bincount(np.random.default_rng(3).integers(0, G, G), minlength=G)
+    idx = np.concatenate([np.flatnonzero(groups == g).repeat(w[g]) for g in range(G)])
+    naive = balanced_accuracy_score(y[idx], pa[idx]) - balanced_accuracy_score(y[idx], pb[idx])
+    assert abs(res["ci_lo"] - naive) < 1e-12
+    assert abs(res["delta"] - (balanced_accuracy_score(y, pa) - balanced_accuracy_score(y, pb))) < 1e-12
