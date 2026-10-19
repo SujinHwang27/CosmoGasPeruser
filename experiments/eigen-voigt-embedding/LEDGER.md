@@ -135,6 +135,32 @@ the full run; the smoke checks engineering correctness only.
     test and report the non-harmonic count next to d); #9 (converged-only filters predictions without
     refitting; report ⟨F⟩ of kept vs dropped skewers).
   - **Re-smoke:** 293 configurations per split, end to end, no NaN.
+- **[D-08] Full fiducial EV-2 (10 seeds × 5 spatial-block folds): eigenmaps do NOT beat PCA**
+  (pre-registered primary cell: masked eigenmap vs PCA, RF, d = 8).
+  - **resid = 0.** ΔBA = −0.049 (raw), −0.022 (Voigt), −0.023 (P_F(k)); all 95% CIs below zero, so
+    eigenmaps are significantly worse.
+  - **resid = 2 (increment).** −0.007 / −0.015 / −0.018, also below zero.
+  - **resid = 1 (spline-residualised).** Positive: +0.026 (Voigt), +0.021 (P_F(k)), simultaneous lower
+    bounds > 0, but −0.012 for raw. This is PCA losing more when ⟨F⟩ is removed, not a better
+    representation: both trail the direct features, and the increment test is negative. The §5
+    criteria require all three modes, so **"beyond PCA" fails for every input**.
+  - **Exploratory rows.** The only other cells with a simultaneous lower bound above 0 are
+    logistic-regression rows (raw, increment mode, d ≥ 8, Δ ≤ 0.016). Per panel #8 a logistic gain can
+    come from nonlinearity alone, so these are not a geometry result.
+  - **Ceiling.** The recomputed spatially-blocked raw-pixel RF baseline is BA 0.477 (p16 0.470,
+    15 splits), above the old ungrouped 0.451. Primary cells (0.29–0.42) fall below it, so **"exceeds
+    the ceiling" fails**. The best compact representations are direct P_F(k) (0.441, increment mode)
+    and direct Voigt features (0.432–0.439), each ≈ +0.10 above the ⟨F⟩, ⟨τ⟩ scalars (0.340).
+  - **Exploratory, not pre-registered (verb ceiling: "observed"; needs its own pre-registered binary
+    test).** On the historically null 2–3 pair, direct Voigt features give pairwise BA 0.576 (p16 0.572;
+    unchanged in increment mode), vs raw pixels 0.544, P_F(k) 0.540 and scalars 0.515; on 1–3 they give
+    0.584. This matches the catalog-level result (EV-3): line-width features separate 2 vs 3 at
+    univariate AUC 0.589 fiducial / 0.588 τ-rescaled, and class 4 broadens lines (median b 31.1 vs
+    24.8 km/s) in both variants, consistent with Nasir+2017 ("AGN … producing some broader lines").
+    Line-count separability largely vanishes under τ-rescaling (|AUC − 0.5| for 2–4 falls 0.283 → 0.007),
+    so counts mostly carry ⟨F⟩, whereas widths survive.
+  - **Voigt converged-only skewers.** 95.2% kept; ⟨F⟩ kept 0.9786 vs dropped 0.9635, so the dropped
+    skewers are more absorbed (panel #9).
 
 ---
 

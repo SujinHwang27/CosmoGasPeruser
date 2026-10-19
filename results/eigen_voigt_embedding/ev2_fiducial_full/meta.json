@@ -1,0 +1,17 @@
+{
+  "args": {
+    "mode": "full",
+    "variant": "fiducial",
+    "seeds": 10,
+    "folds": 5,
+    "n_jobs": -1,
+    "skip_clusters": false
+  },
+  "provenance": {
+    "commit": "f0ead83",
+    "branch": "exp/eigen-voigt-embedding",
+    "dirty": "True",
+    "timestamp": "2026-10-18T21:11:16"
+  },
+  "tau_rescale_A": null
+}
