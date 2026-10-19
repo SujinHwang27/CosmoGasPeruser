@@ -23,6 +23,7 @@ dependencies = [
     "pywavelets>=1.9.0",
     "umap-learn>=0.5.6",
     "seaborn>=0.13.2",
+    "voigtfit==3.23.2",
 ]
 
 [tool.pytest.ini_options]
@@ -30,3 +31,8 @@ testpaths = ["tests"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
+
+[tool.uv]
+# VoigtFit 3.23.2 declares numpy<2 but runs on numpy 2.x (its only removed-API use, np.trapz in
+# limits.py, is outside the fitting path); keep the project's numpy 2 lock.
+override-dependencies = ["numpy>=1.26.4"]
