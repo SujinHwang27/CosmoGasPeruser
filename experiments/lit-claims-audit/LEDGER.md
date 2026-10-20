@@ -15,12 +15,13 @@ with seven binding defense-panel amendments).
 | Test | Question | Status / verdict |
 |---|---|---|
 | T5 | Do winds broaden lines? (Viel+2017 vs Nasir+2017) | ✅ **Consistent with N17**: winds do not broaden b |
-| T4a | Does feedback move the thermal b-envelope or only the bulk? | ✅ **CONFIRMS Bolton/Hu** (envelope ≤ 1 km/s; bulk +1.3 to +2.5) |
-| T4b | T–ρ relation from the LOS temperature field | ✅ Classes 1–3 ≈ unchanged T₀; **WindStrongAGN: volume-filling hot phase** |
-| T6 | Line-by-line paired response (shared ICs) | ✅ **EXTENDS**: typical absorber unchanged; broadening carried by ~20% of lines |
-| T3 | Γ/UVB degeneracy after CDDF matching | ✅ A-ratios INCONCLUSIVE (just outside the confirm bands); **P_F(k) shape residual EXTENDS** |
+| T4a | Does feedback move the thermal b-envelope or only the bulk? | ✅ Consistent with Bolton/Hu, **borderline** (⟨F⟩-matched Δb_env(4−1) −1.03 fails a ±1 km/s equivalence bound; [D-12]) |
+| T4b | T–ρ relation from the LOS temperature field | ✅ Cool-phase T₀ within +2.7% for every class at a 10^4.5 K cut (consistent with Bolton; the earlier +38% was cut leakage, [D-13]); WindStrongAGN has a volume-filling hot phase |
+| T6 | Line-by-line paired response (shared ICs) | ✅ Narrowed: the response is ~6× refit jitter and two-sided; broadened absorbers are the heated ones. The "~20% of lines" localisation was uninformative and is retracted ([D-13], [D-15]) |
+| T3 | Γ/UVB degeneracy after CDDF matching | ✅ A-ratios INCONCLUSIVE; the P_F(k) shape residual survives the forward model but replicates Khaire/Burkhart |
 | T1 | Does the 2–3 width lead survive line-density matching (noiseless)? | ✅ **SURVIVES (noiseless)** at all matchings and fitter depths; Δb(4−1) EXTENDS |
-| T2 | Does it survive a COS-like forward model? (the only test of Khaire+2024a) | ✅ **EXTENDS**: distinguishable per sightline (2–3 BA 0.541, nulls 0.50); ensemble needs ~650 (3−2) / ~200 (4−1) sightlines at S/N 30; the noiseless→observed b shift depends on the continuum/noise systematics |
+| T2 | Does it survive a COS-like forward model? (the only test of Khaire+2024a) | ✅ **CONSISTENT with Khaire; EXTENDS by quantification.** The fixed-N residual survives in the ensemble, but per-sightline 2–3 fails the combined realistic instrument (BA 0.524). It is thermal (absorber gas T), and with a ~9 km/s nuisance free a detection needs ~1,700 (3−2) / ~1,400 (4−1) sightlines ([D-12]–[D-15]) |
+| Edge | Where is our edge? | ⚠️ `EDGE_MAP.md` v2: **no observational edge**. Candidate physics edge = feedback adds a warm tail at fixed N that is not a T–ρ power law; the deciding test (swapped-T τ re-synthesis + [T₀, γ, A] fit) has not run |
 
 ---
 
@@ -368,6 +369,14 @@ with seven binding defense-panel amendments).
     is still +3.5 in the ensemble, and median b is 29.9–31.1 km/s. Per-sightline 2–3 discrimination
     does not survive realistic combined conditions. The ensemble residual does, before nuisance
     marginalisation.
+- **[D-16] Gap map v2 recorded (`EDGE_MAP.md`, PI, PROVISIONAL).** Bottom line: no observational edge.
+  - The fixed-N feedback signal in b is the thermal state of absorbing gas: real physics, but the
+    quantity observational b–N analyses marginalise.
+  - Per-sightline 2–3 discrimination fails realistic conditions. Khaire+2024a holds at their sample size.
+  - The surviving candidate is G9, a warm tail at fixed N that may not be a T–ρ power law. It is decided
+    by a swapped-T τ re-synthesis plus a [T₀, γ, A] fit, with pre-commitment criteria proposed in
+    EDGE_MAP §7 (the panel ratifies them before the run).
+  - Not a paper trigger.
 
 ---
 
@@ -384,12 +393,22 @@ with seven binding defense-panel amendments).
 See `CLAIM_TEST_PLAN.md`: pre-registered outcomes, the amendments, and Holm across practical-null primaries.
 
 ## 6. Visualization & Artifacts
-- Pending (after T2).
+- Results JSON: `results/lit_claims_audit/{t1_results,t2_results,t2_injection_cos,t2_injection_gauss,t3_degeneracy,t4a_*,t4b_temperature_density,t5_*,t6_*,edge_checks}.json`.
+- Catalogs (DVC, `results/lit_claims_audit/artifacts.dvc`): matched noiseless refits; forward-modelled `noisy_*` (T2 grid, sensitivities, noisy nulls, E1 broadened, realistic instrument).
+- No figures yet (not requested).
 
 ## 7. Session History & Next Handoff
 ### Session Snapshot: October 19–20, 2026
-- Literature survey, PI plan and panel review. T3, T4a, T4b, T5, T6 complete; T1 complete except
-  tol 0.002; T2 queued behind it.
-### Next
-1. T2 forward-model grid → the Khaire verdict and an observability forecast.
-2. Synthesis: gap map / edge (PI), defense-panel on the result.
+- Literature survey (36 papers, 49 claims), PI plan, panel protocol review, and all six claim tests in full.
+- T2: the fitter was fixed after a crash, then the forward-model grid was run (16 catalogs, injection–recovery and nulls).
+- PI gap map v1, then a defense-panel review (NEEDS WORK), the PI-authorised checks E1–E4 and the panel
+  follow-ups (mechanism, transfer function, suite identity, realistic instrument), then gap map v2.
+- Withdrawn along the way: "contradicts Khaire", "WindStrongAGN contradicts Bolton's T₀" and the T6
+  localisation reading.
+### Next (all PI-authorisable on disk; opening a follow-on track and any paper are user-owned)
+1. Decider for the candidate edge: τ re-synthesis with swapped temperatures plus a [T₀, γ, A, b_turb] fit
+   (EDGE_MAP v2 §7 criteria; the panel ratifies them first).
+2. 3D-subcube jackknife (honest SEs, bin covariance), then rescore the forecasts.
+3. Phase-randomised Δτ null for the paired response; forward-space dN/dz matching to Danforth.
+4. PDF verification of the [body] literature numbers (including Khaire's data description).
+5. External, user-owned: the G160M LSF, a z = 0.1 snapshot, Sherwood run tables.

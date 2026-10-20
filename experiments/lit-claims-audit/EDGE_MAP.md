@@ -1,123 +1,157 @@
-# EDGE_MAP — lit-claims-audit
+# EDGE_MAP v2 — lit-claims-audit
 
-**PI synthesis, 2026-10-20.** Numbers come from `LEDGER.md` §3 [D-01]–[D-10] (not recomputed). **Review status:** PI-only, PROVISIONAL (rule 15). The defense-panel review of results (LEDGER §7 Next 2) is pending, so nothing below is load-bearing. **Scope:** Sherwood z = 0.3, noiseless, except T2 (COS-like forward model).
+**PI synthesis, 2026-10-20. Replaces v1.** Numbers come from `LEDGER.md` §3 [D-01]–[D-15] (not recomputed). **Review status:** PI-only, PROVISIONAL (rule 15). It incorporates the panel's NEEDS WORK corrections ([D-12]), and a panel re-review of v2 is required before any of it is load-bearing. **Scope:** Sherwood z = 0.3, noiseless, except where forward-modelled.
+
+> **What changed from v1 and why**
+> - **Khaire+2024a:** "partially contradicts" is withdrawn → CONSISTENT / EXTENDS by quantification ([D-12]). Their data (Δz = 1.79) would see only ≈ 1.0σ (post-hoc estimator) or ≈ 0.5σ (pre-registered) of our 3−2 residual.
+> - **Mechanism ([D-15]):** in every N bin, the fixed-N width difference equals the difference in thermal width from absorber gas temperature. It is the thermal state. **This makes the edge weaker as a feedback discriminator** (see §1).
+> - **E1 v1 (fixed-N Δb):** degenerate with a b_x ≈ 9 km/s broadening at the forecast sample size ([D-14]). The forecast rises to ~1,700 / ~1,400 sightlines once that nuisance is free.
+> - **Per-sightline 2-vs-3:** fails under the combined realistic instrument (BA 0.524 [0.520, 0.527]) → G1 is closed for 2–3.
+> - **E2 v1 (localisation):** retracted. The jitter null scores 0.996, above the real pair's 0.951 ([D-13]).
+> - **E3 v1 (class-4 T₀ +38%):** this was warm gas leaking under the 10^5 K cut. At a 10^4.5 K cut it is +2.7%, so "contradicts Bolton" is withdrawn ([D-13]).
+> - **E4 v1 (P_F(k) shape):** survives forward modelling but is demoted to a replication.
+> - **T4a:** CONFIRMS is downgraded to "consistent, borderline" ([D-12]).
+> - **Verb ceiling:** the 13 ≤ log N < 13.5 location was chosen post hoc and stays at "observed".
 
 ## 1. Bottom line
 
-The nulls come first:
-- **Winds do not broaden lines.** Δmedian b(2−1) at log N ≥ 13 is −0.46 km/s fiducial and +0.07 ⟨F⟩-matched, so Viel+2017's +3 km/s is excluded.
-- **Feedback does not move the thermal b-envelope.** Δb_env(4−1) = −0.54 km/s.
-- **The typical absorber is unchanged between paired runs.** Median paired Δb(3−2) = +0.01 km/s.
-- **Per-sightline discrimination is weak.** 2-vs-3 BA is 0.541 at S/N 30 against nulls of 0.50, and it fails the 0.52 bar at S/N 10 (0.519).
-- **The Γ-degeneracy A-ratio test is inconclusive.**
+Nulls first:
+- **Winds do not broaden lines.** Δb(2−1) at log N ≥ 13 is −0.46 / +0.07 km/s.
+- **Per-sightline 2-vs-3 discrimination fails under realistic combined conditions.** BA 0.524, lower bound 0.520 against the > 0.52 bar.
+- **Feedback leaves the cool T–ρ normalisation within ≈ 3% of no-feedback.** At a 10^4.5 K cut every class is within +2.7%, consistent with Bolton+2022.
+- **The b-envelope is unchanged within a borderline ±1 km/s.**
+- **The "localised minority of absorbers" statistic was uninformative** and is retracted.
 
-What survives is this. After dN/dz matching over Khaire+2024a's range, two Sherwood feedback variants stay **distinguishable between two simulations under a COS-like model with known thermal nuisances**. The difference is in line widths at fixed N: Δb(3−2) = +3.9 [3.5, 4.4] and Δb(4−1) = +4.8 [4.2, 5.7] km/s at 13 ≤ log N < 13.5. It does not restate line density: N/count-only BA is 0.509. In noiseless paired skewers the broadening is carried by a minority of absorbers, with the top 20% of lines giving 95% of it. For class 4 it goes with a volume-filling hot phase.
+What survives: after dN/dz matching over Khaire's range, Sherwood feedback variants leave a fixed-N width residual that is **distinguishable between two simulations under a COS-like model with known thermal nuisances**. Δb(3−2) is +3.9 and Δb(4−1) is +4.8 km/s at 13 ≤ log N < 13.5 (observed). It equals the thermal-width difference bin by bin (+2.8 / +4.9 at S/N 30). Feedback heats part of the moderately overdense absorbing gas: at fixed N, the median T_τ goes from 34,300 to 43,400 K.
 
-The signal is smaller than the 8–10 km/s offset between observed and simulated b. Detecting it would need ~650–700 (3−2) or 180–290 (4−1) box-equivalent sightlines at S/N 30, from a post-hoc estimator. Our edge is a mechanistic characterisation of where the feedback b-signal lives: resolved in N, built on shared ICs, and checked under forward modelling. It is not a claim of observational detectability.
+**Plainly, this weakens the edge as a feedback discriminator.** The signal is the thermal state, which is exactly what observers marginalise when they fit [T₀, γ] and b_turb. A 9 km/s broadening already makes the profile degenerate at the forecast sample size. The attribution is real physics, but it also puts the signal where it is most likely to be absorbed. What remains of the edge is one testable hypothesis: feedback adds a warm, N-localised tail that is not a T–ρ power law. Whether a [T₀, γ] fit absorbs that tail is untested.
 
 ## 2. Gap map
 
 | Gap | Literature position | Our result | Verdict | Why |
 |---|---|---|---|---|
-| G1 Per-sightline discrimination | None found (LIT_SURVEY §3.9, §4). Per-sightline ML exists only for thermal parameters (C-42 Nasir+2024, z = 4–5) | D-08: BA 0.579 noiseless (null 0.516). D-09: 0.541 at S/N 30 (nulls 0.497 / 0.499); 1-vs-4 0.602 | PARTIAL | Holm-significant, but ~4 points above chance is not a usable classifier. "Nothing published" rests on a search that found nothing |
-| G2 Do winds broaden b? (V17 vs N17) | C-09 Viel+2017: +3 km/s. C-03 Nasir+2017: "very little difference" | D-03: Δb(2−1) −0.46 / +0.07; Δb(3−2) +1.5 to +1.8 | PARTIAL | Settles the disagreement within the code family toward N17, but noiseless, at z = 0.3 vs 0.1, and with unconfirmed run identity |
-| G3 Envelope vs bulk | C-13 Bolton+2022; C-39 Hu+2024 | D-04: b_env 19.6–20.2 km/s for every class | CLOSED | A confirmation, not an edge |
-| G4 Paired-absorber response | No published analogue | D-06: median +0.01, mean +0.68 [+0.60, +0.76], top-20% share 95%; 1→4 match rate 38–39% | OPEN-EDGE (provisional) | Only shared ICs make this possible. It still lacks a fitter-jitter null |
-| G5 Degeneracy breaking after matching | C-26 Khaire+2024a (~4–5% at k > 0.04); C-27 Burkhart+2022; C-14 Bolton+2022 | D-07: P_F(k) shape −3.3 / −5.5 / −9.4%; A-ratios INCONCLUSIVE. D-08: Δb(4−1) +8.0 [+7.4, +8.6] at 12.5–13 (dndz12) | PARTIAL | The P_F(k) side repeats a known degeneracy breaker in a third suite. The b side is new, but only for 4−1: the 2–3 pair barely loads the degeneracy (D-02) |
-| G6 COS forecast at z ≈ 0.3 | C-47 Tillman+2025b (z ~ 0.4–1.8 gap); C-26 | D-09: n₃σ 650–700 / 180–290 (post-hoc); pre-registered estimator 2,800–7,000 / 640–1,140, unstable across noise seeds | PARTIAL | Statistical errors only; the 8–10 km/s offset is not included; G130M LSF |
-| **G7 (new)** Sign structure across N | Pooled or windowed statistics (C-12 uses 13.3–14.5; C-26) | D-08 / D-09: Δb > 0 at 12.5–13.5, ≈ 0 at 13.5–14, < 0 at 14–14.5 (forward-modelled 3−2 −1.0, 4−1 −1.5). The pre-registered pooled estimator cancels across bins | PARTIAL (post-hoc) | A candidate reason pooled statistics look "insensitive". Exploratory, and untested on Illustris/TNG |
-| **G8 (new)** Class-4 thermal state | C-13: Bolton ΔT₀ ≤ 2.4%. C-15: StrongAGN WHIM fraction 68.4% | D-05: cool-phase T₀ +38%; hot fraction at mean density 64.8% vs 11.0%; envelope unchanged | PARTIAL | A coherent picture inside our suite. Whether it contradicts Bolton depends on run identity and on how T₀ is defined |
+| G1 Per-sightline discrimination | None found (LIT_SURVEY §3.9) | D-15: 2v3 0.524 [0.520, 0.527] realistic; 1v4 0.566 | CLOSED (2–3) / PARTIAL (1–4) | 1–4 is not a clean AGN contrast: NoFeedback's star-formation prescription is unverified (D-12) |
+| G2 Do winds broaden b? (V17 vs N17) | C-09 Viel+2017 vs C-03 Nasir+2017 | D-03: Δb(2−1) −0.46 / +0.07 | PARTIAL | Favours N17, but noiseless, z = 0.3, run identity unknown |
+| G3 Envelope vs bulk | C-13 Bolton+2022; C-39 Hu+2024 | D-04: Δb_env(4−1) −0.54 fiducial / −1.03 ⟨F⟩-matched | CLOSED | Consistent, borderline; not an edge |
+| G4 Paired-absorber response | No analogue | D-13: \|Δb\| > 5 in 16% vs 2.7% for jitter; two-sided. D-15: P(ΔT > 0 \| Δb > 5) = 0.80 vs base rate 0.64 | PARTIAL (narrowed) | Localisation retracted. Chaotic divergence is not yet separated from the response |
+| G5 Degeneracy breaking after matching | C-26 Khaire+2024a; C-27 Burkhart+2022 | D-15: Δb = Δb_th. D-13: P_F(k) −2.4 / −4.4 / −6.8% at S/N 30 | PARTIAL | The b side is thermal and nuisance-degenerate at the forecast sample; the P_F(k) side is a replication |
+| G6 COS forecast at z ≈ 0.3 | C-47 Tillman+2025b; C-26 | D-09 / D-12 / D-14: n₃σ 650–700 (post-hoc) or 2,800–7,000 (pre-registered) for 3−2; ~1,700 / ~1,400 with the nuisance free | PARTIAL | SEs may be low by up to √3 (3 axes × 64 cells); the factor 2 was dropped (with it, ≈ 1,300 for 3−2) |
+| G7 Sign structure across N | Pooled or windowed statistics (C-12, C-26) | D-14: at b_x = 9 the residual is still +2.1 / +3.0 at 13–13.5. D-15: the sign change is thermal (class-4 gas at 14–14.5 is 0.08 dex cooler) | PARTIAL (observed) | The only part a uniform broadening cannot absorb. Its location was chosen post hoc |
+| G8 Class-4 thermal state | C-13 Bolton: ΔT₀ ≤ 2.4% | D-13: +2.7% [2.0, 3.4] at 10^4.5 K; hot fraction 64.8% | CLOSED | No contradiction; the warm tail moves to G9 |
+| **G9 (new)** Warm tail at fixed N, not a power law | C-36 Hu+2026 (hot IGM or v_tur ≈ 15 km/s); C-17 Bolton (extra heat or turbulence); C-39 Hu+2024 | D-15: +0.10 to +0.12 dex (3 vs 2), +0.15 to +0.29 dex (4 vs 1) at 12.5–13.5; cool T₀ moves ≤ 3% | OPEN (untested decider) | Whether a [T₀, γ] fit absorbs it is the open question. Its size (≤ 5 km/s) is below the 8–10 km/s tension, so feedback does not close the b tension |
 
 ## 3. Claim scorecard
 
-| Claim | Verdict | D-xx | Note |
-|---|---|---|---|
-| C-01 N17: small effect on CDDF and b | CONSISTENT | D-03 | Classes 1–3 only |
-| C-02 N17: Δb +1.8 km/s (AGN vs none) | CONSISTENT | D-03 | Our Δb(3−1) is +1.3 to +1.7 |
-| C-03 N17: winds change b little | CONSISTENT | D-03 | |
-| C-04 N17: winds give 2–5× more log N ≥ 14 absorbers | INCONCLUSIVE | D-03 | Ratio 1.84 / 1.47, at or below the low end |
-| C-05 N17: AGN broadening seen only at z = 0.1 | EXTENDS | D-03 | Present at z = 0.3 (N17 had no z = 0.3 output) |
-| C-06 AGN adds b > 50 km/s lines | CONSISTENT | D-03 | Ratio 1.31–1.34 |
-| C-08 Forward model shifts median b by ~8 km/s | INCONCLUSIVE | D-09 | Shift ranges from −0.5 to +8.8 depending on the model |
-| C-09 V17: winds +3, AGN +2 km/s | CONTRADICTS (winds) / CONSISTENT (AGN) | D-03 | |
-| C-12 Bolton: narrow-line tension | INCONCLUSIVE | D-09 | Medians 30.9–34.0 km/s; the peak statistic was not computed |
-| C-13 Bolton: T₀ unchanged by AGN | CONSISTENT (class 2) / mild tension (class 3, +6.9%) / CONTRADICTS (class 4, provisional) | D-04, D-05 | |
-| C-14 Bolton: Γ ratios | INCONCLUSIVE | D-07 | A₄/A₃ = 1.54 and A₃/A₁ = 0.89, both just outside the confirm bands |
-| C-16 StrongAGN changes CDDF shape | CONSISTENT | D-07 | χ²/bin 36 vs 5–9 |
-| C-21 AGN broadens b (direction) | CONSISTENT | D-03, D-08 | |
-| C-24 b stays elevated after T₀ is restored | CONSISTENT (pattern) | D-04 | Different mechanism (Simba jets) |
-| C-26 Khaire: insensitive after dN/dz matching | EXTENDS / partially CONTRADICTS (information content) / CONSISTENT (practical) | D-09 | Different simulation suites |
-| C-26 / C-27 P_F(k) shape residual | CONSISTENT | D-07 | |
-| C-33 Danforth: β = 1.65 | INCONCLUSIVE | D-07 | Ours 1.94–2.08, noiseless; not interpreted |
-| C-39 Hu+2024: b–N insensitive to WHIM | CONFIRMS (envelope) | D-04 | |
+| Claim | Verdict | D-xx |
+|---|---|---|
+| C-01 N17: small effect on CDDF and b | CONSISTENT | D-03 |
+| C-02 N17: Δb +1.8 km/s (AGN vs none) | CONSISTENT (ours +1.3 to +1.7) | D-03 |
+| C-03 N17: winds change b little | CONSISTENT | D-03 |
+| C-04 N17: winds give 2–5× more log N ≥ 14 absorbers | INCONCLUSIVE (ratio 1.84 / 1.47) | D-03 |
+| C-05 N17: AGN broadening seen only at z = 0.1 | EXTENDS (present at z = 0.3) | D-03 |
+| C-06 AGN adds b > 50 km/s lines | CONSISTENT (ratio 1.31–1.34) | D-03 |
+| C-08 Forward model shifts median b by ~8 km/s | INCONCLUSIVE (model-dependent, −0.5 to +8.8) | D-09 |
+| C-09 V17: winds +3, AGN +2 km/s | CONTRADICTS (winds) / CONSISTENT (AGN) | D-03 |
+| C-12 Bolton: narrow-line tension | INCONCLUSIVE (realistic-instrument medians 29.9–31.1; peak statistic not computed) | D-09, D-15 |
+| C-13 Bolton: T₀ unchanged by AGN | CONSISTENT (all classes within +2.7% at 10^4.5 K) | D-13 |
+| C-14 Bolton: Γ ratios | INCONCLUSIVE (A₄/A₃ = 1.54, A₃/A₁ = 0.89) | D-07 |
+| C-16 StrongAGN changes CDDF shape | CONSISTENT | D-07 |
+| C-21 AGN broadens b (direction) | CONSISTENT; attributed to heating | D-15 |
+| C-24 b stays elevated after T₀ is restored | CONSISTENT (pattern) | D-13, D-15 |
+| C-26 Khaire: insensitive after dN/dz matching | CONSISTENT; EXTENDS by quantification | D-12 |
+| C-26 / C-27 P_F(k) shape residual | CONSISTENT (survives forward model) | D-13 |
+| C-33 Danforth: β = 1.65 | INCONCLUSIVE | D-07 |
+| C-39 Hu+2024: b–N insensitive to WHIM | CONSISTENT, borderline | D-04, D-12 |
 
-## 4. Ranked edges
+## 4. Ranked edges (hedged one verb level: two v1 edges were falsified)
 
-**E1. The fixed-N width difference survives dN/dz matching and the COS-like forward model (G5, G6, G7).**
-- **Claim.** On Sherwood z = 0.3, after matching dN/dz over 12 ≤ log N < 14.5, pairs of feedback variants are distinguishable between two simulations under a COS-like model with known thermal nuisances. The difference is ≤ 5 km/s and concentrated at 13 ≤ log N < 13.5.
-- **Evidence (D-08, D-09, D-10).**
-  - Δb +3.9 (3−2) and +4.8 (4−1) km/s at S/N 30.
-  - BA 0.541 (worst seed 0.538) vs a null + margin of 0.519; 1-vs-4 BA 0.602.
-  - It is not line density or ⟨F⟩: N/count-only BA 0.509; residualising on [⟨F⟩, n13, ⟨τ⟩] leaves BA at 0.580.
-  - Sensitivities stay within 0.535–0.547.
-- **Strongest objection.** The 8–10 km/s offset between data and model is larger than every Δb. A thermal/turbulent nuisance that varies with N could mimic or erase the 3−2 difference. The only b_turb sensitivity run so far was one Gaussian broadening per sightline.
-- **Experiment.** A nuisance-degeneracy test on the existing T2 machinery. Apply an N-dependent b_turb plus a T₀/γ envelope shift to class 2 before forward modelling, fit it to class 3's binned b–N, and ask whether any nuisance setting reproduces class 3 within the block CIs at S/N 30. If one does, the edge reduces to "degenerate with thermal nuisance." The G160M LSF is not on disk and is needed for the z = 0.3 instrument.
+**E1. Candidate: feedback leaves a warm tail at fixed N that is not a T–ρ power law (G9).**
+- **Claim (candidate).** In Sherwood z = 0.3, feedback heats part of the moderately overdense absorbing gas. The fixed-N median T_τ rises +0.10 to +0.12 dex (3 vs 2), while the cool T–ρ normalisation moves ≤ 3% and the b-envelope stays put (borderline).
+- **Evidence (D-15, D-13).**
+  - Δb = Δb_th in every N bin, noiseless and at S/N 30.
+  - The fraction of absorbing gas above 10^4.5 K rises from 0.54 to 0.62.
+  - The G7 sign change is also thermal.
+  - The thermal-only τ synthesis reproduces the stored τ shape with a log-correlation of 1.000 / 0.998.
+- **Strongest objection.** This is the nuisance. A [T₀, γ] fit (with a steeper γ) plus b_turb may absorb it fully, and at the forecast sample even a one-parameter broadening does ([D-14]).
+- **Experiment.** τ re-synthesis with swapped temperatures, followed by a [T₀, γ, A] fit (runnable on disk; criteria in §7).
 
-**E2. Feedback acts on a localised minority of absorbers (G4).**
-- **Claim.** In noiseless paired skewers the typical absorber is unchanged. The mean broadening comes from roughly 20% of lines, and strong AGN reshuffles absorbers rather than shifting them.
-- **Evidence (D-06).** Median +0.01, mean +0.68 km/s, top-20% share 95%; 1→4 match rate 38–39%; the 5 km/s matching window agrees. It also fits the signed-response track's finding that the response is localised to the responding regions.
-- **Strongest objection.** No fitter-jitter null. Re-splitting blends produces heavy symmetric tails (9% of lines broaden by > 5 km/s, 7% narrow by > 5 km/s), and those tails alone could give a high top-20% share. It is also unobservable directly and noiseless only.
-- **Experiment.** Run the same paired statistics on class 2 against its own refits (`null2_dndz12`, `tol005`, `tol002` catalogs already exist) to get the jitter baseline for the localisation share and the > 5 km/s tails. The edge holds only if 2→3 clearly exceeds that baseline.
+**E2. The N-shape of Δb is the part a uniform broadening cannot absorb (G7).**
+- **Evidence (D-14).** At b_x = 9 km/s the residual stays at +2.1 (3−2) and +3.0 (4−1) at 13–13.5, while the neighbouring bins go negative. The profile χ² stays non-degenerate at full sample (178 / 213 over 5 bins).
+- **Strongest objection.**
+  - The 13–13.5 location was chosen post hoc (observed only).
+  - It is untested against an N-dependent T₀/γ nuisance.
+  - With the nuisance free it needs ~1,700 (Δz ≈ 39) / ~1,400 (Δz ≈ 33) sightlines, still optimistic (one-sided nuisance, 3 km/s grid).
+  - SEs may be up to √3 too small.
+- **Experiment.** A 3D-subcube jackknife to get honest SEs and bin covariance, then rescore the [D-14] χ² and forecasts. If they hold, apply the E1 [T₀, γ, A] fit to the profile.
 
-**E3. Class 4 is a two-phase IGM with the thermal floor intact (G8, G3).**
-- **Claim.** In this suite, the strong-AGN variant leaves its 10th-percentile temperature and b-envelope unchanged, while 61–65% of mean-density gas sits above 10⁵ K. That single picture accounts for its higher ⟨F⟩, fewer lines and extra broad weak lines.
-- **Evidence (D-04, D-05, D-08).** Hot fraction 64.8% vs 11.0–16.5%; f_HI about 10× lower; the 12–12.5 refit excess of +1.9 km/s. The 64.8% resembles Bolton's StrongAGN WHIM fraction of 68.4%, though the two are defined differently.
-- **Strongest objection.** Largely an explanation of the ⟨F⟩ offset, not an observable orthogonal to it. The +38% cool-phase T₀ may be an artefact of the T < 10⁵ K cut: the hot-phase tail can leak below the cut and pull T₀ up. Run identity is unresolved.
-- **Experiment.** Refit T₀/γ from the LOS fields with alternative cuts (10^4.5 K; HI- vs density-weighted). The contradiction stands only if ΔT₀ stays well above 2.4% under every cut. Settling run identity needs the Sherwood run parameter files, which we do not hold.
-
-**E4. A P_F(k) shape residual survives CDDF matching (G5). Weak.**
-- **Evidence (D-07).** −3.3 / −5.5 / −9.4% at k > 0.04 s/km; Holm reject.
-- **Strongest objection.** It replicates Khaire+2024a and Burkhart+2022 in a third suite, so it is not new. It sits beyond the observed COS cutoff at k > 0.03 s/km (C-35), and it is noiseless.
-- **Experiment.** Forward-model P_F(k) with the T2 LSF and noise, and check whether the residual's CI still excludes 0 at the k values COS resolves.
+**E3. Broadened absorbers in the feedback run are the heated ones (G4, narrowed).**
+- **Evidence (D-13, D-15).**
+  - The paired response is ~6× refit jitter (16% vs 2.7%) and two-sided, with net mean +0.7 km/s.
+  - Broadened absorbers have ΔT > 0 in 80% of cases against a 64% base rate (1→4: 0.91).
+  - Narrowed absorbers are not cooler (0.37 vs 0.36): they are re-decomposition or kinematics.
+- **Strongest objection.**
+  - Per-absorber Δb barely tracks Δb_th (r = 0.25; 5.6% of the variance).
+  - Chaotic divergence (Genel+2019) is not separated from the response.
+  - It is a simulation-only mechanism statement and cannot be observed directly.
+- **Experiment.** A phase-randomised Δτ null: perturb class-2 τ with the power of (τ₃ − τ₂) but random phases, refit, and compare the paired tail fractions and the ΔT conditionals (runnable on disk).
 
 ## 5. What is NOT an edge
 
-- **C-08 b-shift.** +4.4 to +4.9 km/s under the pre-registered model, but −0.5 to +8.8 across models. It comes from selection and continuum placement, so it is a systematics finding.
-- **T6 median.** Δb +0.010 [0.007, 0.012] km/s is statistically ≠ 0 and practically zero. The pre-registered EXTENDS rule passed on this median, so the rule was badly designed. The real content is the mean and the localisation, and both still need the jitter null.
-- **T3 A-ratios.** 1.54 and 0.89, just outside the confirm bands. INCONCLUSIVE, not a contradiction of Bolton.
-- **S/N 10.** BA 0.519 fails the bar; completeness at 12.5–13 is 17–24%.
-- **Per-sightline BA as a classifier.** 0.54 is a detection statistic, not a tool.
-- **2–3 "robust to ⟨F⟩".** A weak test (D-02): A₃/A₂ = 1.047.
-- **T4a CONFIRMS label.** The pre-registered bar also required Δmedian b ≥ 4 km/s. The bulk median at log N = 13.5 is +2.3 / +2.5, so the bar is met only by the pooled or low-N medians. The ⟨F⟩-matched Δb_env of −1.03 sits on the 1 km/s bar.
-- **Narrow-line tension "not confirmed".** Our statistic is the median and Bolton's is the peak, at a different z. This is not evidence against Bolton+2022.
-- **CDDF slope.** 1.94–2.08 against Danforth's 1.65, but noiseless; not interpreted.
+- **2-vs-3 per-sightline BA.** It fails the realistic instrument. The 1v4 BA of 0.566 rests on an unclean contrast.
+- **The T6 localisation share.** The jitter null scores higher (0.996). The pre-registered rule could not fail.
+- **The class-4 "+38%" T₀.** Cut leakage: +2.7% at 10^4.5 K.
+- **The P_F(k) shape residual.** It survives forward modelling (−2.4 / −4.4 / −6.8%) but replicates Khaire+2024a and Burkhart+2022. Significance against COS error bars is not assessed.
+- **The C-08 b-shift.** Model-dependent (−0.5 to +8.8 km/s); a systematics finding.
+- **T3 A-ratios.** Just outside the confirm bands; INCONCLUSIVE.
+- **"Contradicts Khaire."** Withdrawn: their Δz = 1.79 would see ≲ 1σ.
+- **Any single-estimator forecast.** Quote the post-hoc and pre-registered estimators together, every time.
+- **Feedback as the fix for the b tension.** Δb ≤ 5 km/s against an 8–10 km/s offset, and realistic medians are 29.9–31.1 km/s.
 
-## 6. Open caveats (all results)
+## 6. Open caveats
 
-1. **Run identity.** Bolton+2022 has no winds-only run, and our 4-class set matches no published run table.
-2. **Redshift.** Every literature anchor is at z = 0.1, and we have one snapshot at z = 0.3.
-3. **Fitter.** We use patched VoigtFit with AICc; the literature uses VPFIT. A FLAME/VIPER cross-check has not been done.
-4. **LSF.** We used the G130M LSF at 1327 Å; z = 0.3 Lyα needs G160M.
-5. **Literature numbers.** [body] numbers are WebFetch paraphrases, including Khaire's "largely insensitive". They must be checked against the PDFs.
-6. **Resolution.** Single resolution: b falls as resolution increases, and the CDDF needs 10–30% corrections at log N ≥ 14 (C-18).
-7. **Temperature weighting.** T is HI-weighted, not mass-weighted.
-8. **Forecast.** The 650–700 / 180–290 figures come from a post-hoc estimator (a stated deviation). Systematics are excluded, and 1 sightline is one 60 h⁻¹ cMpc box (Δz = 0.0234).
-9. **Bootstrap resolution.** p = 0.002 (500 resamples).
-10. **Novelty.** The G1 and G4 novelty claims rest on searches that found nothing. Re-search before any novelty claim.
-11. **Prior claims falsified in this line of work.** The eigen-voigt "robust to ⟨F⟩" claim was downgraded by D-02. Under the falsified-prior cascade rule, E1–E4 are hedged one verb level.
+1. **Run identity.** The 4-class set matches no published run table. NoFeedback's star-formation prescription is unverified. Shared ICs are confirmed: void-density correlation with class 1 is r = 0.991 / 0.891 / 0.501.
+2. **Redshift.** z = 0.3 vs the literature's 0.1.
+3. **Fitter.** Patched VoigtFit with AICc vs VPFIT.
+4. **LSF.** G130M at 1327 Å; z = 0.3 Lyα needs G160M.
+5. **Literature numbers.** [body] numbers, including Khaire's data description, still need PDF verification.
+6. **Resolution.** Single resolution, and b depends on resolution (C-18).
+7. **Temperature.** T is HI-/τ-weighted.
+8. **Forecasts.** Statistical only. The factor 2 was dropped (a deviation), SEs may be up to √3 low, and bin covariance was ignored.
+9. **Selection.** At S/N 30 the noise stage moves the signal in N (3−2 at 13–13.5 goes from 2.9 to 3.9). For 3−2 this selection is class-blind; for 4−1 it is not (class 4 is detected 1–10 points less often).
+10. **Novelty.** Novelty for G4/G9 rests on searches that found nothing.
 
 ## 7. Next-step authorisation gate
 
-**PI can authorise now (probe-class, data on disk, run each in full):**
-1. The defense-panel review of this EDGE_MAP. It is required before any edge becomes load-bearing.
-2. The E2 fitter-jitter null on the existing refit catalogs.
-3. The E1 nuisance-degeneracy test, forward-modelled at S/N 30.
-4. The E3 T₀ cut-robustness check on the LOS fields.
-5. The E4 forward-modelled P_F(k) check.
-6. PDF verification of every [body] number in §3 (support-researcher).
-7. A LEDGER [D-11] recording this map, and the §6 figures.
+**Remaining open tests:**
+
+| Test | Decides | Runnable on disk? |
+|---|---|---|
+| τ re-synthesis with swapped temperatures (class-2 ρ, v, f_HI with class-3 T, and vice versa) | E1: is the thermal attribution causal? | **Yes.** LOS fields are on disk and the mapping is validated (D-15) |
+| [T₀, γ, A] fit: parametric b_th(N) power law plus b_turb, fitted to class 2 to reproduce class 3's forward-modelled profile | E1/E2: is the tail absorbed by the nuisance? | **Yes**, as a parametric fit. A Hu-style SBI would need a Nyx training set, which we do not have |
+| Forward-space dN/dz matching (to Danforth+2016) | Matching realism | **Yes** (Danforth numbers need PDF verification) |
+| Phase-randomised Δτ null | E3 | **Yes** |
+| 3D-subcube jackknife + nuisance-marginalised Fisher forecast | E2, G6 | **Yes**, if the skewer coordinates are in the LOS headers (verify first) |
+| G160M LSF | Instrument realism at z = 0.3 | **No.** Public STScI file; external fetch needed |
+| z = 0.1 snapshot | Direct comparison with the literature | **No.** Data owners needed |
+
+**Proposed pre-commitment for the E1 decider, for the panel to ratify before it runs:**
+- **CAUSAL:** the swapped-T synthesis reproduces ≥ 80% of the class 3−2 Δb at 12.5–13.5.
+- **DEGENERATE (E1 and E2 close):** the best-fit [T₀, γ, A, b_turb] applied to class 2 reproduces class 3's binned profile with χ² p > 0.05 at full sample.
+- **OPEN-EDGE:** p ≤ 0.05 at full sample *and* at the sample size the jackknife-corrected forecast gives.
+
+A DEGENERATE outcome is a valid end state: feedback in this suite would then be indistinguishable from a thermal-state shift at fixed N, which is CONSISTENT with Khaire.
+
+**PI authorises (probe-class, on-disk data, run each in full):**
+1. The panel re-review of v2.
+2. The swap synthesis and the [T₀, γ, A] fit, first.
+3. The jackknife.
+4. The phase-randomised null.
+5. Forward-space dN/dz matching.
+6. PDF verification of the [body] numbers.
+7. A LEDGER [D-16] recording v2, plus the §6 figures and the §7 history.
 
 **User-owned:**
-- Getting data we lack: the G160M LSF, a z = 0.1 snapshot, Sherwood run parameter files, and other suites (Illustris/TNG catalogs for testing G7).
+- Fetching the G160M LSF and other external data.
+- Requesting a z = 0.1 snapshot or the run tables.
 - Opening any follow-on track.
-- Any paper. This document does not recommend one, and the paper trigger is the user's alone.
+- Any paper. This map does not recommend one.
