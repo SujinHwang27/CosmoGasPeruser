@@ -388,3 +388,108 @@ def binary_cv(cats_a: Dict[str, np.ndarray], cats_b: Dict[str, np.ndarray], bloc
         out[f"ba_{name}"] = {"value": float(point[0]), "ci95_lo": float(np.percentile(boot[:, 0], 2.5)),
                              "ci95_hi": float(np.percentile(boot[:, 0], 97.5))}
     return out
+
+
+# ---------------------------------------------------------------------------
+# T4b — temperature-density relation from the Sherwood LOS files (C-11, C-13, C-24)
+# ---------------------------------------------------------------------------
+RAW_DIRS = {1: "Physics1_nofeedback", 2: "Physics2_stellarwind", 3: "Physics3_windAGN", 4: "Physics4_windstrongAGN"}
+_LOS_HEADER_BYTES = 7 * 8 + 2 * 4                          # 7 doubles + nbins, numlos (int32)
+
+
+def read_los_fields(class_id: int, z: float = 0.3, raw_root: str = "data/raw/Sherwood"
+                    ) -> Dict[str, np.ndarray]:
+    """Memory-mapped density (rho/<rho>), HI fraction, HI-weighted T [K] and v_pec [km/s],
+    each (numlos, nbins), from the Sherwood los2048 binary (format: data/raw/Sherwood/src/utils.py)."""
+    path = Path(raw_root) / RAW_DIRS[class_id] / f"los2048_n16384_z{z:.3f}.dat"
+    with open(path, "rb") as fh:
+        hdr_d = np.fromfile(fh, dtype=np.float64, count=7)
+        nbins, numlos = (int(x) for x in np.fromfile(fh, dtype=np.int32, count=2))
+    off = _LOS_HEADER_BYTES + numlos * 4 + 3 * numlos * 8 + 2 * nbins * 8
+    size = nbins * numlos
+    expect = off + 4 * size * 8
+    if path.stat().st_size != expect:
+        raise ValueError(f"read_los_fields: {path} size {path.stat().st_size} != expected {expect}")
+    if abs(hdr_d[0] - z) > 1e-3:
+        raise ValueError(f"read_los_fields: header redshift {hdr_d[0]} != {z}")
+    names = ("density", "H1frac", "temp", "vpec")
+    out = {n: np.memmap(path, dtype=np.float64, mode="r", offset=off + i * size * 8, shape=(numlos, nbins))
+           for i, n in enumerate(names)}
+    out["header"] = {"z": float(hdr_d[0]), "omegaM": float(hdr_d[1]), "omegaL": float(hdr_d[2]),
+                     "omegab": float(hdr_d[3]), "h100": float(hdr_d[4]), "box_kpc_h": float(hdr_d[5]),
+                     "Xh": float(hdr_d[6]), "nbins": nbins, "numlos": numlos}
+    return out
+
+
+def t4b_temperature_density(n_skewers_sample: int = 4096, seed: int = 0, logd_lo: float = -0.5,
+                            logd_hi: float = 0.5) -> Dict[str, object]:
+    """Per class: T0 and gamma from the median log T in 0.1-dex log-density bins over
+    [logd_lo, logd_hi]; temperature-PDF fractions (pixels, i.e. volume-weighted along the sightline)
+    above 1e5 K overall and at Delta > 10; block-bootstrap over the same skewer sample in every class.
+    The HI-weighted temperature is what the LOS files carry (not a mass-weighted T)."""
+    rng = np.random.default_rng(seed)
+    blocks = skewer_blocks()
+    rows = np.sort(rng.choice(16384, n_skewers_sample, replace=False))
+    edges = np.arange(logd_lo, logd_hi + 1e-9, 0.1)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    ub, inv = np.unique(blocks[rows], return_inverse=True)
+    W = np.stack([np.bincount(np.random.default_rng(seed + 1 + i).integers(0, ub.size, ub.size), minlength=ub.size)
+                  for i in range(100)]).astype(np.float64)
+    res: Dict[str, object] = {"n_skewers": int(rows.size), "fit_range_logDelta": [logd_lo, logd_hi],
+                              "note": "HI-weighted T and density per pixel from the LOS files"}
+    boot = {}
+    for c in range(1, N_CLASSES + 1):
+        f = read_los_fields(c)
+        res.setdefault("header", f["header"])
+        logd = np.log10(np.asarray(f["density"][rows]))      # (n, nbins)
+        logT = np.log10(np.asarray(f["temp"][rows]))
+        sk_w = np.ones(rows.size)
+
+        def fit(weights_sk):
+            w = np.repeat(weights_sk, logd.shape[1])
+            ld, lt = logd.ravel(), logT.ravel()
+
+            def tdr(sel):
+                med = []
+                for lo, hi in zip(edges[:-1], edges[1:]):
+                    m = (ld >= lo) & (ld < hi) & (w > 0) & sel
+                    order = np.argsort(lt[m])
+                    cw = np.cumsum(w[m][order])
+                    med.append(lt[m][order][np.searchsorted(cw, 0.5 * cw[-1])])
+                slope, icpt = np.polyfit(centers, med, 1)
+                return 10 ** icpt, slope + 1.0
+
+            T0, gam = tdr(np.ones_like(lt, dtype=bool))
+            T0c, gamc = tdr(lt < 5.0)                     # cool phase only (T < 1e5 K)
+            hot = float(np.sum(w * (lt > 5.0)) / np.sum(w))
+            dense = ld > 1.0
+            hot_dense = float(np.sum((w * (lt > 5.0))[dense]) / max(np.sum(w[dense]), 1e-12))
+            mean_d = (ld >= -0.5) & (ld < 0.5)
+            hot_mean = float(np.sum((w * (lt > 5.0))[mean_d]) / max(np.sum(w[mean_d]), 1e-12))
+            return T0, gam, hot, hot_dense, T0c, gamc, hot_mean
+
+        T0, gam, hot, hot_dense, T0c, gamc, hot_mean = fit(sk_w)
+        bt = np.array([fit(Wi[inv]) for Wi in W])
+        boot[c] = bt
+        hist, he = np.histogram(logT.ravel(), bins=np.arange(3.0, 7.01, 0.1))
+        res[f"class{c}"] = {"T0": float(T0), "gamma": float(gam), "frac_T_gt_1e5": hot,
+                            "frac_T_gt_1e5_at_Delta_gt_10": hot_dense, "T0_cool": float(T0c),
+                            "gamma_cool": float(gamc), "frac_T_gt_1e5_near_mean_density": hot_mean,
+                            "logT_pdf": {"edges": he.tolist(), "frac": (hist / hist.sum()).tolist()}}
+    for a, b in ((2, 1), (3, 1), (4, 1), (3, 2), (4, 3)):
+        r = boot[a][:, 0] / boot[b][:, 0] - 1.0
+        pt = res[f"class{a}"]["T0"] / res[f"class{b}"]["T0"] - 1.0
+        res[f"dT0_rel_{a}{b}"] = {"value": pt, "ci95_lo": float(np.percentile(r, 2.5)), "ci95_hi": float(np.percentile(r, 97.5))}
+        dg = boot[a][:, 1] - boot[b][:, 1]
+        res[f"dgamma_{a}{b}"] = {"value": res[f"class{a}"]["gamma"] - res[f"class{b}"]["gamma"],
+                                 "ci95_lo": float(np.percentile(dg, 2.5)), "ci95_hi": float(np.percentile(dg, 97.5))}
+        rc = boot[a][:, 4] / boot[b][:, 4] - 1.0
+        res[f"dT0cool_rel_{a}{b}"] = {"value": res[f"class{a}"]["T0_cool"] / res[f"class{b}"]["T0_cool"] - 1.0,
+                                      "ci95_lo": float(np.percentile(rc, 2.5)), "ci95_hi": float(np.percentile(rc, 97.5))}
+        dm = boot[a][:, 6] - boot[b][:, 6]
+        res[f"dhot_mean_{a}{b}"] = {"value": res[f"class{a}"]["frac_T_gt_1e5_near_mean_density"] - res[f"class{b}"]["frac_T_gt_1e5_near_mean_density"],
+                                    "ci95_lo": float(np.percentile(dm, 2.5)), "ci95_hi": float(np.percentile(dm, 97.5))}
+        dh = boot[a][:, 3] - boot[b][:, 3]
+        res[f"dhot_dense_{a}{b}"] = {"value": res[f"class{a}"]["frac_T_gt_1e5_at_Delta_gt_10"] - res[f"class{b}"]["frac_T_gt_1e5_at_Delta_gt_10"],
+                                     "ci95_lo": float(np.percentile(dh, 2.5)), "ci95_hi": float(np.percentile(dh, 97.5))}
+    return res

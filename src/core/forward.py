@@ -43,26 +43,22 @@ def gaussian_lsf(fwhm_kms: float, dv_kms: float) -> np.ndarray:
     return k / k.sum()
 
 
-def tabulated_lsf(path: Path, dv_kms: float, lam_obs: float = 1595.0) -> np.ndarray:
+def tabulated_lsf(path: Path, dv_kms: float, lam_obs: float = 1595.0, cos_pixel_A: float = 0.00997) -> np.ndarray:
     """COS LSF table -> kernel on the native velocity grid.
 
-    The file holds a pixel-offset column and one LSF column per tabulated wavelength (COS
-    format, ~2.0 km/s per offset pixel for G130M); the column nearest `lam_obs` is used,
-    interpolated onto multiples of dv_kms and normalised. The caller states which grating it
-    is (the on-disk table is G130M at 1327 A; z = 0.3 Lya at ~1580-1609 A is G160M).
+    The on-disk table (COS_LSF1_cw1327_75) has two columns: pixel offset (COS pixels,
+    -159..159) and the LSF value. Offsets are mapped to velocity with the G130M dispersion
+    `cos_pixel_A` at the observed wavelength (z = 0.3 Lya ~ 1595 A), exactly as the Sherwood
+    spectrum generator (data/raw/Sherwood/src/utils.py) does; the kernel is interpolated onto
+    multiples of dv_kms and normalised. (z = 0.3 Lya would fall in G160M; that table is not on
+    disk, which LEDGER records as a forward-model caveat.)
     """
     raw = np.loadtxt(path)
-    header = raw[0]
-    if np.all(header[1:] > 1000):                         # first row = wavelengths
-        lams, tab = header[1:], raw[1:]
-        off_pix, cols = tab[:, 0], tab[:, 1:]
-    else:                                                  # no wavelength row: offset, profile
-        lams, off_pix, cols = np.array([lam_obs]), raw[:, 0], raw[:, 1:2]
-    j = int(np.argmin(np.abs(lams - lam_obs)))
-    prof = cols[:, j] / np.trapezoid(cols[:, j], off_pix)
-    # COS FUV detector pixel ~ 2.0 km/s (G130M: 9.97 mA at 1327 A -> 2.25 km/s); use 2.25.
-    v = off_pix * 2.25
-    h = int(np.floor(v.max() / dv_kms))
+    if raw.ndim != 2 or raw.shape[1] != 2:
+        raise ValueError(f"tabulated_lsf: expected (offset, value) columns, got shape {raw.shape}")
+    off_pix, prof = raw[:, 0], raw[:, 1]
+    v = off_pix * C_KMS * cos_pixel_A / lam_obs
+    h = int(np.floor(np.abs(v).max() / dv_kms))
     grid = np.arange(-h, h + 1) * dv_kms
     k = np.interp(grid, v, prof, left=0.0, right=0.0)
     return k / k.sum()
