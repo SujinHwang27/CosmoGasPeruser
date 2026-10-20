@@ -208,6 +208,22 @@ with seven binding defense-panel amendments).
 
   Bootstrap p-values have resolution 0.002 (500 resamples); the Holm threshold for the smallest p is
   0.0083.
+- **[D-11] Pre-registration of the E1 nuisance-degeneracy criterion (written 2026-10-20 before the E1
+  results were opened; the E1 catalogs were still being built).** Test: class 2 (class 1) at dndz12 plus a
+  fixed Gaussian broadening b_x ∈ {3, 6, 9, 12, 15, 18, 21} km/s, unknown to the fitter, forward-modelled
+  at S/N 30 (noise seed 0), against class 3 (class 4) at S/N 30.
+  - **DEGENERATE at b_x** if both hold: (i) the binned Δmedian b profile over the five N bins has χ²
+    p > 0.05 at the full 16384 sightlines, **or** p > 0.05 after scaling χ² to the forecast sample
+    (χ² × 650/16384 for 3−2, × 250/16384 for 4−1); and (ii) the per-sightline RF BA (all features) CI
+    lower bound is ≤ 0.52.
+  - **NON-DEGENERATE (fixed-broadening nuisance only)** if no b_x meets the full-sample criterion. The
+    forecast-sample criterion is reported alongside.
+  - **Declared weakness (defense panel, attack 4):** a uniform quadrature broadening only adds b, so it
+    cannot reproduce the sign change of Δb across N (+ at 12.5–13.5, − at 14–14.5). Its nuisance enters
+    only the class-2 (class-1) side and is not re-matched in dN/dz. "Non-degenerate" here is therefore
+    weak evidence. It excludes only the simplest thermal-like nuisance (a T₀-like offset), not a T₀/γ
+    shift (attack 1). That requires τ re-synthesis from the LOS fields with swapped temperatures, which is
+    not run in this track.
 
 ---
 
