@@ -493,3 +493,64 @@ def t4b_temperature_density(n_skewers_sample: int = 4096, seed: int = 0, logd_lo
         res[f"dhot_dense_{a}{b}"] = {"value": res[f"class{a}"]["frac_T_gt_1e5_at_Delta_gt_10"] - res[f"class{b}"]["frac_T_gt_1e5_at_Delta_gt_10"],
                                      "ci95_lo": float(np.percentile(dh, 2.5)), "ci95_hi": float(np.percentile(dh, 97.5))}
     return res
+
+
+# ---------------------------------------------------------------------------
+# T3 — UVB/Gamma degeneracy: CDDF slope and match, flux PDF, P_F(k) shape after CDDF matching
+# ---------------------------------------------------------------------------
+def cddf_stats(cats: List[Dict[str, np.ndarray]], lo: float = 12.5, hi: float = 14.5,
+               dbin: float = 0.1) -> Dict[str, object]:
+    """Per class: CDDF slope beta (dN/dlogN ∝ N^(1-beta), fit over [lo, hi]) and the CDDF ratio
+    to class 1 over [13.3, 14.5] (chi^2 per bin, Poisson)."""
+    edges = np.arange(lo, hi + 1e-9, dbin)
+    cen = 0.5 * (edges[:-1] + edges[1:])
+    out = {}
+    ref = np.histogram(cats[0]["logN"], np.arange(13.3, 14.5 + 1e-9, dbin))[0].astype(float)
+    for c, cat in enumerate(cats, start=1):
+        h = np.histogram(cat["logN"], edges)[0].astype(float)
+        slope = np.polyfit(cen, np.log10(np.maximum(h, 1)), 1)[0]
+        hm = np.histogram(cat["logN"], np.arange(13.3, 14.5 + 1e-9, dbin))[0].astype(float)
+        out[f"class{c}"] = {"beta": float(1.0 - slope),
+                            "chi2_per_bin_vs_class1_13.3-14.5": float(np.mean((hm - ref) ** 2 / np.maximum(ref, 1))),
+                            "count_ratio_vs_class1_13.3-14.5": float(hm.sum() / ref.sum())}
+    return out
+
+
+def flux_shape_stats(A: Sequence[float], n_skewers: int = 4096, seed: int = 0, n_boot: int = 300
+                     ) -> Dict[str, object]:
+    """For tau-rescaled (factors A) flux: KS distance of the pixel flux PDF vs class 1, and the
+    per-sightline P_F(k) ratio P_c/P_1 (each class normalised by its own <F>) in k bins with a
+    paired block bootstrap over the same skewers."""
+    from scipy.stats import ks_2samp
+    from src.core.eigen_voigt import load_flux_variant
+    rng = np.random.default_rng(seed)
+    rows = np.sort(rng.choice(16384, n_skewers, replace=False))
+    blocks = skewer_blocks()[rows]
+    ub, inv = np.unique(blocks, return_inverse=True)
+    W = np.stack([np.bincount(np.random.default_rng(seed + 1 + i).integers(0, ub.size, ub.size), minlength=ub.size)
+                  for i in range(n_boot)]).astype(np.float64)[:, inv]          # (n_boot, n_skewers)
+    dv = 2.6365028403447024
+    k = 2 * np.pi * np.fft.rfftfreq(2048, d=dv)[1:]                           # s/km
+    kedges = np.geomspace(k[0], k[-1], 13)
+    kb = np.clip(np.digitize(k, kedges) - 1, 0, 11)
+    P, F = {}, {}
+    for c in range(1, N_CLASSES + 1):
+        f = load_flux_variant("taurescaled", c, rows=rows, factors=list(A))
+        F[c] = f
+        d = f / f.mean() - 1.0
+        p = np.abs(np.fft.rfft(d, axis=1)[:, 1:]) ** 2
+        P[c] = np.stack([p[:, kb == j].mean(axis=1) for j in range(12)], axis=1)   # (n_skewers, 12)
+    kc = np.array([k[kb == j].mean() for j in range(12)])
+    out: Dict[str, object] = {"A": list(A), "k_centers_s_per_km": kc.tolist()}
+    for c in range(2, N_CLASSES + 1):
+        ks = ks_2samp(F[c].ravel()[::7], F[1].ravel()[::7]).statistic
+        ratio = P[c].mean(axis=0) / P[1].mean(axis=0)
+        boot = (W @ P[c]) / (W @ P[1])                                        # (n_boot, 12)
+        hi_k = kc > 0.04
+        dev_hi = (W @ P[c])[:, hi_k].sum(axis=1) / (W @ P[1])[:, hi_k].sum(axis=1) - 1.0
+        out[f"class{c}_vs_1"] = {
+            "flux_pdf_ks": float(ks), "pk_ratio": ratio.tolist(),
+            "pk_ratio_ci95_lo": np.percentile(boot, 2.5, axis=0).tolist(),
+            "pk_ratio_ci95_hi": np.percentile(boot, 97.5, axis=0).tolist(),
+            "pk_ratio_k_gt_0.04_minus1": _summ(float(P[c].mean(axis=0)[hi_k].sum() / P[1].mean(axis=0)[hi_k].sum() - 1.0), dev_hi)}
+    return out
