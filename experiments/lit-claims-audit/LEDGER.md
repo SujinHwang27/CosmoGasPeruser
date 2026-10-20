@@ -192,8 +192,9 @@ with seven binding defense-panel amendments).
     systematics statement. The difference is real but small (Δb ≤ 5 km/s, narrow N windows), and an
     observational detection needs ~200–700 box-equivalent sightlines plus marginalisation of the 8–10 km/s
     thermal/turbulent offset. Caveats: different simulations (Illustris/TNG vs Sherwood), z = 0.3 vs 0.1,
-    VoigtFit vs VPFIT, and a G130M LSF. → **EXTENDS / partially CONTRADICTS (information content),
-    CONSISTENT (practical observability at current systematics).**
+    VoigtFit vs VPFIT, and a G130M LSF. → ~~EXTENDS / partially CONTRADICTS (information content),
+    CONSISTENT (practical observability at current systematics).~~ **Superseded by [D-12]: CONSISTENT
+    with Khaire+2024a; EXTENDS by quantification. "Contradicts" is withdrawn.**
 - **[D-10] Multiplicity (Holm across the six pre-registered primaries, practical nulls per
   amendment 6).**
 
@@ -224,6 +225,71 @@ with seven binding defense-panel amendments).
     weak evidence. It excludes only the simplest thermal-like nuisance (a T₀-like offset), not a T₀/γ
     shift (attack 1). That requires τ re-synthesis from the LOS fields with swapped temperatures, which is
     not run in this track.
+- **[D-12] Defense-panel review of EDGE_MAP.md: NEEDS WORK. Accepted corrections:**
+  - **Khaire+2024a (attack 3, accepted in full).** Khaire's "insensitive" is conditional on their data:
+    34 QSOs, Δz = 1.79, S/N > 10, VPFIT, G130M (from the arXiv HTML; still to verify against the PDF).
+    At Δz = 1.79 (≈ 76 boxes), our own forecast gives ≈ 1.0σ (post-hoc estimator) or ≈ 0.5σ
+    (pre-registered) for 3−2. **Verdict: CONSISTENT. EXTENDS** by quantifying, in Sherwood at z = 0.3, a
+    fixed-N residual that would need Δz ≳ 15 at S/N 30 per 7.9 km/s pixel (≈ 40 per resolution
+    element), before nuisance marginalisation.
+  - **Forecast (attack 5).** Both estimators are quoted together wherever either appears. Amendment 6's
+    two-sample factor 2 was dropped: the reasoning (one observed sample vs a model) is stated, but this
+    is a deviation, and with the factor n₃σ doubles (≈ 1,300 / Δz ≈ 30 for 3−2). The 192 blocks are 3
+    projection axes × 64 cells, and the axes cross the same structures, so SEs may be low by up to √3
+    and n₃σ low by up to 3×. Bins share skewers (no covariance used). Δb at S/N 30 is inflated relative
+    to the LSF-only value (3−2 at 13–13.5: 2.9 → 3.9).
+  - **Verb ceiling (attack 6).** The 13 ≤ log N < 13.5 location was chosen after the forward model had
+    moved the signal there, and it was never a primary. It is stated at "observed". T4/T6 "unchanged"
+    claims are equivalence claims tested as ≠ 0: the ⟨F⟩-matched Δb_env(4−1) = −1.03 fails a ±1 km/s
+    bound, so the **T4a CONFIRMS label is downgraded to "consistent, borderline"**. The T4a bar also
+    required Δmedian b ≥ 4 km/s, and the bulk at log N = 13.5 is +2.3 / +2.5.
+  - **Contrasts (attack 7).** 4−1 is not "AGN only": NoFeedback may also differ in star-formation
+    prescription (unverified). The clean AGN contrasts are 3−2, 4−2 and 4−3; their fixed-N values are
+    computed under the mechanism check.
+  - **Pending panel items run in this track:** mechanism attribution (attack 1a), transfer function
+    (attack 2), suite identity (attack 7) and a combined realistic instrument (attack 8).
+  - **Not run** (recorded as open): τ re-synthesis T₀/γ swap and the [T₀, γ, A] fit (attack 1b/c);
+    forward-space dN/dz re-matching to Danforth (attack 9); a phase-randomised Δτ perturbation null
+    (attack 10); 3D-subcube jackknife and nuisance-marginalised Fisher forecast (attack 5).
+- **[D-13] PI-authorised edge checks E2, E3, E4 (`results/lit_claims_audit/edge_checks.json`).**
+  - **E2: jitter null for the T6 paired response (noiseless, |Δv| < 10 km/s, log N ≥ 12).**
+
+    | Comparison | mean Δb | \|Δb\| > 5 | Δb > 5 / < −5 | top-20% share |
+    |---|---|---|---|---|
+    | class 2 → 3 (fiducial) | +0.68 | 15.8% | 9.0% / 6.8% | 0.951 |
+    | class 2 → 3 (dndz12) | +0.80 | 16.2% | 9.5% / 6.7% | 0.948 |
+    | class 1 → 4 (fiducial) | +3.55 | 29.2% | 18.8% / 10.4% | 0.943 |
+    | null: class 2 at A₂ vs A₃ (5% τ refit) | +0.05 | 2.7% | 1.5% / 1.2% | **0.996** |
+    | null: class 2 fiducial vs tol 0.005 | −0.39 | 11.6% | 4.7% / 6.9% | 0.971 |
+
+    - The **localisation statistic is uninformative**: the jitter null scores 0.996, higher than the real
+      pair. The T6 EXTENDS rule was unfalsifiable and the "~20% of lines carry the broadening" reading is
+      **retracted**.
+    - What survives: the paired response is about 6× more frequent than refit jitter at matched τ
+      amplitude (|Δb| > 5 in 16% vs 2.7%). It is **two-sided** (9% broaden, 7% narrow) with net mean
+      +0.7 km/s. The perturbation-matched null (attack 10) and chaotic divergence (Genel+2019) are not
+      separated; the paired ΔT test runs under the mechanism check.
+  - **E3: cool-phase T₀ vs the temperature cut (2048 skewers, block CIs; volume and density weighting
+    agree).**
+
+    | Class vs 1 | cut 10^4.5 | 10^4.75 | 10^5 | 10^5.5 | mode at Δ≈1 | 10th pct at Δ≈1 |
+    |---|---|---|---|---|---|---|
+    | 2 | +0.2% | +0.2% | +0.3% | +1.1% | 0 | +0.3% |
+    | 3 | +0.7% | +2.7% | +6.9% | +18% | 0 | +1.2% |
+    | 4 | **+2.7% [2.0, 3.4]** | +11% | +38% | +358% | 0 | +20% [17, 23] |
+
+    The D-05 "+38% cool-phase T₀" was warm gas leaking under the 10^5 K cut. With a 10^4.5 K cut,
+    every class is within +2.7% of class 1, **consistent with Bolton+2022's ≤ 2.4%**, and the mode does
+    not move (the mode's resolution is ±4.7%). The robust class-4 differences are the hot-phase fraction
+    (D-05) and a 20% warmer 10th percentile at mean density. **D-05's "contradicts Bolton for
+    WindStrongAGN" is withdrawn.** It is replaced by: feedback leaves the cool T–ρ normalisation within
+    ≈ 3% and adds a warm/hot tail whose size depends on the class.
+  - **E4: P_F(k) shape after the COS-like forward model (CDDF-matched, 4096 skewers, noise power
+    subtracted).** At k > 0.04 s/km: −2.4 [−3.4, −1.3] / −4.4 [−5.5, −3.0] / −6.8 [−9.4, −4.3]% for
+    classes 2/3/4 vs 1 at S/N 30, the same as at S/N ∞ (−2.4 / −4.6 / −7.0) and close to noiseless D-07.
+    At k 0.01–0.03: +7.8 / +2.5 / +8.6%. It survives the forward model but is a replication (Khaire,
+    Burkhart). The ratio is largely LSF-invariant, and significance against COS error bars is not
+    assessed → **demoted** to replication.
 
 ---
 
