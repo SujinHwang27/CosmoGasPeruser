@@ -697,3 +697,68 @@ def forward_pk_stats(A: Sequence[float], lsf: np.ndarray, snr: float = 30.0, con
             ent[name] = _summ(pt, bt)
         out[f"class{c}_vs_1"] = ent
     return out
+
+
+# ---------------------------------------------------------------------------
+# Mechanism test (defense panel attack 1a): tau-weighted gas temperature of each Voigt component
+# ---------------------------------------------------------------------------
+B_TH_COEF = 0.12845                          # b_th = sqrt(2 k T / m_H) = 0.12845 sqrt(T [K]) km/s
+
+
+def _synth_weights(f: Dict[str, np.ndarray], row: int, dv: float = SPAN_KMS / 2048) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Per real-space pixel of one skewer: HI weight (rho x f_HI), redshift-space position u = i dv + v_pec
+    (periodic) and thermal width b_th."""
+    n = np.asarray(f["density"][row], dtype=np.float64) * np.asarray(f["H1frac"][row], dtype=np.float64)
+    T = np.asarray(f["temp"][row], dtype=np.float64)
+    u = (np.arange(n.size) * dv + np.asarray(f["vpec"][row], dtype=np.float64)) % SPAN_KMS
+    return n, u, np.maximum(B_TH_COEF * np.sqrt(T), 0.5)
+
+
+def synth_tau_shape(f: Dict[str, np.ndarray], row: int, dv: float = SPAN_KMS / 2048) -> np.ndarray:
+    """Un-normalised tau(v) of one skewer from the LOS fields (thermal Gaussian per real-space pixel)."""
+    n, u, b = _synth_weights(f, row, dv)
+    v = np.arange(n.size) * dv
+    d = (v[:, None] - u[None, :] + SPAN_KMS / 2) % SPAN_KMS - SPAN_KMS / 2
+    return (np.exp(-(d / b[None, :]) ** 2) * (n / b)[None, :]).sum(axis=1)
+
+
+def tau_mapping_lag(class_id: int, n_skewers: int = 64, seed: int = 0, max_lag: int = 6) -> Dict[str, object]:
+    """Validate the field -> spectrum mapping: correlation of log synth tau with log tau = -ln F of the stored
+    flux, per integer pixel lag; returns the best lag and the correlation there."""
+    from src.core.eigen_voigt import load_flux_variant
+    rows = np.sort(np.random.default_rng(seed).choice(16384, n_skewers, replace=False))
+    f = read_los_fields(class_id)
+    F = load_flux_variant("fiducial", class_id, rows=rows)
+    lags = np.arange(-max_lag, max_lag + 1)
+    cors = np.zeros(lags.size)
+    for k, r in enumerate(rows):
+        s = np.log(synth_tau_shape(f, int(r)) + 1e-30)
+        t = np.log(-np.log(np.clip(F[k], 1e-300, 1.0)) + 1e-30)
+        cors += np.array([np.corrcoef(np.roll(s, L), t)[0, 1] for L in lags])
+    cors /= rows.size
+    return {"lags": lags.tolist(), "mean_corr": cors.tolist(), "best_lag": int(lags[np.argmax(cors)]),
+            "best_corr": float(cors.max())}
+
+
+def component_temperatures(class_id: int, cat: Dict[str, np.ndarray], lag_px: int = 0) -> np.ndarray:
+    """tau-weighted HI temperature at each component: sum_j w_j(v_c) T_j / sum_j w_j(v_c), with
+    w_j(v) = n_HI,j exp(-((v - u_j)/b_j)^2) / b_j the contribution of real-space pixel j to tau at the
+    component's velocity v_c (shifted by lag_px pixels). Returns T (n_components,)."""
+    f = read_los_fields(class_id)
+    dv = SPAN_KMS / 2048
+    out = np.full(cat["logN"].size, np.nan)
+    order = np.argsort(cat["sightline"], kind="stable")
+    sl = cat["sightline"][order]
+    bounds = np.searchsorted(sl, np.arange(int(sl.max()) + 2))
+    for s in range(bounds.size - 1):
+        i0, i1 = bounds[s], bounds[s + 1]
+        if i1 == i0:
+            continue
+        idx = order[i0:i1]
+        n, u, b = _synth_weights(f, s, dv)
+        T = np.asarray(f["temp"][s], dtype=np.float64)
+        vc = (cat["v_kms"][idx] - lag_px * dv) % SPAN_KMS
+        d = (vc[:, None] - u[None, :] + SPAN_KMS / 2) % SPAN_KMS - SPAN_KMS / 2
+        w = np.exp(-(d / b[None, :]) ** 2) * (n / b)[None, :]
+        out[idx] = (w * T[None, :]).sum(axis=1) / np.maximum(w.sum(axis=1), 1e-300)
+    return out

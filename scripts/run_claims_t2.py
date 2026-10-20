@@ -27,8 +27,8 @@ COS_LSF = Path("data/raw/Sherwood/COS_LSF1_cw1327_75_z0.100.dat")
 FID = Path("results/eigen_voigt_embedding/artifacts/catalog_fiducial_full")
 
 
-def get_lsf(kind: str, dv: float) -> np.ndarray:
-    return tabulated_lsf(COS_LSF, dv) if kind == "cos" else gaussian_lsf(17.0, dv)
+def get_lsf(kind: str, dv: float, fwhm: float = 17.0) -> np.ndarray:
+    return tabulated_lsf(COS_LSF, dv) if kind == "cos" else gaussian_lsf(fwhm, dv)
 
 
 def run_catalog(args, wave, dv) -> None:
@@ -38,7 +38,7 @@ def run_catalog(args, wave, dv) -> None:
     ocfg = ObsConfig(snr=float(args.snr), noise=args.noise, b_turb_max=args.bturb, b_extra=args.bextra,
                      cont_sigma=0.0 if not np.isfinite(float(args.snr)) else args.cont)
     fcfg = NoisyFitConfig(d_aicc=args.daicc)
-    lsf = get_lsf(args.lsf, dv)
+    lsf = get_lsf(args.lsf, dv, args.lsf_fwhm)
     out_dir = OUT / f"noisy_{args.name}"
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "meta.json").write_text(json.dumps({"A_key": args.A_key, "A": A, "obs": ocfg.__dict__,
@@ -114,6 +114,7 @@ def main() -> None:
     ap.add_argument("--snr", default="30")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--lsf", choices=("cos", "gauss"), default="cos")
+    ap.add_argument("--lsf-fwhm", dest="lsf_fwhm", type=float, default=17.0)
     ap.add_argument("--noise", choices=("const", "sqrtF"), default="const")
     ap.add_argument("--cont", type=float, default=0.01)
     ap.add_argument("--daicc", type=float, default=-2.0)
