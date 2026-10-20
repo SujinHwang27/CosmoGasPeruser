@@ -19,7 +19,7 @@ with seven binding defense-panel amendments).
 | T4b | T–ρ relation from the LOS temperature field | ✅ Classes 1–3 ≈ unchanged T₀; **WindStrongAGN: volume-filling hot phase** |
 | T6 | Line-by-line paired response (shared ICs) | ✅ **EXTENDS**: typical absorber unchanged; broadening carried by ~20% of lines |
 | T3 | Γ/UVB degeneracy after CDDF matching | ✅ A-ratios INCONCLUSIVE (just outside the confirm bands); **P_F(k) shape residual EXTENDS** |
-| T1 | Does the 2–3 width lead survive line-density matching (noiseless)? | ✅ **SURVIVES (noiseless)** at all matchings; Δb(4−1) EXTENDS; tol 0.002 pending |
+| T1 | Does the 2–3 width lead survive line-density matching (noiseless)? | ✅ **SURVIVES (noiseless)** at all matchings and fitter depths; Δb(4−1) EXTENDS |
 | T2 | Does it survive a COS-like forward model? (the only test of Khaire+2024a) | 🚀 running |
 
 ---
@@ -120,7 +120,8 @@ with seven binding defense-panel amendments).
     | b-only / N-only / b(N)-residual (dndz12) | 0.566 / **0.516** / 0.553 |
     | residualised on [⟨F⟩, n13, ⟨τ⟩] | 0.580 |
     | axis-held-out | 0.579 |
-    | tol 0.005 | 0.579 |
+    | tol 0.005 (35 comps/sightline) | 0.579 |
+    | tol 0.002 (53 comps/sightline) | 0.586 [0.582, 0.589] |
     | detect 12.5 | 0.575 |
     | detect 13.0 | **0.539** |
 
@@ -128,7 +129,8 @@ with seven binding defense-panel amendments).
     line widths at fixed N (N/count-only ≈ chance) and **concentrated in weak lines (log N 12–13)**, as
     the detect-13 drop shows. That is the observability risk T2 tests.
   - 1-vs-4 binary: 0.792 fiducial → 0.736–0.746 under every matching.
-  - Pending: tol 0.002 sensitivity.
+  - Fitter depth: decomposing more than twice as deeply (25 → 53 components per sightline, tol 0.002)
+    leaves the 2–3 BA unchanged or slightly higher, so the lead is not an under-splitting artefact.
 
 ---
 
