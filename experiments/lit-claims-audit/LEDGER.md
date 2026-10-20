@@ -316,6 +316,58 @@ with seven binding defense-panel amendments).
     T₀/γ (N-dependent) nuisance is untested.
   - Per-sightline BA rises with b_x (broadening also changes line counts), so BA is not a degeneracy
     metric here. The profile χ² is.
+- **[D-15] Defense-panel follow-ups: mechanism, transfer function, suite identity, realistic instrument
+  (`edge_checks.json` → m1, x2, x7, x8).**
+  - **Mapping validated.** A thermal-only τ synthesis from the LOS fields (ρ·f_HI weight, u = x·Δv +
+    v_pec, b_th from the HI-weighted T) reproduces the stored τ shape with a mean log-correlation of
+    1.000 (class 1) and 0.998 (class 4) at a lag of +1 pixel, which is the known roll(exp(−τ), 1). Each
+    component gets a τ-weighted gas temperature T_τ, and b_th = 0.128 √T_τ.
+  - **Mechanism (panel attack 1a): the fixed-N width difference is thermal.** Δmedian b equals Δmedian
+    b_th in every N bin (paired block CIs):
+
+    | Pair | Catalog | 12.5–13 | 13–13.5 | 13.5–14 | 14–14.5 |
+    |---|---|---|---|---|---|
+    | 3−2 | noiseless: Δb / Δb_th | +2.3 / +2.5 | +3.0 / +3.0 | +0.1 / +0.5 | −0.3 / 0.0 |
+    | 4−1 | noiseless | +8.0 / +7.0 | +3.7 / +4.4 | −0.7 / +0.1 | −2.4 / −2.6 |
+    | 3−2 | S/N 30 | +0.9 / +0.8 | +3.9 / +2.8 | +1.3 / +1.5 | −1.0 / +0.1 |
+    | 4−1 | S/N 30 | +3.2 / +3.1 | +4.8 / +4.9 | +0.1 / +1.0 | −1.5 / −2.0 |
+
+    - At fixed N, class-3 absorbers' gas is +0.10 to +0.12 dex hotter than class 2's at 12.5–13.5
+      (median T_τ 34,300 → 43,400 K at 13–13.5). The fraction above 10^4.5 K rises from 0.54 to 0.62.
+      Class 4 is +0.15 to +0.29 dex hotter than class 1.
+    - The G7 sign change is also thermal: class-4 gas at 14–14.5 is 0.08 dex cooler than class 1's.
+    - The thermal envelope (D-04) stays put while the median moves, and the cool T–ρ normalisation near
+      mean density moves by ≤ 3% (D-13 E3). Feedback **heats part of the moderately overdense absorbing
+      gas** (a warm tail at fixed N), rather than shifting the T–ρ power law near mean density.
+    - **Consequence (accepted from attack 1):** this is the thermal state, the quantity observational
+      b–N analyses fit as a nuisance. An observer fitting a [T₀, γ] power law to b–N would likely see a
+      steeper γ or a warm tail. Whether a power-law fit absorbs it fully is untested (no τ re-synthesis
+      with swapped T).
+    - Contrasts: 4−2 at 13–13.5 is +3.9 noiseless and +4.6 at S/N 30 (Δb_th +4.4 / +5.1). 4−3 is +0.9 /
+      +0.7 (Δb_th +1.4 / +2.3). Both are thermal as well.
+  - **Paired per absorber (noiseless 2→3).** Δb correlates only weakly with Δb_th (r = 0.25; 5.6% of the
+    variance), so per-absorber changes are mostly decomposition and kinematics. Broadening tails are
+    hotter: P(ΔT > 0 | Δb > 5) = 0.80 against a base rate of 0.64, with a median +0.11 dex. Narrowing
+    tails are not cooler: P(ΔT < 0 | Δb < −5) = 0.37 against a base of 0.36. For 1→4: r = 0.51, 26%,
+    P = 0.91. **Broadened absorbers in the feedback run are the heated ones; narrowed absorbers are
+    re-decomposition or kinematics.**
+  - **Transfer function (attack 2).** Matching noiseless dndz12 components to S/N-30 components per
+    class: at fixed true (N, b), detection fraction and b bias are class-independent for 3−2 (within
+    2 percentage points and 0.26 km/s, except one sparse cell). For 4−1 they are not: class 4 is detected
+    1–10 points less often. The observation-stage selection depends strongly on b (12.5–13: 74%
+    detected at b < 20, 28% at b > 35) but is the same across classes 2 and 3. So the noise-stage
+    change in where Δb sits in N (2.9 → 3.9 at 13–13.5) is a class-blind selection acting on different
+    true b distributions, not a class-dependent fitter artefact.
+  - **Suite identity (attack 7).** LOS headers are identical across classes (cosmology, box). Void-pixel
+    (Δ < 0.3) log-density correlation with class 1 is r = 0.991 / 0.891 / 0.501 for classes 2/3/4, so
+    shared ICs hold. AGN, strong AGN especially, rearranges even void gas. The star-formation-prescription
+    question for NoFeedback stays open (no run tables).
+  - **Combined realistic instrument (attack 8):** Gaussian FWHM 19 km/s, S/N 15 per pixel, σ ∝ √F, 2%
+    continuum error, b_turb ~ U(0, 20). 2-vs-3 RF BA is **0.524 [0.520, 0.527]**, b-only 0.520, so it
+    **fails the > 0.52 bar (lower bound = 0.520)**. 1-vs-4 BA is 0.566 [0.561, 0.571]. Δb(3−2) at 13–13.5
+    is still +3.5 in the ensemble, and median b is 29.9–31.1 km/s. Per-sightline 2–3 discrimination
+    does not survive realistic combined conditions. The ensemble residual does, before nuisance
+    marginalisation.
 
 ---
 
