@@ -1,0 +1,392 @@
+{
+  "snrinf|blank": {
+    "false_per_sightline": 0.0,
+    "false_per_sightline_logN13": 0.0,
+    "false_per_sightline_logN12p5": 0.0,
+    "median_b": null
+  },
+  "snrinf|class1": {
+    "completeness": 1.0,
+    "median_db": 5.88435966619727e-11,
+    "mad_db": 1.1219469797651982e-11,
+    "median_dlogN": -1.4210854715202004e-13,
+    "N12.5-13.0": {
+      "completeness": 1.0,
+      "median_db": 5.920952617088915e-11
+    },
+    "N13.0-13.5": {
+      "completeness": 1.0,
+      "median_db": 5.8115290357818594e-11
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": 6.45457021164475e-11
+    }
+  },
+  "snrinf|class2": {
+    "completeness": 1.0,
+    "median_db": 6.012790265685908e-11,
+    "mad_db": 1.106315039578476e-11,
+    "median_dlogN": -1.3855583347321954e-13,
+    "N12.5-13.0": {
+      "completeness": 1.0,
+      "median_db": 5.983125106467924e-11
+    },
+    "N13.0-13.5": {
+      "completeness": 1.0,
+      "median_db": 5.946887426944159e-11
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": 6.390621365426341e-11
+    }
+  },
+  "snrinf|class3": {
+    "completeness": 1.0,
+    "median_db": 5.8117066714657994e-11,
+    "mad_db": 1.3073986337985843e-11,
+    "median_dlogN": -1.2256862191861728e-13,
+    "N12.5-13.0": {
+      "completeness": 1.0,
+      "median_db": 5.653255641391297e-11
+    },
+    "N13.0-13.5": {
+      "completeness": 1.0,
+      "median_db": 5.880806952518469e-11
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": 6.266276386668324e-11
+    }
+  },
+  "snrinf|class4": {
+    "completeness": 1.0,
+    "median_db": 5.5210946925399185e-11,
+    "mad_db": 1.1802114840975264e-11,
+    "median_dlogN": -1.509903313490213e-13,
+    "N12.5-13.0": {
+      "completeness": 1.0,
+      "median_db": 5.1173287829442415e-11
+    },
+    "N13.0-13.5": {
+      "completeness": 1.0,
+      "median_db": 5.6344262588936544e-11
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": 7.219469466690498e-11
+    }
+  },
+  "snr10|blank": {
+    "false_per_sightline": 0.055,
+    "false_per_sightline_logN13": 0.01,
+    "false_per_sightline_logN12p5": 0.055,
+    "median_b": 11.568892130869948
+  },
+  "snr10|class1": {
+    "completeness": 0.47,
+    "median_db": -1.111114379305013,
+    "mad_db": 5.1873630346339645,
+    "median_dlogN": 0.03754116560611909,
+    "N12.5-13.0": {
+      "completeness": 0.2364341085271318,
+      "median_db": -3.6175696120501577
+    },
+    "N13.0-13.5": {
+      "completeness": 0.8478260869565217,
+      "median_db": -1.6147782204960368
+    },
+    "N13.5-14.5": {
+      "completeness": 0.98,
+      "median_db": 1.4824138613107536
+    }
+  },
+  "snr10|class2": {
+    "completeness": 0.475,
+    "median_db": -2.179570992211886,
+    "mad_db": 4.747124190416345,
+    "median_dlogN": 0.02156367723769126,
+    "N12.5-13.0": {
+      "completeness": 0.228,
+      "median_db": -2.990139153948313
+    },
+    "N13.0-13.5": {
+      "completeness": 0.8365384615384616,
+      "median_db": -3.5064883786960124
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": -0.35792002388057576
+    }
+  },
+  "snr10|class3": {
+    "completeness": 0.4825,
+    "median_db": -1.5320231424301092,
+    "mad_db": 6.4749202009748394,
+    "median_dlogN": 0.0350665677473323,
+    "N12.5-13.0": {
+      "completeness": 0.22916666666666666,
+      "median_db": -0.8656737219490793
+    },
+    "N13.0-13.5": {
+      "completeness": 0.84,
+      "median_db": -3.3619382647201235
+    },
+    "N13.5-14.5": {
+      "completeness": 0.9428571428571428,
+      "median_db": -0.9474343519588899
+    }
+  },
+  "snr10|class4": {
+    "completeness": 0.415,
+    "median_db": -1.0812727944147724,
+    "mad_db": 4.824600215407217,
+    "median_dlogN": 0.028101447093417775,
+    "N12.5-13.0": {
+      "completeness": 0.16538461538461538,
+      "median_db": 1.645103582217974
+    },
+    "N13.0-13.5": {
+      "completeness": 0.8202247191011236,
+      "median_db": -1.4279365998137976
+    },
+    "N13.5-14.5": {
+      "completeness": 0.9803921568627451,
+      "median_db": -1.2993951832913293
+    }
+  },
+  "snr20|blank": {
+    "false_per_sightline": 0.29,
+    "false_per_sightline_logN13": 0.0175,
+    "false_per_sightline_logN12p5": 0.2725,
+    "median_b": 26.92971782143792
+  },
+  "snr20|class1": {
+    "completeness": 0.79,
+    "median_db": -0.5522732803745019,
+    "mad_db": 3.656852038019972,
+    "median_dlogN": 0.011110212175685419,
+    "N12.5-13.0": {
+      "completeness": 0.6867924528301886,
+      "median_db": -1.274713820292293
+    },
+    "N13.0-13.5": {
+      "completeness": 0.9901960784313726,
+      "median_db": -0.5919590828673122
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": -0.16089638229162517
+    }
+  },
+  "snr20|class2": {
+    "completeness": 0.8175,
+    "median_db": -0.20167427916481984,
+    "mad_db": 3.1535290300843037,
+    "median_dlogN": 0.009560375588327119,
+    "N12.5-13.0": {
+      "completeness": 0.7183673469387755,
+      "median_db": -0.6458505349522206
+    },
+    "N13.0-13.5": {
+      "completeness": 0.9619047619047619,
+      "median_db": 0.035823678382211455
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": 0.300639119580115
+    }
+  },
+  "snr20|class3": {
+    "completeness": 0.78,
+    "median_db": -0.18377683395893296,
+    "mad_db": 3.887645388104308,
+    "median_dlogN": 0.017037451387723834,
+    "N12.5-13.0": {
+      "completeness": 0.6653386454183267,
+      "median_db": -1.8243830240555532
+    },
+    "N13.0-13.5": {
+      "completeness": 0.9705882352941176,
+      "median_db": 0.4054735283256008
+    },
+    "N13.5-14.5": {
+      "completeness": 0.9787234042553191,
+      "median_db": -0.08640816597983658
+    }
+  },
+  "snr20|class4": {
+    "completeness": 0.6525,
+    "median_db": -0.6453876055202272,
+    "mad_db": 3.809058142840307,
+    "median_dlogN": 0.006524415199670841,
+    "N12.5-13.0": {
+      "completeness": 0.4980694980694981,
+      "median_db": -1.6406794140269483
+    },
+    "N13.0-13.5": {
+      "completeness": 0.9042553191489362,
+      "median_db": -1.0200518983241942
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": 0.4690347848199288
+    }
+  },
+  "snr30|blank": {
+    "false_per_sightline": 0.7075,
+    "false_per_sightline_logN13": 0.035,
+    "false_per_sightline_logN12p5": 0.3425,
+    "median_b": 33.84762903711531
+  },
+  "snr30|class1": {
+    "completeness": 0.9225,
+    "median_db": -0.0927671979714404,
+    "mad_db": 3.594178601605673,
+    "median_dlogN": 0.0058327510848936726,
+    "N12.5-13.0": {
+      "completeness": 0.8914728682170543,
+      "median_db": -0.43442318638788
+    },
+    "N13.0-13.5": {
+      "completeness": 0.970873786407767,
+      "median_db": 0.01432516024490127
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": 0.06761242456716587
+    }
+  },
+  "snr30|class2": {
+    "completeness": 0.9125,
+    "median_db": -0.4465992568408552,
+    "mad_db": 3.025493065839539,
+    "median_dlogN": -0.006365189515728176,
+    "N12.5-13.0": {
+      "completeness": 0.8700787401574803,
+      "median_db": -0.7773969015546918
+    },
+    "N13.0-13.5": {
+      "completeness": 0.98,
+      "median_db": -0.1014020888082694
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": -0.2717878090141177
+    }
+  },
+  "snr30|class3": {
+    "completeness": 0.8775,
+    "median_db": -0.29692815602469835,
+    "mad_db": 3.925082440820976,
+    "median_dlogN": 0.0016172005351080543,
+    "N12.5-13.0": {
+      "completeness": 0.8212927756653993,
+      "median_db": -0.6959858844942381
+    },
+    "N13.0-13.5": {
+      "completeness": 0.9813084112149533,
+      "median_db": -0.29692815602469835
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": 0.28640035232576366
+    }
+  },
+  "snr30|class4": {
+    "completeness": 0.8675,
+    "median_db": 0.40488045631376934,
+    "mad_db": 3.4768595108954017,
+    "median_dlogN": 0.00381431157146217,
+    "N12.5-13.0": {
+      "completeness": 0.7984189723320159,
+      "median_db": -0.9921437113675875
+    },
+    "N13.0-13.5": {
+      "completeness": 0.9795918367346939,
+      "median_db": 0.5654768501063678
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": 0.7772747248539318
+    }
+  },
+  "snr50|blank": {
+    "false_per_sightline": 2.895,
+    "false_per_sightline_logN13": 0.1625,
+    "false_per_sightline_logN12p5": 0.915,
+    "median_b": 39.18084711611199
+  },
+  "snr50|class1": {
+    "completeness": 0.95,
+    "median_db": 0.20368683273143695,
+    "mad_db": 2.351113041611635,
+    "median_dlogN": 0.0028243610087343995,
+    "N12.5-13.0": {
+      "completeness": 0.9254901960784314,
+      "median_db": 0.46827376366717033
+    },
+    "N13.0-13.5": {
+      "completeness": 0.9911504424778761,
+      "median_db": 0.00326221558003148
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": 0.3664712594223207
+    }
+  },
+  "snr50|class2": {
+    "completeness": 0.965,
+    "median_db": -0.058231022860240955,
+    "mad_db": 1.9922470035871775,
+    "median_dlogN": -0.0011903613895789533,
+    "N12.5-13.0": {
+      "completeness": 0.95,
+      "median_db": -0.1017126638860475
+    },
+    "N13.0-13.5": {
+      "completeness": 0.9891304347826086,
+      "median_db": 0.3292385644886586
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": -0.1292360186276582
+    }
+  },
+  "snr50|class3": {
+    "completeness": 0.9425,
+    "median_db": 0.03592099694782647,
+    "mad_db": 2.5083816890123316,
+    "median_dlogN": 0.0050190496189248535,
+    "N12.5-13.0": {
+      "completeness": 0.9198473282442748,
+      "median_db": 0.29435154281380704
+    },
+    "N13.0-13.5": {
+      "completeness": 0.9805825242718447,
+      "median_db": -0.26640512673122885
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": -0.03893414736718981
+    }
+  },
+  "snr50|class4": {
+    "completeness": 0.8975,
+    "median_db": -0.04465661789105724,
+    "mad_db": 2.807070758806038,
+    "median_dlogN": 0.00363956852432068,
+    "N12.5-13.0": {
+      "completeness": 0.8433734939759037,
+      "median_db": 0.010258169485306112
+    },
+    "N13.0-13.5": {
+      "completeness": 0.9836065573770492,
+      "median_db": 0.3799806565041681
+    },
+    "N13.5-14.5": {
+      "completeness": 1.0,
+      "median_db": -0.2300860879521025
+    }
+  }
+}

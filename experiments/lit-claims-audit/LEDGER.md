@@ -20,7 +20,7 @@ with seven binding defense-panel amendments).
 | T6 | Line-by-line paired response (shared ICs) | ✅ **EXTENDS**: typical absorber unchanged; broadening carried by ~20% of lines |
 | T3 | Γ/UVB degeneracy after CDDF matching | ✅ A-ratios INCONCLUSIVE (just outside the confirm bands); **P_F(k) shape residual EXTENDS** |
 | T1 | Does the 2–3 width lead survive line-density matching (noiseless)? | ✅ **SURVIVES (noiseless)** at all matchings and fitter depths; Δb(4−1) EXTENDS |
-| T2 | Does it survive a COS-like forward model? (the only test of Khaire+2024a) | 🚀 running |
+| T2 | Does it survive a COS-like forward model? (the only test of Khaire+2024a) | ✅ **EXTENDS**: distinguishable per sightline (2–3 BA 0.541, nulls 0.50); ensemble needs ~650 (3−2) / ~200 (4−1) sightlines at S/N 30; the noiseless→observed b shift depends on the continuum/noise systematics |
 
 ---
 
@@ -131,6 +131,83 @@ with seven binding defense-panel amendments).
   - 1-vs-4 binary: 0.792 fiducial → 0.736–0.746 under every matching.
   - Fitter depth: decomposing more than twice as deeply (25 → 53 components per sightline, tol 0.002)
     leaves the 2–3 BA unchanged or slightly higher, so the lead is not an under-splitting artefact.
+- **[D-09] T2 — forward-modelled (COS-like) observability: the matched feedback difference does NOT wash
+  out in the sim-vs-sim limit; it needs hundreds of sightlines.** Scope: dndz12 matching (Khaire's
+  12 ≤ log N < 14.5 range), tabulated COS G130M LSF (z = 0.3 Lyα would be G160M; mismatch stated), rebin
+  ×3, 1% Legendre-≤2 continuum error, Gaussian noise, AICc model selection, 16384 sightlines/class.
+  Results in `results/lit_claims_audit/t2_results.json`, `t2_injection_{cos,gauss}.json`.
+  - **Fitter fixes before the full run (engineering, no science gate).** The first launch crashed
+    (leastsq with more parameters than pixels in a 5-px region). Fixes: components capped at
+    (n_pix − 2)/3 per region; each region's fit must beat the no-absorption model by the same ΔAICc
+    criterion; any per-sightline exception is recorded as an empty, flagged fit. Zero crashed sightlines
+    in every catalog; median χ²_ν 1.10–1.14 (0.41–0.46 at S/N ∞, error floor 10⁻³).
+  - **Injection–recovery (400 single lines per class from each class's own fiducial (b, N)).** S/N ∞:
+    100% complete, Δb = 0.00. S/N 30: 87–92% complete, median Δb −0.45 to +0.40 km/s (12.5–13: 80–89%).
+    S/N 10: 42–48% complete (17–24% at 12.5–13). Isolated-line b is unbiased to < 1 km/s at S/N ≥ 20.
+    **False lines on blank spectra** (all from the continuum-error term; pure noise gives 0.02–0.05):
+    0.06 / 0.29 / 0.71 / 2.90 per sightline at S/N 10/20/30/50, of which 0.01 / 0.02 / 0.04 / 0.16 have
+    log N ≥ 13.
+  - **Per-sightline 2-vs-3 (pre-registered primary, S/N 30, 10 CV seeds per noise seed).** RF BA
+    0.539 / 0.540 / 0.546 / 0.538 / 0.542 over 5 noise seeds (mean 0.541; min CI lower bound 0.534).
+    Label null (class 2 vs class 2, different noise) 0.497 [0.493, 0.501]; rescaling-only null (class 2
+    at A₃, independent noise) 0.499 [0.496, 0.502]. Lower bound 0.534 > 0.52 and > null + 0.02 →
+    **EXTENDS (distinguishable per sightline under a COS-like model)**. LR agrees (0.546).
+    - S/N trend: ∞ 0.581 (LSF + rebinning alone cost nothing), 50 0.550, 30 0.541, 20 0.533,
+      10 0.519 [0.515, 0.523] (fails the 0.52 bar at S/N 10).
+    - Sensitivities at S/N 30 all 0.535–0.547: Gaussian LSF 0.544, σ ∝ √F 0.541, ΔAIC < −10 0.541,
+      b_turb ~ U(0, 20) 0.537, no continuum error 0.547, ⟨F⟩ matching instead of dN/dz 0.535.
+    - Ablations: b-only 0.526, N/count-only 0.509, detect 12.5 0.538, **detect 13.0 0.535**. The
+      noiseless signal sat in weak lines (detect-13 dropped it to 0.539); forward-modelled, the weak
+      lines are gone and what survives is carried by log N ≥ 13 lines, which is also where false lines
+      are rare.
+  - **1-vs-4:** 0.602 at S/N 30 (0.748 at S/N ∞, 0.555 at S/N 10) → EXTENDS.
+  - **Ensemble Δmedian b at fixed N (S/N 30, paired block CIs).** 3−2: +0.9 [0.6, 1.2] (12.5–13),
+    **+3.9 [3.5, 4.4] (13–13.5)**, +1.3 [0.9, 1.8] (13.5–14), −1.0 (14–14.5). 4−1: +3.2 (12.5–13),
+    **+4.8 [4.2, 5.7] (13–13.5)**, ≈ 0 (13.5–14), −1.5 (14–14.5). With no continuum error: 3−2 +3.4,
+    4−1 +3.9 at 13–13.5. The forward model moves the 3−2 signal from 12.5–13 (noiseless +2.6) to 13–13.5.
+  - **Forecast (statistical only; one observed sample vs a model prediction, single-sample block SE).**
+    - The pre-registered estimator (inverse-variance mean of Δb over N bins) gives n₃σ = 2,800–7,000
+      (3−2) and 640–1,140 (4−1) sightlines at S/N 30. It is unstable across noise seeds because Δb
+      changes sign at 14–14.5 and the bins partly cancel.
+    - **Post-hoc bin-resolved estimator** (Σ(Δ/SE)² = 9 over bins; stated as a deviation): n₃σ ≈
+      650–700 sightlines (Δz ≈ 15) for 3−2 and 180–290 (Δz ≈ 4–7) for 4−1 at S/N 30, stable across
+      seeds and sensitivities. Most informative single bin: 13–13.5, ~900 sightlines (3−2).
+    - 1 sightline = one 60 h⁻¹ cMpc box, Δz = 0.0234 at z = 0.3. Systematic data-vs-model b offsets
+      (observed b exceeds simulations by 8–10 km/s; C-08, C-12) are NOT included. They are larger than
+      every Δb here, so an observational test needs the thermal/turbulent nuisance marginalised, not
+      just more sightlines.
+  - **Pre-registered secondary verdicts.**
+    - Narrow-line tension (every class's median b < 30 km/s): **not confirmed** at S/N 30 (30.9 / 31.1
+      / 32.6 / 34.0).
+    - Noiseless→forward-modelled median-b shift ≥ 4 km/s ("consistent with C-08"): met for classes 1–3
+      (+4.8 / +4.9 / +4.4; class 4 +2.2) under the pre-registered model. **This shift is
+      model-dependent:** +2.4 with no continuum error, −0.5 at S/N ∞, +8.8 at S/N 50 (continuum false
+      lines). It comes from selection under noise and continuum placement, not single-line bias
+      (injection Δb < 1 km/s). We record it as a systematics finding, not as support for C-08.
+  - **Khaire+2024a verdict (verb ceiling: "distinguishable between two simulations under a COS-like
+    model with known thermal nuisances", Sherwood z = 0.3).** After dN/dz matching over Khaire's range,
+    the b–N difference between feedback variants survives forward modelling, per sightline (BA 0.54–0.60
+    vs nulls 0.50) and in the ensemble (Δb 3.9–4.8 km/s at 13–13.5). "Largely insensitive" is not
+    reproduced as an information-content statement. Our reading: the insensitivity is a sample-size and
+    systematics statement. The difference is real but small (Δb ≤ 5 km/s, narrow N windows), and an
+    observational detection needs ~200–700 box-equivalent sightlines plus marginalisation of the 8–10 km/s
+    thermal/turbulent offset. Caveats: different simulations (Illustris/TNG vs Sherwood), z = 0.3 vs 0.1,
+    VoigtFit vs VPFIT, and a G130M LSF. → **EXTENDS / partially CONTRADICTS (information content),
+    CONSISTENT (practical observability at current systematics).**
+- **[D-10] Multiplicity (Holm across the six pre-registered primaries, practical nulls per
+  amendment 6).**
+
+  | Test | Primary | Estimate | p | Holm |
+  |---|---|---|---|---|
+  | T1 | 2–3 BA vs rescaling null + 0.02 (noiseless, dndz12) | 0.579 vs 0.536 | < 10⁻¹⁰ (z ≈ 28) | reject |
+  | T2 | 2–3 BA vs max null + 0.02 (S/N 30, worst seed) | 0.538 vs 0.519 | < 10⁻¹⁰ (z ≈ 10) | reject |
+  | T3 | P_F(k > 0.04) shape residual after CDDF matching | −3.3 / −5.5 / −9.4% | < 0.002 | reject |
+  | T4 | Δb_env(4−1) ≠ 0 | −0.54 [−0.73, −0.37] | < 0.002 | reject (|Δ| < 1 → CONFIRMS-Bolton outcome stands) |
+  | T5 | Δb(2−1) ≠ 0, log N ≥ 13 | −0.46 fiducial / +0.07 ⟨F⟩ | < 0.002 / 0.42 | reject / retain (neither has V17's sign) |
+  | T6 | paired median Δb(3−2) ≠ 0 | +0.010 [0.007, 0.012] km/s | < 0.002 | reject (statistically ≠ 0, practically zero) |
+
+  Bootstrap p-values have resolution 0.002 (500 resamples); the Holm threshold for the smallest p is
+  0.0083.
 
 ---
 
