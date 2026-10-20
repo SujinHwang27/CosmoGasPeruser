@@ -65,6 +65,13 @@ def run_injection(args, wave, dv) -> None:
         snr = float(snr_s)
         fm = ForwardModel(wave, dv, lsf, ObsConfig(snr=snr, cont_sigma=0.0 if not np.isfinite(snr) else args.cont))
         fit = NoisyVoigtFitter(fm)
+        blank = [fit.fit(fm.observe(np.ones(wave.size), rng))[0] for _ in range(args.n_inject)]
+        bl = np.vstack(blank)
+        res[f"snr{snr_s}|blank"] = {"false_per_sightline": float(len(bl) / len(blank)),
+                                    "false_per_sightline_logN13": float((bl[:, 2] >= 13.0).sum() / len(blank)),
+                                    "false_per_sightline_logN12p5": float((bl[:, 2] >= 12.5).sum() / len(blank)),
+                                    "median_b": float(np.median(bl[:, 1])) if len(bl) else None}
+        print(f"[t2-inject] snr {snr_s} blank: {res[f'snr{snr_s}|blank']}", flush=True)
         for c in range(1, 5):
             cat = np.load(FID / f"class{c}.npz")
             m = (cat["logN"] >= 12.5) & (cat["logN"] <= 14.5)

@@ -255,14 +255,15 @@ class NoisyVoigtFitter:
         comps_all, chi2_tot, n_tot, n_err = [], 0.0, 0, 0
         for lo, hi in self._regions(f, sig):
             n = hi - lo
-            trial = self._seed(f, sig, lo, hi)
+            max_comp = max((n - 2) // 3, 1)                 # leastsq needs n_params < n_pix
+            trial = sorted(self._seed(f, sig, lo, hi), key=lambda c: -c[2])[:max_comp]
             best, best_aicc, best_r, best_chi2 = None, np.inf, None, None
             for _ in range(cfg.max_iter):
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     try:
                         fitted, r, chi2 = self._fit(f, sig, lo, hi, trial)
-                    except (ValueError, OverflowError, FloatingPointError):
+                    except (ValueError, TypeError, OverflowError, FloatingPointError):
                         n_err += 1
                         if len(trial) <= 1 or best is not None:
                             break
@@ -274,10 +275,13 @@ class NoisyVoigtFitter:
                 best, best_aicc, best_r, best_chi2 = fitted, a, r, chi2
                 rs = self._smooth(np.clip(best_r, 0, None)) / (sig[lo:hi] / np.sqrt(3.0))
                 pk, _ = find_peaks(rs, height=cfg.resid_sig)
-                if pk.size == 0:
+                if pk.size == 0 or len(best) + 1 > max_comp:
                     break
                 p = int(pk[np.argmax(rs[pk])])
                 trial = list(best) + [(self._z(lo + p), 20.0, 12.8)]
+            chi2_null = float(np.sum(((1.0 - f[lo:hi]) / sig[lo:hi]) ** 2))
+            if best is not None and best_aicc - chi2_null >= cfg.d_aicc:   # no better than no absorption
+                best = None
             if best is not None:
                 comps_all.extend(best)
                 chi2_tot += best_chi2
@@ -312,7 +316,10 @@ def _work(args: Tuple[int, np.ndarray, int]):
     for j, row in enumerate(block):
         rng = np.random.default_rng([seed, start + j])
         obs = _W["fm"].observe(row, rng)
-        c, d = _W["fit"].fit(obs)
+        try:
+            c, d = _W["fit"].fit(obs)
+        except Exception:                                      # flagged (n_fit_errors=-2), counted in analysis
+            c, d = np.zeros((0, 3)), {k: (-2.0 if k == "n_fit_errors" else 0.0) for k in DIAG_KEYS_NOISY}
         comps.append(c)
         diags.append(d)
     return start, comps, diags
