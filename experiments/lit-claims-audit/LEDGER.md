@@ -290,6 +290,32 @@ with seven binding defense-panel amendments).
     At k 0.01–0.03: +7.8 / +2.5 / +8.6%. It survives the forward model but is a replication (Khaire,
     Burkhart). The ratio is largely LSF-invariant, and significance against COS error bars is not
     assessed → **demoted** to replication.
+- **[D-14] E1 nuisance degeneracy (scored against the [D-11] pre-registration).** Class 2 (class 1)
+  plus a fixed broadening b_x, forward-modelled at S/N 30, compared with class 3 (class 4).
+
+  | b_x (km/s) | 3−2 profile χ²/5 | 3−2 BA (CI lo) | 4−1 profile χ²/5 | 4−1 BA (CI lo) |
+  |---|---|---|---|---|
+  | 0 | 353 | 0.539 (0.535) | 474 | 0.601 (0.596) |
+  | 6 | 205 | 0.540 (0.535) | 296 | 0.614 (0.610) |
+  | **9** | **178** | 0.575 (0.570) | **213** | 0.637 (0.633) |
+  | 12 | 478 | 0.631 | 278 | 0.670 |
+  | 21 | 4282 | 0.780 | 2355 | 0.784 |
+
+  - **Pre-registered verdict: NON-DEGENERATE** for the fixed-broadening nuisance at full-sample
+    precision (no b_x gives p > 0.05 together with a BA lower bound ≤ 0.52).
+  - **At the forecast sample the binned b–N profile IS degenerate.** At b_x = 9 km/s, the χ² scaled to
+    650 sightlines (3−2) is 7.1 (p = 0.22). Scaled to 250 sightlines (4−1) it is 3.3 (p = 0.66).
+  - With this one-parameter nuisance free, a 3σ-equivalent profile detection (χ²₅ = 18.2) needs about
+    **1,700 sightlines (Δz ≈ 39) for 3−2 and 1,400 (Δz ≈ 33) for 4−1**. That is 2.6× and 5.6× the
+    no-nuisance forecast, and still optimistic: one-sided nuisance, 3 km/s grid, no T₀/γ freedom.
+  - b_x ≈ 9 km/s is the size of the observed data-vs-simulation b offset (8–10 km/s), so the realistic
+    nuisance sits exactly where it does the most damage.
+  - **What the nuisance cannot absorb.** The residual stays peaked at 13 ≤ log N < 13.5: +2.1 (3−2) and
+    +3.0 (4−1) at b_x = 9, while the neighbouring bins go negative. A uniform quadrature broadening
+    cannot make an N-localised bump, so the N shape of Δb is the separable part. Its separability from a
+    T₀/γ (N-dependent) nuisance is untested.
+  - Per-sightline BA rises with b_x (broadening also changes line counts), so BA is not a degeneracy
+    metric here. The profile χ² is.
 
 ---
 
