@@ -84,6 +84,8 @@ def main() -> None:
     run_bin("null|class2@A2_vs_class2@A3", d12[1], null2, feature_set="all")
     # fitter-depth sensitivity (fiducial spectra, tighter tol)
     for tol in ("tol005", "tol002"):
+        while not all((ART / f"catalog_{tol}_full" / f"class{c}.npz").exists() for c in (2, 3)):
+            time.sleep(120)                                 # tol refits run last in the refit queue
         t2c = load_catalogs_single(ART / f"catalog_{tol}_full", 2)
         t3c = load_catalogs_single(ART / f"catalog_{tol}_full", 3)
         run_bin(f"{tol}|23|all", t2c, t3c, feature_set="all")
