@@ -35,7 +35,7 @@ def run_catalog(args, wave, dv) -> None:
     A = json.loads(Path("results/lit_claims_audit/matching_factors.json").read_text())[args.A_key]["A"]
     if args.A_from_class:                                   # rescaling-only null: class c refitted at another class's A
         A = [A[args.A_from_class - 1]] * 4
-    ocfg = ObsConfig(snr=float(args.snr), noise=args.noise, b_turb_max=args.bturb,
+    ocfg = ObsConfig(snr=float(args.snr), noise=args.noise, b_turb_max=args.bturb, b_extra=args.bextra,
                      cont_sigma=0.0 if not np.isfinite(float(args.snr)) else args.cont)
     fcfg = NoisyFitConfig(d_aicc=args.daicc)
     lsf = get_lsf(args.lsf, dv)
@@ -118,6 +118,7 @@ def main() -> None:
     ap.add_argument("--cont", type=float, default=0.01)
     ap.add_argument("--daicc", type=float, default=-2.0)
     ap.add_argument("--bturb", type=float, default=0.0)
+    ap.add_argument("--b-extra", dest="bextra", type=float, default=0.0)
     ap.add_argument("--A-from-class", dest="A_from_class", type=int, default=0)
     ap.add_argument("--classes", default="1,2,3,4")
     ap.add_argument("--n-jobs", type=int, default=9)

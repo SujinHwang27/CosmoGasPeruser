@@ -72,6 +72,7 @@ class ObsConfig:
     noise: str = "const"              # const | sqrtF
     cont_sigma: float = 0.01          # std of each Legendre continuum coefficient (k = 0, 1, 2)
     b_turb_max: float = 0.0           # if > 0: extra Gaussian broadening b ~ U(0, b_turb_max) km/s
+    b_extra: float = 0.0              # if > 0: fixed extra Gaussian broadening (b, km/s), unknown to the fitter
 
 
 class ForwardModel:
@@ -99,6 +100,8 @@ class ForwardModel:
     def observe(self, flux: np.ndarray, rng: np.random.Generator) -> Dict[str, np.ndarray]:
         cfg = self.cfg
         f = self._convolve_periodic(np.asarray(flux, dtype=np.float64), self.lsf)
+        if cfg.b_extra > 0:
+            f = self._convolve_periodic(f, gaussian_lsf(cfg.b_extra * 2.3548 / np.sqrt(2.0), self.dv))
         if cfg.b_turb_max > 0:
             bt = rng.uniform(0.0, cfg.b_turb_max)
             if bt > 0.5:

@@ -554,3 +554,146 @@ def flux_shape_stats(A: Sequence[float], n_skewers: int = 4096, seed: int = 0, n
             "pk_ratio_ci95_hi": np.percentile(boot, 97.5, axis=0).tolist(),
             "pk_ratio_k_gt_0.04_minus1": _summ(float(P[c].mean(axis=0)[hi_k].sum() / P[1].mean(axis=0)[hi_k].sum() - 1.0), dev_hi)}
     return out
+
+
+# ---------------------------------------------------------------------------
+# EDGE_MAP checks (E1 nuisance degeneracy, E3 T0 cut robustness, E4 forward-modelled P_F(k))
+# ---------------------------------------------------------------------------
+def profile_chi2(dmedb: Dict[str, Dict[str, float]]) -> Dict[str, float]:
+    """chi^2 of a binned Delta median b profile against zero (paired block-bootstrap SE per bin)."""
+    terms = []
+    for v in dmedb.values():
+        se = (v["ci95_hi"] - v["ci95_lo"]) / (2 * 1.96)
+        if se > 0 and np.isfinite(v["value"]):
+            terms.append((v["value"] / se) ** 2)
+    from scipy.stats import chi2 as _chi2
+    x = float(np.sum(terms))
+    return {"chi2": x, "dof": len(terms), "p": float(_chi2.sf(x, len(terms)))}
+
+
+def _weighted_median_boot(x: np.ndarray, w_base: np.ndarray, sk: np.ndarray, Wsk: np.ndarray,
+                          q: float = 0.5) -> Tuple[float, np.ndarray]:
+    """Quantile q of x with pixel weights w_base (point) and w_base * Wsk[i, sk] (bootstrap rows)."""
+    o = np.argsort(x, kind="stable")
+    xs, wo, so = x[o], w_base[o], sk[o]
+    out = []
+    for w in [wo] + [wo * Wi[so] for Wi in Wsk]:
+        cw = np.cumsum(w)
+        out.append(xs[min(np.searchsorted(cw, q * cw[-1]), xs.size - 1)])
+    return float(out[0]), np.array(out[1:])
+
+
+def t0_cut_sweep(n_skewers_sample: int = 2048, seed: int = 0, cuts: Sequence[float] = (4.5, 4.75, 5.0, 5.5),
+                 n_boot: int = 100, logd_lo: float = -0.5, logd_hi: float = 0.5) -> Dict[str, object]:
+    """Robustness of the cool-phase T0 shift (EDGE_MAP E3): T0/gamma from the median-T(rho) fit restricted to
+    log T < cut, with volume (pixel) or density weighting, plus two cut-free estimators at mean density
+    (|log Delta| < 0.05): the cool-phase mode of log T and the 10th percentile of log T. Ratios vs class 1 with
+    a paired block bootstrap over the same skewers. HI-weighted T, as carried by the LOS files."""
+    rng = np.random.default_rng(seed)
+    blocks = skewer_blocks()
+    rows = np.sort(rng.choice(16384, n_skewers_sample, replace=False))
+    ub, inv = np.unique(blocks[rows], return_inverse=True)
+    Wsk = np.stack([np.bincount(np.random.default_rng(seed + 1 + i).integers(0, ub.size, ub.size), minlength=ub.size)
+                    for i in range(n_boot)]).astype(np.float64)[:, inv]           # (n_boot, n_skewers)
+    edges = np.arange(logd_lo, logd_hi + 1e-9, 0.1)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    hbins = np.arange(3.0, 4.6 + 1e-9, 0.02)                                  # cool-phase window for the mode
+    est: Dict[int, Dict[str, np.ndarray]] = {}
+    for c in range(1, N_CLASSES + 1):
+        f = read_los_fields(c)
+        ld = np.log10(np.asarray(f["density"][rows]))
+        lt = np.log10(np.asarray(f["temp"][rows]))
+        sk = np.repeat(np.arange(rows.size), ld.shape[1])
+        ld, lt = ld.ravel(), lt.ravel()
+        inr = (ld >= logd_lo) & (ld < logd_hi)
+        ld, lt, sk = ld[inr], lt[inr], sk[inr]
+        e: Dict[str, np.ndarray] = {}
+        for weighting in ("volume", "density"):
+            wb = np.ones_like(ld) if weighting == "volume" else 10.0 ** ld
+            for cut in cuts:
+                sel = lt < cut
+                meds = []
+                for lo, hi in zip(edges[:-1], edges[1:]):
+                    m = sel & (ld >= lo) & (ld < hi)
+                    p, b = _weighted_median_boot(lt[m], wb[m], sk[m], Wsk)
+                    meds.append(np.r_[p, b])
+                meds = np.array(meds)                                             # (n_bins, 1 + n_boot)
+                fits = np.polyfit(centers, meds, 1)                               # (2, 1 + n_boot)
+                e[f"T0|{weighting}|cut{cut}"] = 10 ** fits[1]
+                e[f"gamma|{weighting}|cut{cut}"] = fits[0] + 1.0
+        md = np.abs(ld) < 0.05
+        ltm, skm = lt[md], sk[md]
+        idx = np.digitize(ltm, hbins) - 1
+        inb = (idx >= 0) & (idx < hbins.size - 1)                                # cool-phase window only
+        modes = []
+        for w in [np.ones_like(ltm)] + [Wi[skm] for Wi in Wsk]:
+            h = np.bincount(idx[inb], weights=w[inb], minlength=hbins.size - 1)
+            h = np.convolve(h, np.ones(5) / 5, mode="same")
+            modes.append(10 ** (hbins[np.argmax(h)] + 0.01))
+        e["T_mode_mean_density"] = np.array(modes)
+        p, b = _weighted_median_boot(ltm, np.ones_like(ltm), skm, Wsk, q=0.10)
+        e["T_p10_mean_density"] = 10 ** np.r_[p, b]
+        est[c] = e
+    out: Dict[str, object] = {"n_skewers": int(rows.size), "cuts_logT": list(cuts), "per_class": {}, "rel_vs_class1": {}}
+    for c in range(1, N_CLASSES + 1):
+        out["per_class"][f"class{c}"] = {k: float(v[0]) for k, v in est[c].items()}
+    for c in range(2, N_CLASSES + 1):
+        rel = {}
+        for k in est[c]:
+            if k.startswith("gamma"):
+                d = est[c][k] - est[1][k]
+            else:
+                d = est[c][k] / est[1][k] - 1.0
+            rel[k] = {"value": float(d[0]), "ci95_lo": float(np.percentile(d[1:], 2.5)),
+                      "ci95_hi": float(np.percentile(d[1:], 97.5))}
+        out["rel_vs_class1"][f"class{c}"] = rel
+    return out
+
+
+def forward_pk_stats(A: Sequence[float], lsf: np.ndarray, snr: float = 30.0, cont_sigma: float = 0.01,
+                     n_skewers: int = 4096, seed: int = 0, n_boot: int = 300) -> Dict[str, object]:
+    """P_F(k) shape ratios P_c/P_1 after the T2 forward model (EDGE_MAP E4): LSF, rebin x3, continuum
+    error, Gaussian noise (independent per class), each class normalised by its own <F>; the expected
+    white-noise power n sigma^2 / <F>^2 is subtracted per mode. Paired block bootstrap over skewers."""
+    from src.core.eigen_voigt import load_flux_variant, load_grid
+    from src.core.forward import ForwardModel, ObsConfig
+    wave, vel = load_grid()
+    dv = float(vel[1] - vel[0])
+    fm = ForwardModel(wave, dv, lsf, ObsConfig(snr=snr, cont_sigma=cont_sigma if np.isfinite(snr) else 0.0))
+    rng = np.random.default_rng(seed)
+    rows = np.sort(rng.choice(16384, n_skewers, replace=False))
+    blocks = skewer_blocks()[rows]
+    ub, inv = np.unique(blocks, return_inverse=True)
+    W = np.stack([np.bincount(np.random.default_rng(seed + 1 + i).integers(0, ub.size, ub.size), minlength=ub.size)
+                  for i in range(n_boot)]).astype(np.float64)[:, inv]
+    dv_obs = dv * fm.cfg.rebin
+    n_obs = fm.obs_wave.size
+    k = 2 * np.pi * np.fft.rfftfreq(n_obs, d=dv_obs)[1:]
+    kedges = np.geomspace(k[0], k[-1], 13)
+    kb = np.clip(np.digitize(k, kedges) - 1, 0, 11)
+    P = {}
+    for c in range(1, N_CLASSES + 1):
+        f = load_flux_variant("taurescaled", c, rows=rows, factors=list(A))
+        r = np.random.default_rng([seed, c])
+        obs = [fm.observe(row, r) for row in f]
+        fo = np.stack([o["flux"] for o in obs])                                   # shape: (n_skewers, 682)
+        sg = np.stack([o["sigma"] for o in obs])
+        mF = fo.mean()
+        p = np.abs(np.fft.rfft(fo / mF - 1.0, axis=1)[:, 1:]) ** 2
+        if np.isfinite(snr):
+            p = p - (np.sum(sg ** 2, axis=1) / mF ** 2)[:, None]
+        P[c] = np.stack([p[:, kb == j].mean(axis=1) for j in range(12)], axis=1)
+    kc = np.array([k[kb == j].mean() for j in range(12)])
+    out: Dict[str, object] = {"A": list(A), "snr": snr, "k_centers_s_per_km": kc.tolist()}
+    bands = {"k_0.01-0.03": (kc >= 0.01) & (kc < 0.03), "k_0.03-0.04": (kc >= 0.03) & (kc < 0.04),
+             "k_gt_0.04": kc > 0.04, "k_0.04-0.1": (kc > 0.04) & (kc < 0.1)}
+    for c in range(2, N_CLASSES + 1):
+        ent: Dict[str, object] = {"pk_ratio": (P[c].mean(axis=0) / P[1].mean(axis=0)).tolist()}
+        for name, m in bands.items():
+            if not m.any():
+                continue
+            pt = float(P[c].mean(axis=0)[m].sum() / P[1].mean(axis=0)[m].sum() - 1.0)
+            bt = (W @ P[c])[:, m].sum(axis=1) / (W @ P[1])[:, m].sum(axis=1) - 1.0
+            ent[name] = _summ(pt, bt)
+        out[f"class{c}_vs_1"] = ent
+    return out
