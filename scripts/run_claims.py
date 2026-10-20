@@ -35,7 +35,8 @@ def main() -> None:
             elif test == "t4a":
                 res = t4a_envelope(cats, bb)
             elif test == "t6":
-                res = t6_paired(cats, bb, blocks.size)
+                res = {"dv10": t6_paired(cats, bb, blocks.size, logN_min=12.0, dv_max=10.0),
+                       "dv5": t6_paired(cats, bb, blocks.size, logN_min=12.0, dv_max=5.0)}
             else:
                 raise ValueError(test)
             res["provenance"] = provenance_header({"variant": variant, "test": test})

@@ -153,9 +153,9 @@ def t4a_envelope(cats: List[Dict[str, np.ndarray]], bb: BlockBootstrap, q_env: f
 # T6 — paired absorbers across classes (shared initial conditions)
 # ---------------------------------------------------------------------------
 def match_lines(cat_a: Dict[str, np.ndarray], cat_b: Dict[str, np.ndarray], n_skewers: int,
-                logN_min: float = 12.5) -> Dict[str, np.ndarray]:
+                logN_min: float = 12.5, dv_max: float = 10.0) -> Dict[str, np.ndarray]:
     """Mutual-nearest-in-velocity matching of class-a and class-b components on the same
-    skewer, |dv| < max(0.5 b_a, 5 km/s), periodic in v."""
+    skewer, |dv| < dv_max km/s (fixed, so the matching does not depend on b), periodic in v."""
     def split(cat):
         m = cat["logN"] >= logN_min
         sl, v, b, N = cat["sightline"][m], cat["v_kms"][m], cat["b_kms"][m], cat["logN"][m]
@@ -182,8 +182,7 @@ def match_lines(cat_a: Dict[str, np.ndarray], cat_b: Dict[str, np.ndarray], n_sk
             k = ia[j]
             if ib[k] != j:
                 continue
-            tol = max(0.5 * ba[a0 + j], 5.0)
-            if ad[j, k] < tol:
+            if ad[j, k] < dv_max:
                 rows.append((i, va[a0 + j], ba[a0 + j], Na[a0 + j], bbb[b0 + k], Nb[b0 + k], d[j, k]))
     arr = np.array(rows, dtype=np.float64) if rows else np.zeros((0, 7))
     return {"sightline": arr[:, 0].astype(np.int64), "v": arr[:, 1], "b_a": arr[:, 2], "logN_a": arr[:, 3],
@@ -192,12 +191,12 @@ def match_lines(cat_a: Dict[str, np.ndarray], cat_b: Dict[str, np.ndarray], n_sk
 
 def t6_paired(cats: List[Dict[str, np.ndarray]], bb: BlockBootstrap, n_skewers: int,
               pairs: Sequence[Tuple[int, int]] = ((2, 3), (1, 4), (1, 2)),
-              logN_min: float = 12.5) -> Dict[str, object]:
+              logN_min: float = 12.5, dv_max: float = 10.0) -> Dict[str, object]:
     """Paired line-by-line response: median Δb (b_class_b − b_class_a), Δb by log N bin,
     fraction |Δb| > 5 km/s, localisation of the broadening, pair-order accuracy, match rate."""
-    out: Dict[str, object] = {"logN_min": logN_min}
+    out: Dict[str, object] = {"logN_min": logN_min, "dv_max": dv_max}
     for a, b_ in pairs:
-        M = match_lines(cats[a - 1], cats[b_ - 1], n_skewers, logN_min)
+        M = match_lines(cats[a - 1], cats[b_ - 1], n_skewers, logN_min, dv_max)
         db = M["b_b"] - M["b_a"]
         w = bb.line_weights(M["sightline"])
         res: Dict[str, object] = {"n_matched": int(db.size), "match_rate": float(db.size / max(M["n_a_total"], 1))}
@@ -212,10 +211,180 @@ def t6_paired(cats: List[Dict[str, np.ndarray]], bb: BlockBootstrap, n_skewers: 
         res["share_of_positive_broadening_top20pct"] = float(pos[:top].sum() / max(pos.sum(), 1e-12))
         res["pair_order_acc_b_larger_in_class_b"] = float(np.mean(db > 0) + 0.5 * np.mean(db == 0))
         by_bin = {}
-        for lo, hi in ((12.5, 13.0), (13.0, 13.5), (13.5, 14.0), (14.0, 14.5), (14.5, 16.0)):
+        for lo, hi in ((12.0, 12.5), (12.5, 13.0), (13.0, 13.5), (13.5, 14.0), (14.0, 14.5), (14.5, 16.0)):
             m = (M["logN_a"] >= lo) & (M["logN_a"] < hi)
             if m.sum() >= 100:
                 by_bin[f"{lo}-{hi}"] = _summ(float(np.median(db[m])), weighted_quantile(db[m], w[:, m], 0.5))
         res["median_db_by_logN"] = by_bin
         out[f"pair_{a}{b_}"] = res
+    return out
+
+
+# ---------------------------------------------------------------------------
+# T1 / T3 — matching factors (analytic, on the fiducial catalog: tau -> A tau shifts every
+# component's log N by log10 A and leaves its b unchanged)
+# ---------------------------------------------------------------------------
+_S_GRID = np.arange(-0.6, 0.6 + 1e-9, 0.0005)
+
+
+def dndz_match_factors(cats: List[Dict[str, np.ndarray]], lo: float, hi: float) -> Dict[str, object]:
+    """A_c so that every class has the pooled-mean number of components with lo <= log N < hi."""
+    counts = [int(((c["logN"] >= lo) & (c["logN"] < hi)).sum()) for c in cats]
+    target = float(np.mean(counts))
+    A = []
+    for c in cats:
+        N = np.sort(c["logN"])
+        n_s = np.searchsorted(N, hi - _S_GRID) - np.searchsorted(N, lo - _S_GRID)
+        A.append(float(10 ** _S_GRID[int(np.argmin(np.abs(n_s - target)))]))
+    return {"window": [lo, hi], "counts_fiducial": counts, "target": target, "A": A}
+
+
+def cddf_match_factors(cats: List[Dict[str, np.ndarray]], lo: float = 13.3, hi: float = 14.5,
+                       dbin: float = 0.1) -> Dict[str, object]:
+    """A_c minimising chi^2 between class c's CDDF and class 1's over [lo, hi] (Poisson errors)."""
+    edges = np.arange(lo, hi + 1e-9, dbin)
+    ref = np.histogram(cats[0]["logN"], edges)[0].astype(float)
+    A = [1.0]
+    for c in cats[1:]:
+        chi = [np.sum((np.histogram(c["logN"] + s, edges)[0] - ref) ** 2 / np.maximum(ref, 1.0)) for s in _S_GRID[::4]]
+        A.append(float(10 ** _S_GRID[::4][int(np.argmin(chi))]))
+    return {"window": [lo, hi], "A": A}
+
+
+def predicted_matched_db(cats: List[Dict[str, np.ndarray]], A: Sequence[float], a: int, b: int,
+                         bins: Sequence[Tuple[float, float]]) -> Dict[str, float]:
+    """Prediction for the matched catalog: median b(class b) - median b(class a) in log N bins
+    after shifting every component's log N by log10 A_c (b unchanged)."""
+    out = {}
+    for lo, hi in bins:
+        meds = []
+        for k in (a, b):
+            c = cats[k - 1]
+            N = c["logN"] + np.log10(A[k - 1])
+            m = (N >= lo) & (N < hi)
+            meds.append(float(np.median(c["b_kms"][m])))
+        out[f"{lo}-{hi}"] = meds[1] - meds[0]
+    return out
+
+
+# ---------------------------------------------------------------------------
+# T1 — matched characterisation: ensemble Δb in log N bins + binary 2-vs-3 classification
+# ---------------------------------------------------------------------------
+N_BINS_T1: Tuple[Tuple[float, float], ...] = ((12.0, 12.5), (12.5, 13.0), (13.0, 13.5), (13.5, 14.0), (14.0, 14.5))
+B_FEATS = ("b_q10", "b_q25", "b_q50", "b_q75", "b_q90", "b_Nweighted", "frac_b_gt40", "frac_b_lt15", "bN_slope")
+N_FEATS = ("n_lines_12", "n_lines_13", "n_lines_14", "logNtot", "logN_q25", "logN_q50", "logN_q75", "logN_q90",
+           "dv_nn_median", "has_lines", "has_bN_slope", "has_dv_nn")
+
+
+def binned_dmedb(cats: List[Dict[str, np.ndarray]], bb: BlockBootstrap, a: int, b: int,
+                 bins: Sequence[Tuple[float, float]] = N_BINS_T1) -> Dict[str, Dict[str, float]]:
+    """median b(class b) - median b(class a) within log N bins, paired block bootstrap."""
+    out = {}
+    for lo, hi in bins:
+        pts, bts = [], []
+        for k in (a, b):
+            c = cats[k - 1]
+            m = (c["logN"] >= lo) & (c["logN"] < hi)
+            pts.append(float(np.median(c["b_kms"][m])))
+            bts.append(weighted_quantile(c["b_kms"][m], bb.line_weights(c["sightline"][m]), 0.5))
+        out[f"{lo}-{hi}"] = _summ(pts[1] - pts[0], bts[1] - bts[0])
+    return out
+
+
+def _b_residual_features(cat: Dict[str, np.ndarray], n: int, train_rows: np.ndarray,
+                         ref_cats: List[Dict[str, np.ndarray]], ref_train: List[np.ndarray],
+                         logN_detect: float = 12.0) -> np.ndarray:
+    """Per-sightline aggregates of b - median_b(log N), the median curve fit in 0.1-dex bins on
+    the TRAINING sightlines of the reference classes only (fold-internal)."""
+    edges = np.arange(logN_detect, 17.0 + 1e-9, 0.1)
+    bs, Ns = [], []
+    for rc, rt in zip(ref_cats, ref_train):
+        keep = np.isin(rc["sightline"], rt) & (rc["logN"] >= logN_detect)
+        bs.append(rc["b_kms"][keep])
+        Ns.append(rc["logN"][keep])
+    b_all, N_all = np.concatenate(bs), np.concatenate(Ns)
+    idx = np.clip(np.digitize(N_all, edges) - 1, 0, edges.size - 2)
+    med = np.array([np.median(b_all[idx == i]) if np.any(idx == i) else np.nan for i in range(edges.size - 1)])
+    good = np.isfinite(med)
+    med = np.interp(np.arange(med.size), np.flatnonzero(good), med[good])
+    m = cat["logN"] >= logN_detect
+    sl = cat["sightline"][m]
+    r = cat["b_kms"][m] - med[np.clip(np.digitize(cat["logN"][m], edges) - 1, 0, edges.size - 2)]
+    X = np.full((n, 5), np.nan)
+    order = np.argsort(sl, kind="stable")
+    sl, r = sl[order], r[order]
+    bounds = np.searchsorted(sl, np.arange(n + 1))
+    for i in range(n):
+        ri = r[bounds[i]:bounds[i + 1]]
+        if ri.size:
+            X[i] = (np.median(ri), np.percentile(ri, 75), np.percentile(ri, 90), np.mean(ri > 10.0), np.mean(ri))
+    return X
+
+
+def binary_cv(cats_a: Dict[str, np.ndarray], cats_b: Dict[str, np.ndarray], blocks: np.ndarray,
+              seeds: Sequence[int], feature_set: str = "all", logN_detect: float = 12.0,
+              scalars: Optional[np.ndarray] = None, axis_ids: Optional[np.ndarray] = None,
+              n_jobs: int = -1) -> Dict[str, object]:
+    """Binary per-sightline classification of catalog A (label 0) vs catalog B (label 1).
+
+    feature_set: all | b_only | n_only | b_resid (fold-internal b(N) residual aggregates).
+    scalars (2n, k): if given, every feature column is spline-residualised on them per fold.
+    axis_ids (n,): if given, folds are the 3 projection axes (axis-held-out sensitivity).
+    Returns per-split BA (RF, logreg) and seed-averaged block-bootstrap BA.
+    """
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import balanced_accuracy_score
+    from sklearn.preprocessing import StandardScaler
+    from src.core.eigen_eval import _SplineResidualiser, _impute_train_median, block_bootstrap, group_splits
+    from src.core.voigt import line_feature_names, line_statistics_features
+
+    n = blocks.size
+    names = line_feature_names()
+    y = np.r_[np.zeros(n, int), np.ones(n, int)]
+    sk = np.r_[np.arange(n), np.arange(n)]
+    bl = np.r_[blocks, blocks]
+    if feature_set != "b_resid":
+        X = np.vstack([line_statistics_features(c["sightline"], c["v_kms"], c["b_kms"], c["logN"], n_sightlines=n,
+                                                span_kms=SPAN_KMS, logN_detect=logN_detect, impute=False)
+                       for c in (cats_a, cats_b)])
+        if feature_set == "b_only":
+            X = X[:, [names.index(f) for f in B_FEATS]]
+        elif feature_set == "n_only":
+            X = X[:, [names.index(f) for f in N_FEATS]]
+    splits_by_seed = {}
+    for s in seeds:
+        if axis_ids is not None:
+            ax = np.r_[axis_ids, axis_ids]
+            splits_by_seed[s] = [(np.flatnonzero(ax != k), np.flatnonzero(ax == k)) for k in (1, 2, 3)]
+        else:
+            splits_by_seed[s] = group_splits(bl, 5, s)
+    correct = {"rf": np.zeros((len(seeds), 2 * n)), "logreg": np.zeros((len(seeds), 2 * n))}
+    per_split = []
+    for si, s in enumerate(seeds):
+        for fold, (tr, te) in enumerate(splits_by_seed[s]):
+            if feature_set == "b_resid":
+                tr_sk = [np.unique(sk[tr][y[tr] == 0]), np.unique(sk[tr][y[tr] == 1])]
+                X = np.vstack([_b_residual_features(c, n, None, [cats_a, cats_b], tr_sk, logN_detect)
+                               for c in (cats_a, cats_b)])
+            Xtr, Xte = _impute_train_median(X[tr], X[te])
+            if scalars is not None:
+                r = _SplineResidualiser().fit(scalars[tr], Xtr)
+                Xtr, Xte = r.residual(scalars[tr], Xtr), r.residual(scalars[te], Xte)
+            sc = StandardScaler().fit(Xtr)
+            Xtr, Xte = sc.transform(Xtr), sc.transform(Xte)
+            row = {"seed": s, "fold": fold}
+            for name, clf in (("rf", RandomForestClassifier(n_estimators=200, min_samples_leaf=5, max_samples=0.5,
+                                                             n_jobs=n_jobs, random_state=s)),
+                              ("logreg", LogisticRegression(C=1.0, max_iter=3000))):
+                clf.fit(Xtr, y[tr])
+                p = clf.predict(Xte)
+                correct[name][si, te] = (p == y[te])
+                row[f"ba_{name}"] = float(balanced_accuracy_score(y[te], p))
+            per_split.append(row)
+    out: Dict[str, object] = {"feature_set": feature_set, "logN_detect": logN_detect, "per_split": per_split}
+    for name in ("rf", "logreg"):
+        point, boot = block_bootstrap(y + 1, bl, correct[name].mean(axis=0)[None, :], n_boot=2000, seed=0)
+        out[f"ba_{name}"] = {"value": float(point[0]), "ci95_lo": float(np.percentile(boot[:, 0], 2.5)),
+                             "ci95_hi": float(np.percentile(boot[:, 0], 97.5))}
     return out
